@@ -1,0 +1,19 @@
+BIN=gclfield2vtk
+PF=gclfield2vtk.pf
+MAN1=gclfield2vtk.1
+
+
+ldlibs=-lm -lgclgrid -lseispp -lperf  \
+   $(DBLIBS) $(TRLIBS) $(F77LIBS) -L$(VTKLIB) \
+   -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtkCommon -lvtkIO -lgclgrid
+ANTELOPEMAKELOCAL = $(ANTELOPE)/local/include/antelopemake.local
+
+include $(ANTELOPEMAKE)
+include $(ANTELOPEMAKELOCAL)
+
+CXXFLAGS += -I$(VTKINCLUDE) 
+
+OBJS=gclfield2vtk.o vtk_output.o vtk_output_GCLgrid.o
+$(BIN) : $(OBJS)
+	$(RM) $@
+	$(CXX) $(CCFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)

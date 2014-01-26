@@ -1,0 +1,121 @@
+.TH GCLFIELD2VTK 1
+.SH NAME
+gclfield2vtk \- convert internal gclfield objects to vtk format files
+.SH SYNOPSIS
+.nf
+\fBgclfield2vtk\fR db|infile outfile [-i | -g gridname -f fieldname] 
+             -r remapgridname -odbf outfieldname -xml|-binary -pf pffile] -V
+.fi
+.SH DESCRIPTION
+.LP
+This program is used to convert Geographical CurviLinear (GCL) field objects
+stored in an Antelope database to external formats that can be read by 
+the Visualization Tool Kit (VTK).  The program can convert scalar3d, vector3d,
+scalar2d, and grid2d (structured grid surfaces such as a DEM) objects.  
+Outputs are in "legacy VTK" format or the newer XML format depending on the 
+choice of options.  Not all combinations are currently supported.  
+(see Bugs and Caveats section).
+.LP
+Argument 1 is required.  If the \fB-i\fR flag is present this is assumed to
+be an input file base name.  Otherwise it is assumed to be a database
+named \fBdb\fR.  In the later case it must point to a valid Antelope database
+descriptor.  \fBoutfile\fR is the (required) output file name.  Use a simple 
+name without an extension for this file.  The program appends an appropriate 
+extension depending on the output option.  This is necessary for paraview to
+grok the file type in windows, macos, or linux implementations.  The output 
+files should normally be readable directly by paraview. 
+.SH OPTIONS
+.IP -g 
+Override the parameter file grid name to locate the gclfield to be converted.
+The current implementation stores GCLfield objects in an antelope database
+keyed by a gridname and a fieldname.  This is one key.
+This is ignored if the -i flag is used.
+.IP -f 
+Defines the related key for the field name used to index the desired 
+data.  This is ignored if the -i flag is used.
+.IP -r
+Because visualizations use a Cartesian coordinate system it is frequently
+essential to make sure a set of outputs are in a common reference frame. 
+We commonly do this by defining one grid as a master.  Use the -r option 
+to make sure all conversions use the coordinate system of this master.
+.IP -odbf
+This is most commonly used to build apply an internal agc operator to 
+a field and save the result.  This parameter should be avoided an 
+will probably eventually be depricated.
+.IP -xml
+Ue the -xml to have the output written in vtk's xml format.
+.IP -binary
+Use the -binary format to have the output written as binary.  The program
+should automatically test byte order and flag the file appropriately.
+.IP -pf
+Use pffile.pf as the alternative parameter file to the standard gclfield2vtk.pf.
+.SH FILES
+.LP
+The output file is a legacy VTK file described in documentation for the Visualization Tool Kit (VTK) library.
+.SH PARAMETER FILE
+.LP
+Several parameters can be viewed as defaults for command line arguments.  
+The \fBgridname\fR parameter is the default for -g, 
+\fBfieldname\fR provides the default for -f, and 
+\fBremapgridname\fR provides the default for -r. 
+Related is the \fBremap_grid\fR boolean.  If false (the default) \fBremapgridname\fR is ignored 
+unless the -r command line argument is used.  Using the -r command line options implicitly turns on 
+the remap option.
+.LP
+The \fBfieldtype\fR defines the type of grid object the program will convert.  Allowed 
+options are:  grid2d, scalar2d, scalar3d, and vector3d.  Note that vector3d currently produces
+a sequence of scalar field objects for with each vector component in a different file.
+.LP
+The \fBremapgrid_number_dimensions\fR parameter is used to sort out a potential ambiguity in 
+the grid geometry used when remapping is enabled.  That is, the GCLgrid library allows both 2d 
+and 3d structured grids.  This assure the coordinate system to use for mapping is unambiguous.
+.LP
+The boolean parameter \fBsave_as_vector_field\fR is a switch for handling vector field data.
+When true output is VTK's vector field format.  When false vector fields are output with one 
+file per vector component.  The default is false.  (This capability is not currently implemented.
+If set true an error message will be posted and the program will abort.)
+.LP
+There are some special parameters used only in certain circumstances.  The user is warned these
+may one day be depricated in favor of editing and saving to new loction.  The boolean
+parameter \fBremove_mean_x3_slices\fR can be useful for absolute velocity tomography models.  
+It removes the average value of each layer (constant x3 slice) before saving the output.
+The boolean \fBapply_agc\fR and integer valued parameter \fBagc_operator_length\fR are linked.  
+When \fBapply_agc\fR is true an agc operator with a length (in vertical-x3 samples) is applied
+before output.  The author has used this frequently for wavefield imaging volumes.
+.SH DIAGNOSTICS
+.LP
+Check stderr for errors.  Most problems will generate a relatively verbose message.
+.SH "BUGS AND CAVEATS"
+.IP (1)
+Not all combinations of output format options are support.  The -xml and 
+-binary options will only work on 3D scalar or vector fields.  Either
+option will silently be ignored for any 2D object.
+.IP (2)
+Vector fields are not actually properly supported in this version.  As noted
+above vector fields are actually output as multiple files that are actually
+scalar fields.  VTK supports vector fields, but an output writer has not
+yet been implemented.  
+.IP (3)
+For version 3.8 of paraview on 64 bit platforms a bug seems to exist in libc for reading ascii data created by this program.  The VTK reader for ascii files 
+will abort when trying to read numbers with exponents that define tiny
+numbers that overflow the exponent field on floats.  (e.g. a number like
+1.6698897e-258 will cause the VTK reader for legacy VTK files to throw
+an exception and cause paraview, which uses this routine, to abort).  
+For this reason use only the -xml or -binary option on 64 bit platforms. 
+.IP (4)
+This program is a bit of an abomination in that as it evolved it developed a scitzo approach to 
+parameter information.  The command line arguments were added to allow easier interaction with
+shell scripts but create an inconsistent and (admittedly) confusing parameter definition.
+.IP (5)
+The agc and remove mean parameters really do not belong in this program.  There is a good chance these
+will be replaced with a more elaborate field editor or implemented as a python module in paraview in
+the future.
+.SH AUTHOR
+.nf
+Gary L. Pavlis
+Department of Geological Sciences
+Indiana University 
+1001 East 10th Street
+Bloomington, IN 47405
+pavlis@indiana.edu
+.fi

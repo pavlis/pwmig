@@ -1,0 +1,16 @@
+n1 487
+n2 433
+iorigin 0
+jorigin 0
+lon0 -74.1
+lat0 0.8
+r0 6371.0
+dx1n 3.7
+dx2n 3.7
+gridname etopo10to1
+# etopo is units of m, this converts to km
+# to get vertical exaggeration change this factor
+vertical_scale_factor 0.01
+vertical_offset 70.0
+grid_directory vmodels
+

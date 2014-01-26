@@ -1,0 +1,20 @@
+BIN=gclfield2vtk
+
+vtkroot=/N/soft/linux-rhel4-x86_64/VTK/5.2.1/VTK-32
+vtkcore =-L$(vtkroot)/lib/vtk-5.2 -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtkCommon
+
+vtkext =  -lvtkpng -lvtktiff -lvtkzlib -lvtkjpeg -lvtkexpat -lvtkftgl -lvtkfreetype
+vtkgl =  -lGL
+vtklibs = $(vtkcore) $(vtkext) $(vtkgl)
+vtkquarry = -lvtkmetaio  -lvtksys -lvtkverdict -lvtkzlib
+vtkincs=-I$(vtkroot)/include/vtk-5.2
+quarrylibs=-L/N/soft/linux-rhel4-x86_64/intel/cc/10.1.013/lib -Wl,-rpath,/N/soft/linux-rhel4-x86_64/intel/cc/10.1.013/lib -lguide -limf -lirc -lpthread
+
+cflags=-g $(vtkincs)
+ldlibs=-lm -lgclgrid -lseispp -lperf $(DBLIBS) $(TRLIBS) $(F77LIBS) $(quarrylibs) $(vtklibs) $(vtkquarry)
+
+include antelopemake
+OBJS=gclfield2vtk.o vtk_output.o vtk_output_GCLgrid.o
+$(BIN) : $(OBJS)
+	$(RM) $@
+	$(CXX) $(CCFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
