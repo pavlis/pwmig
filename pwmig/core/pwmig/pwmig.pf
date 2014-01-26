@@ -1,0 +1,38 @@
+Pvelocity_model_grid ak135
+Svelocity_model_grid ak135
+P_velocity_model1d_name	derive_from_3d
+S_velocity_model1d_name	derive_from_3d
+P_velocity_model3d_name	ak135P
+S_velocity_model3d_name	ak135S
+Parent_GCLgrid_Name taimage12
+stack_grid_name	taimage12
+border_padding	10
+output_field_directory	migrated_data
+output_filename_base e12r1
+use_depth_variable_transformation	false
+maximum_depth	900.0
+maximum_time_lag	120.0
+fixed_u_mode	false
+slowness_grid_deltau	0.01
+ray_trace_depth_increment	1.0
+data_sample_interval 0.05
+# new Jan 25,2007 for weighting function fundamental problem
+recompute_weight_functions false
+weighting_function_smoother_length 10
+# New for coherence option
+use_grt_weights true
+coherence_grid_name	tacoh12
+coherence_raygrid_decimation	10
+coherence_smoother_length 10
+# don't need this as this model has a pad above zero eleation of 25 km 
+Velocity_model_surface_tolerance 0.01
+save_partial_sums false
+#
+# new parameter added july 23 
+#
+Incident_TTgrid_zdecfac 10
+depth_padding_multiplier 1.2
+apply_elevation_statics false
+delta_slowness_cutoff 1.0
+elevation_static_correction_velocity 8.4
+pf_revision_time	1098359696
