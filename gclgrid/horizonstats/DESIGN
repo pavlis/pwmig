@@ -1,0 +1,24 @@
+Purpose of this program is a quick and dirty estimate of amplitude variations 
+in migration solutions at 410 and 660 discontinuities.  Need to quantify 
+this for xin's paper.  This is part 1 of a series of things that might be 
+useful to improve that work.
+
+This program will simply compute rms, and median absolute deviation of 
+values in a depth window.
+
+Input should be lat,lon,depth points were stats are desired.  
+this should allow use on a more than just the 410 problem.  e.g. it could
+be used to measure amplitude variations on what I'm calling the top of the 
+Farllon slab or by Bauer in Alaska.
+
+usage should be 
+
+horizonstats db gridname fieldname [-pf pffile] < inlist 
+
+write to stdout 
+lon, lat, depmin, depthcenter, depthmax, Rrms, R_MAD, Trms, T_MAD, 3Crms, 3C_MAD
+
+where R is radial, T is transverse, and 3C means sum of all 3 components
+
+Future step after this is to try fitting a single wavelet curve to seismogram
+extracted at each point.
