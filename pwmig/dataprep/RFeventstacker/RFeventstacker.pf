@@ -12,6 +12,17 @@ fake_origin_time_offsets 3600.0
 phase_for_alignment P
 # chan in arrival will get this label or all posted (fake) arrivals
 arrival_chan Z
+#
+# This set of parameters provide capability of post filtering 
+# stack with a limited suite of possible wavelets.
+# Currently only allow ricker or gaussian.
+#
+# this must be true to enable the post filtering features
+filter_stack true
+filter_type ricker
+wavelet_length 200
+# for gaussian sigma, for ricker 1/fc=nu
+wavelet_width_parameter 2.0
 # In this program all data are written to a single file directory set by output_dir
 output_dir stackdata
 output_dfile stackdata.w

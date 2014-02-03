@@ -9,10 +9,7 @@
 #include "dbpp.h"
 #include "VectorStatistics.h"
 #include "resample.h"
-#ifdef MATLABPLOTTING
-#include "MatlabPlotter.h"
-#include "SeisppKeywords.h"
-#endif
+#include "SimpleWavelets.h"
 using namespace std;
 using namespace SEISPP;
 /* This procedure will eventually be in libseispp under resample.h but for 
@@ -364,6 +361,27 @@ bool need_to_resample(ThreeComponentEnsemble& d,double targetdt)
         if(fabs( ((dptr->dt)-targetdt)/targetdt)>tolerance) return true;
     return false;
 }
+TimeSeries build_filter_wavelet(Metadata& control)
+{
+    try {
+        string filter_type=control.get_string("filter_type");
+        int wavelet_length=control.get_int("wavelet_length");
+        double width_parameter=control.get_double("wavelet_width_parameter");
+        double dt=control.get_double("target_sample_interval");
+        if(filter_type=="ricker")
+        {
+            return(ricker_wavelet(wavelet_length,dt,width_parameter,AREA));
+        }
+        else if (filter_type=="gaussian")
+        {
+            return(gaussian_wavelet(wavelet_length,dt,width_parameter,AREA));
+        }
+        else
+            throw SeisppError("build_filter_wavelet:   filter_type="
+                    + filter_type + " not allowed\n" 
+                    + "Must be either gaussian or ricker");
+    }catch(...){throw;};
+}
 void usage()
 {
 	cerr << "RFeventstacker dbin dbout [-noplots -v -pf pfname]" << endl
@@ -416,13 +434,6 @@ int main(int argc, char **argv)
 	MetadataList mdwfdisc=pfget_mdlist(pf,"wfdisc_mdlist");
 	try {
 
-#ifdef MATLABPLOTTING
-		MatlabPlotter *mphandle;
-		if(plotdata) 
-			mphandle=new MatlabPlotter();
-		else
-			mphandle=NULL;
-#endif
                 ResamplingDefinitions rd(pf);
 		Metadata control(pf);
                 /* The data will all be resampled to this sample interval */
@@ -441,7 +452,12 @@ int main(int argc, char **argv)
 		string phase=control.get_string("phase_for_alignment");
 		string arrivalchan=control.get_string("arrival_chan");
 		bool ignore_vertical=control.get_bool("ignore_vertical");
-		int PlotSizeCutoff=control.get_int("plot_size_cutoff");
+                /* These control an optional post stack convolution 
+                   with a Ricker wavelet*/
+                bool filter_stack=control.get_bool("filter_stack");
+                TimeSeries filter_wavelet;
+                if(filter_stack) filter_wavelet=build_filter_wavelet(control);
+
 		/* All data will be written to this directory and to 
 		one file set by dfile.  Intentional to improve performance
 		in hpc systems*/
@@ -648,27 +664,10 @@ cout << "Number of record to process="<<nrec<<endl;
 			if(s1!=NULL) delete s1;
 			if(s2!=NULL) delete s2;
 			if(s3!=NULL) delete s3;
-#ifdef MATLABPLOTTING
-			if(pwdata->member.size()>PlotSizeCutoff) 
-			{
-				string channames[3];
-				channames[0]="E";  
-				channames[1]="N";  
-				channames[2]="Z";
-				ThreeComponentEnsemble plotdata(*pwdata);
-				sort(plotdata.member.begin(),
-				    plotdata.member.end(),
-				    less_stackweight<ThreeComponentSeismogram>());
-				// Push two copies of the stack.  Clear the first so
-				// it appears as a spacer.
-				plotdata.member.push_back(result);
-				int currentsize=plotdata.member.size();
-				for(int k=0;k<result.ns;++k)
-					for(int ic=0;ic<3;++ic) plotdata.member[currentsize-1].u(ic,k)=0.0;
-				plotdata.member.push_back(result);
-				mphandle->wigbplot(plotdata,channames,false);
-			}
-#endif
+                        /* This is not an efficient way to do this convolution
+                           but a handy procedure that handles 3c data simply*/
+                        if(filter_stack) 
+                            result=sparse_convolve(filter_wavelet,result);
 			double stalat=result.get_double("site.lat");
 			double stalon=result.get_double("site.lon");
 			double staelev=result.get_double("site.elev");
@@ -687,14 +686,6 @@ cout << "Number of record to process="<<nrec<<endl;
 			/* This program writes fake, absolute times */
 			result.put("timetype","a");
 			result.put("wfprocess.algorithm","RFeventstacker");
-#ifdef MATLABPLOTTING
-			if(pwdata->member.size()>PlotSizeCutoff) 
-			{
-				mphandle->plot(result);
-				cout << "Push any key to continue:";
-				int ans=cin.get();
-			}
-#endif
 			/* Save data to both wfdisc and wfprocess */
 			int irec;
 			irec=dbsave(result,dbwfdisc.db,string("wfdisc"),
@@ -723,9 +714,6 @@ cout << "Number of record to process="<<nrec<<endl;
 			save_assoc(dbassoc,result,orid,arid,phase,hcen);
 
 		}
-#ifdef MATLABPLOTTING
-		delete mphandle;
-#endif
 	}
 	catch (SeisppError& serr)
 	{
