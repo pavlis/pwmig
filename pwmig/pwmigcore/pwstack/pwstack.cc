@@ -8,6 +8,7 @@
 #include "Hypocenter.h"
 #include "seispp.h"
 #include "PwmigFileHandle.h"
+#include "PfstyleMetadata.h"
 #include "pwstack.h"
 
 using namespace std;
@@ -17,11 +18,11 @@ bool Verbose;
 
 void usage()
 {
-    cbanner((char *)"$Revision: 1.17 $ $Date: 2010/02/09 11:53:30 $",
-        (char *)"dbin [-np np -rank rank -v -V -pf pfname]",
-        (char *)"Gary Pavlis",
-        (char *)"Indiana University",
-        (char *)"pavlis@indiana.edu") ;
+    cerr << "Usage:  pwstack datafile [-np np -rank rank -v -pf pfname]"
+        <<endl <<"  If -np is set every np events processed starting at rank"
+        <<endl <<"  -v - run verbose"
+        <<endl <<"  -pf use alternate parameter file pfname"
+        <<endl;
     exit(-1);
 }
 
@@ -71,24 +72,14 @@ auto_ptr<ThreeComponentEnsemble> clean_gather(
 	
 
 
-#ifdef MATLABDEBUG
-MatlabProcessor mp(stdout);
-#endif
 
 bool SEISPP::SEISPP_verbose(false);
 int main(int argc, char **argv)
 {
-    Dbptr db;
     int i,j;
     char *pfin=NULL;
-    int sift=0;
-    char subset_string[128];
-    Pf *pf;
-    Pf *pfnext;
     char *ensemble_tag;
 
-    // This is the input data ensemble
-    ThreeComponentEnsemble *din;
     // Tbl tag used in pf to define depth-dependent apeture.
     // frozen here as this constant but passed as a ariable to the
     // appropriate constructor below
@@ -101,16 +92,14 @@ int main(int argc, char **argv)
 
     /* usual cracking of command line */
     if(argc < 2) usage();
-    string dbname_in(argv[1]);
+    string infile(argv[1]);
     int rank(0);
     int np(1);
 
     for(i=2;i<argc;++i)
     {
 	string sarg(argv[i]);
-	if(sarg=="-V")
-            usage();
-	else if(sarg=="-v")
+	if(sarg=="-v")
         {
             Verbose=true;
             SEISPP::SEISPP_verbose=true;
@@ -176,11 +165,9 @@ int main(int argc, char **argv)
     /* this sets defaults */
     if(pfin == NULL) pfin = strdup("pwstack");
 
-    i = pfread(pfin,&pf);
-    if(i != 0) die(1,(char *)"Pfread error\n");
     try
     {
-	Metadata control(pf);
+	PfStyleMetadata control=SEISPP::pfread(string(pfin));
         // This builds the grid of plane wave components
         RectangularSlownessGrid ugrid(pf,"Slowness_Grid_Definition");
         // control parameters on stack process
@@ -262,81 +249,13 @@ int main(int argc, char **argv)
         double dtcoh,cohwinlen;
         dtcoh=control.get_double("coherence_sample_interval");
         cohwinlen=control.get_double("coherence_average_length");
-        /* This database open must create a doubly grouped view to
-        // correctly define a three component ensemble grouping
-        // normally this will be done by a hidden dbprocess list
-        // stored in the master pf directory
-        */
-        DatascopeHandle dbh(dbname_in,true);
-	string dbviewmode(control.get_string("database_view_mode"));
-	if(dbviewmode=="dbprocess")
-        	dbh=DatascopeHandle(dbh,pf,string("dbprocess_commands"));
-	else if(dbviewmode=="use_wfdisc")
-	{
-		dbh.lookup("arrival");
-		list<string> j1,j2;
-		j1.push_back("sta");
-		j1.push_back("wfdisc.time::wfdisc.endtime");
-		j2.push_back("sta");
-		j2.push_back("arrival.time");
-		dbh.leftjoin("wfdisc",j1,j2);
-		dbh.natural_join("assoc");
-		dbh.natural_join("origin");
-		dbh.natural_join("event");
-		dbh.subset("orid==prefor");
-		dbh.natural_join("sitechan");
-		dbh.natural_join("site");
-		if(SEISPP_verbose) cout << "working view size="
-			<<dbh.number_tuples()<<endl;
-		list<string> sortkeys;
-		sortkeys.push_back("evid");
-		sortkeys.push_back("sta");
-		sortkeys.push_back("chan");
-		dbh.sort(sortkeys);
-		list<string> gkey;
-		gkey.push_back("evid");
-		gkey.push_back("sta");
-		dbh.group(gkey);
-	}
-	else if(dbviewmode=="use_wfprocess")
-	{
-		dbh.lookup("event");
-		dbh.natural_join("origin");
-		dbh.subset("orid==prefor");
-		dbh.natural_join("assoc");
-		dbh.natural_join("arrival");
-cout << "Catalog view size="<<dbh.number_tuples()<<endl;
-		DatascopeHandle ljhandle(dbh);
-		ljhandle.lookup("wfprocess");
-		ljhandle.natural_join("sclink");
-		ljhandle.natural_join("evlink");
-cout << "Left join table size="<<ljhandle.number_tuples()<<endl;
-		list<string> jk,sjk;
-		jk.push_back("evid");
-		jk.push_back("sta");
-		dbh.join(ljhandle,jk,jk);
-cout << "Working table size="<<dbh.number_tuples()<<endl;
-                sjk.push_back("sta");
-		dbh.join(string("site"),sjk,sjk);
-cout << "After site join size="<<dbh.number_tuples()<<endl;
-		list<string> sortkeys;
-		sortkeys.push_back("evid");
-		sortkeys.push_back("sta");
-		dbh.sort(sortkeys);
-	}
-	else
-	{
-		cerr << "Illegal option for parameter database_view_mode="<<dbviewmode;
-		exit(-1);
-	}
-	cout << "Processing begins on database " 
-		<<  dbname_in << endl
-		<<"Number of rows in working database view== "<<dbh.number_tuples() <<endl;
-        list<string> group_keys;
-        group_keys.push_back("evid");
-        dbh.group(group_keys);
-        dbh.rewind();
-	cout << "This run will process data from "<<dbh.number_tuples()<<" events."<<endl;
+        /* This access a special format input data file for reading.*/
+        PwstackBinaryFileReader input_handle(infile);
+	cout << "Processing begins on file " 
+		<<  infile << endl
+		<<"Number of events in file= "
+                <<input_handle.number_events()
+                <<endl;
 
         // We need to load the primary GCLgrid that defines the
         // location of pseudostation points.  It is assumed we
@@ -347,7 +266,9 @@ cout << "After site join size="<<dbh.number_tuples()<<endl;
         // need this information though.
         //
         string stagridname=control.get_string("pseudostation_grid_name");
-        GCLgrid stagrid(dbh,stagridname);
+        /* This is a file based constructor with two implied names
+        ending in .dat and .hdr */
+        GCLgrid stagrid(stagridname);
         cout << "Using pseudostation grid of size "<<stagrid.n1<<" X " <<stagrid.n2<<endl;
 
 	/* This field derived from stagrid is used to hold stack fold
@@ -356,14 +277,9 @@ cout << "After site join size="<<dbh.number_tuples()<<endl;
 	fold.zero();  // best to guarantee initialization
 
 	char ssbuf[256];
-        int rec;
-        //DEBUG
-        /*
-        MatlabProcessor mp(stdout);
-        */
-        for(rec=0,dbh.rewind();rec<dbh.number_tuples();++rec,++dbh)
+        int event_number;
+        for(event_number=rank;event_number<np;event_number+=np)
         {
-	    if(rec%np != rank)continue;
             int iret;
             int evid;
             double olat,olon,odepth,otime;
@@ -372,22 +288,14 @@ cout << "After site join size="<<dbh.number_tuples()<<endl;
             // methods like that under development by Fan
             // will prove better than pseudostation method
             //
-
-            din = new ThreeComponentEnsemble(
-                dynamic_cast<DatabaseHandle&>(dbh),
-                station_mdl, ensemble_mdl,InputAM);
-            //DEBUG
-#ifdef MATLABDEBUG
-            string chans[3]={"x1","x2","x3"};
-            mp.load(*din,chans);
-            mp.process(string("wigb(x1);figure;wigb(x2);figure;wigb(x3);"));
-            mp.run_interactive();
-#endif
+            auto_ptr<ThreeComponentEnsemble> ensemble;
+            ensemble=auto_ptr<ThreeComponentEnsemble>(input_handle.read_gather(event_number));
+            /* Used to need this - retain as reminder until debug finished
             auto_ptr<ThreeComponentEnsemble>
                 ensemble=ArrivalTimeReference(*din,"arrival.time",
                 data_window);
+                */
             // Release this potentially large memory area
-            delete din;
 	    if(SEISPP_verbose) cout << "Ensemble for evid="
 			<<  ensemble->get_int("evid")
 			<< " has "<<ensemble->member.size()<<" seismograms"
@@ -407,21 +315,15 @@ cout << "After site join size="<<dbh.number_tuples()<<endl;
 			<<ensemble->member.size()<<endl;
 	    }
             //DEBUG
-#ifdef MATLABDEBUG
-            mp.load(*ensemble,chans);
-            mp.process(string("figure; wigb(x1)"));
-            mp.process(string("figure; wigb(x2)"));
-            mp.run_interactive();
-#endif
             // this should probably be in a try block, but we need to
             // extract it here or we extract it many times later.
             evid=ensemble->get_int("evid");
-            olat=ensemble->get_double("origin.lat");
-            olon=ensemble->get_double("origin.lon");
+            olat=ensemble->get_double("lat");
+            olon=ensemble->get_double("lon");
             // Database has these in degrees, but we need them in radians here.
             olat=rad(olat);  olon=rad(olon);
-            odepth=ensemble->get_double("origin.depth");
-            otime=ensemble->get_double("origin.time");
+            odepth=ensemble->get_double("depth");
+            otime=ensemble->get_double("time");
 	    /* A way to assure this is cleared.  May not be necessary */
 	    ssbuf[0]='\0';
 	    stringstream ss(ssbuf);

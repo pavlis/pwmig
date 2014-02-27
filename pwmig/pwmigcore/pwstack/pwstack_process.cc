@@ -525,13 +525,6 @@ PwmigFileHandle& cohfh)
                             //mp.load(stack,string("stack"));
 			    /* We accumulate the stack_weight vector only on the first component. */
 			    if(j==0) vadd(nsout,weights.get_address(i,0),nsta,&(stack_weight[0]),1);
-#ifdef MATLABDEBUG
-			    if(j==2)
-			    {
-                            mp.load(stack_weight,string("w"));
-                            mp.process(string("stackdebugplot"));
-			    }
-#endif
                         }
                         ++icol;
                     }
@@ -553,15 +546,6 @@ PwmigFileHandle& cohfh)
                 }
             }
 
-//DEBUG
-/*
-double *debugptr=stack.get_address(0,0);
-twork.clear();
-for(int kkk=0;kkk<(3*nsout);++kkk,++debugptr) twork.push_back(*debugptr);
-vector<double>::iterator  idbg=max_element(twork.begin(),twork.end());
-cout << "Max of stack="<<*idbg<<endl;
-twork.clear();
-*/
             // Create the output stack as a 3c trace object and copy
             // metadata from the input into the output object.
             stackout = new ThreeComponentSeismogram(nsout);
@@ -585,19 +569,6 @@ twork.clear();
             // migration algorithm.
             stackout->put("elev",avg_elev);
             ApplyTopMute(*stackout,stackmute);
-//DEBUG
-/*
-dcopy(nsout*3,stackout->u.get_address(0,0),1,DEBUGBUFFER,1);
-twork.clear();
-for(int kkk=0;kkk<(3*nsout);++kkk) twork.push_back(DEBUGBUFFER[kkk]);
-idbg=max_element(twork.begin(),twork.end());
-cout << "Max of stackout="<<*idbg<<endl;
-*/
-#ifdef MATLABDEBUG
-             mp.load(*stackout,string("d"));
-             mp.load(stack_weight,string("sw"));
-             mp.process(string("pwsplot"));
-#endif
             // new March 2007: compute stack coherence
             Coharray coh=compute_stack_coherence(gather,gathwgt,*stackout,
                 dtcoh,cohwinlen,stackmute);
