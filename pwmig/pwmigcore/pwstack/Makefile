@@ -2,6 +2,7 @@ BIN=pwstack
 PF=pwstack.pf
 DATADIR=schemas/css3.0.ext
 DATA=gclgdisk gclfield
+INCLUDE=pwstack_reader.h
 
 #MAN1=pwstack.1
 cflags=-g
@@ -13,10 +14,12 @@ ldlibs=-lpwmig -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBL
 
 include $(ANTELOPEMAKE) 
 
+pwstack_reader.cc : pwstack_reader.h
 OBJS=pwstack.o \
 	apsubs.o \
 	aperture.o \
 	pwstack_process.o \
+        pwstack_reader.o \
 	compute_stack_coherence.o
 $(BIN) : $(OBJS)
 	$(CXX) $(CCFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
