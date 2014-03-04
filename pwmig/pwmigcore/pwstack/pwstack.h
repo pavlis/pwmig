@@ -1,19 +1,14 @@
 #include "SeisppError.h"
 #include "ensemble.h"
 #include "mute.h"
+#include "PfStyleMetadata.h"
 #include "PwmigFileHandle.h"
-#ifdef MATLABDEBUG
-#include "MatlabProcessor.h"
-#endif
 /*  Avoided now with a define in Makefile, but leave here 
 for reference. 
 #define _FILE_OFFSET_BITS 64
 */
 using namespace std;
 using namespace SEISPP;
-#ifdef MATLABDEBUG
-extern MatlabProcessor mp;
-#endif
 
 class DepthDependentAperture
 {
@@ -59,8 +54,15 @@ public:
          */
         DepthDependentAperture(double vs, double vp,double period,
             double dtau, int ntau,double cutoff_multiplier,bool echoresult);
-	// pf constructor.  tag is keyword to hold list of values
-	DepthDependentAperture(Pf *pf,string tag) throw(string);
+        /*! Parameter file driven constructor.   
+          
+          Uses a pf format file through a nonantelope interface called
+          a PfStyleMetadata object.   
+
+          \param md is the object created from a pf file.
+          \param tag is an &Arr tag bounding he parameters for this object.
+          */
+	DepthDependentAperture(PfStyleMetadata& md,string tag);
         /*! Copy constructor. */
 	DepthDependentAperture(const DepthDependentAperture& parent);
 	~DepthDependentAperture(){

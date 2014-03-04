@@ -1,14 +1,14 @@
 #include <sstream>
 #include "stock.h"
 #include "arrays.h"
-#include "pf.h"
+#include "PfStyleMetadata.h"
 #include "pwstack.h"
 using namespace std;
 //
 // Pf-based constrructor for DepthDependentAperture object.
 //
 //  Arguments:
-//	pf - input parameter file "object"
+//      md - PfStyleMetadata object created from a pf file.
 //	tag - name identifying the Tbl defining the designed input
 //
 //  This routine throws an exception with a message string if the required
@@ -20,27 +20,25 @@ using namespace std;
 //  Author:  Gary L. Pavlis
 //
 
-DepthDependentAperture::DepthDependentAperture(Pf *pf,string tag)
-throw (string)
+DepthDependentAperture::DepthDependentAperture(PfStyleMetadata& md,
+        string tag) 
 {
-    Tbl *tlist;
-
-    tlist = pfget_tbl(pf,(char *)tag.c_str());
-    if(tlist==NULL) throw "Aperture definition missing from parameter file";
-    npoints = maxtbl(tlist);
-    t=new double[npoints];
-    aperture=new double[npoints];
-    cutoff=new double[npoints];
-
-    for(int i=0;i<maxtbl(tlist);++i)
-    {
-        char *tline;
-        tline = (char *)gettbl(tlist,i);
-        stringstream instr(tline);
-        instr >> t[i];
-        instr >> aperture[i];
-        instr >> cutoff[i];
-    }
+    try {
+        list<string> tlist=md.get_tbl(tag);
+        npoints=tlist.size();
+        t=new double[npoints];
+        aperture=new double[npoints];
+        cutoff=new double[npoints];
+        list<string>::iterator tptr;
+        int i;
+        for(tptr=tlist.begin(),i=0;tptr!=tlist.end();++tptr,++i)
+        {
+            stringstream instr(tptr->c_str());
+            instr >> t[i];
+            instr >> aperture[i];
+            instr >> cutoff[i];
+        }
+    }catch(...){throw;};
 }
 /* Fresnel zone constructor.  See include file for parameter definitions. */
 DepthDependentAperture::DepthDependentAperture(double vs, 
