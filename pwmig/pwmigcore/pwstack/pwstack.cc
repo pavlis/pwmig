@@ -1,8 +1,6 @@
 #include <string>
 #include <sstream>
 #include "stock.h"
-#include "elog.h"
-#include "pf.h"
 #include "glputil.h"
 #include "gclgrid.h"
 #include "Hypocenter.h"
@@ -10,6 +8,7 @@
 #include "PwmigFileHandle.h"
 #include "PfstyleMetadata.h"
 #include "pwstack.h"
+#include "pwstack_reader.h"
 
 using namespace std;
 using namespace SEISPP;
@@ -88,7 +87,6 @@ int main(int argc, char **argv)
 
     ios::sync_with_stdio();
     /* Initialize the error log and write a version notice */
-    //elog_init (argc, argv);
 
     /* usual cracking of command line */
     if(argc < 2) usage();
@@ -169,7 +167,7 @@ int main(int argc, char **argv)
     {
 	PfStyleMetadata control=SEISPP::pfread(string(pfin));
         // This builds the grid of plane wave components
-        RectangularSlownessGrid ugrid(pf,"Slowness_Grid_Definition");
+        RectangularSlownessGrid ugrid(control,"Slowness_Grid_Definition");
         // control parameters on stack process
         double ts,te;
 	ts=control.get_double("stack_time_start");
@@ -199,8 +197,8 @@ int main(int argc, char **argv)
         // metadata space of data object.  ensemble_mdl are
         // globals copied to the metadata area for the entire ensemble
         //
-        MetadataList station_mdl=pfget_mdlist(pf,"station_metadata");
-        MetadataList ensemble_mdl=pfget_mdlist(pf,"ensemble_metadata");
+        MetadataList station_mdl=get_mdlist(control,"station_metadata");
+        MetadataList ensemble_mdl=get_mdlist(control,"ensemble_metadata");
         AttributeMap InputAM("css3.0");
         bool use_fresnel_aperture=control.get_bool("use_fresnel_aperture");
         DepthDependentAperture aperture;
@@ -228,18 +226,18 @@ int main(int argc, char **argv)
         }
         else 
         {
-            aperture=DepthDependentAperture(pf,aperture_tag);
+            aperture=DepthDependentAperture(control,aperture_tag);
         }
 	/* These will throw an exception if not defined.  
 	We use a parameter to turn these off if desired.
 	Not very elegant, but functional. */
-        TopMute mute(pf,string("Data_Top_Mute"));
+        TopMute mute(control,"Data_Top_Mute");
 	bool enable_data_mute=control.get_bool("enable_data_mute");
 	if(enable_data_mute)
 		mute.enabled=true;
 	else
 		mute.enabled=false;
-        TopMute stackmute(pf,string("Stack_Top_Mute"));
+        TopMute stackmute(control,"Stack_Top_Mute");
 	bool enable_stack_mute=control.get_bool("enable_stack_mute");
 	if(enable_stack_mute)
 		stackmute.enabled=true;
@@ -430,7 +428,8 @@ int main(int argc, char **argv)
                 } catch (SeisppError& serr)
                 {
                     serr.log_error();
-                    cerr << "Ensemble " << rec << " data skipped" << endl;
+                    cerr << "Ensemble " << event_number 
+                        << " data skipped" << endl;
                     cerr << "Pseudostation grid point indices (i,j)="
                         << "("<<i<<","<<j<<")"<<endl;
                 }
