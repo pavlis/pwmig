@@ -23,9 +23,6 @@ Metadata PGHtoMD(PwStackGatherHeader& gh)
     result.put("lat",gh.lat);
     result.put("time",gh.origin_time);
     result.put("depth",gh.depth);
-    //DEBUG
-    cerr << "Gather header"<<endl
-        << result<<endl;
     return(result);
 }
 /* comparable routine for trace headers */
@@ -39,9 +36,9 @@ Metadata THtoMD(PwstackTraceHeader& th)
     result.put("samprate",th.samprate);
     /* assumed this is relative time - maintenance issue warning*/
     result.put("atime",th.atime);
-    result.put("lon",th.lon);
-    result.put("lat",th.lat);
-    result.put("elev",th.elev);
+    result.put("site.lon",th.lon);
+    result.put("site.lat",th.lat);
+    result.put("site.elev",th.elev);
     /* Data read are assumed to have been oriented to cardinal
        directions.  We need to set these to connect with 
        constructor in seispp library. */
@@ -91,9 +88,6 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
 {
     ThreeComponentEnsemble *result;
     const string base_error("PwstackBinaryFileReader::read_gather method:  ");
-    //DEBUG
-    cerr << "Attempting to read gather for index id="<<id<<" which is set as evid="<<ids[id]<<endl
-        <<"fseek offset for this event is "<<foffs[id]<<endl;
     if(fseek(fp,foffs[id],SEEK_SET))
     {
         stringstream ss;
@@ -123,8 +117,6 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
         for(int i=0;i<gh.number_members;++i)
         {
             PwstackTraceHeader th;
-            //DEBUG
-            cerr << "File position reading header="<<ftell(fp)<<endl;
             if(fread(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
             {
                 stringstream ss;
@@ -137,9 +129,6 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
             }
             Metadata trmd=THtoMD(th);
             ThreeComponentSeismogram seis(trmd,false);
-            //DEBUG
-            cerr << "Header for member "<< i<<endl
-                << dynamic_cast<Metadata&>(seis)<<endl;
             /* Set required parameters.  Some of these may reset attributes 
                set by constructor.  Intentional to make this more stable*/
             seis.dt=1.0/th.samprate;
@@ -151,8 +140,6 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
                Used to point to first byte of u matrix memory block*/
             double *uptr=seis.u.get_address(0,0);
             int nsamp3c=3*th.nsamp;
-            //DEBUG
-            cerr << "File position before fread of sample data="<<ftell(fp)<<endl;
             if(fread(uptr,sizeof(double),nsamp3c,fp)!=nsamp3c)
             {
                 stringstream ss;
