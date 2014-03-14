@@ -21,7 +21,11 @@ Metadata PGHtoMD(PwStackGatherHeader& gh)
     /* assumed lon and lat are radians and depth is km */
     result.put("lon",gh.lon);
     result.put("lat",gh.lat);
+    result.put("time",gh.origin_time);
     result.put("depth",gh.depth);
+    //DEBUG
+    cerr << "Gather header"<<endl
+        << result<<endl;
     return(result);
 }
 /* comparable routine for trace headers */
@@ -38,6 +42,10 @@ Metadata THtoMD(PwstackTraceHeader& th)
     result.put("lon",th.lon);
     result.put("lat",th.lat);
     result.put("elev",th.elev);
+    /* Data read are assumed to have been oriented to cardinal
+       directions.  We need to set these to connect with 
+       constructor in seispp library. */
+    result.put("components_are_cardinal",true);
     return(result);
 }
 PwstackBinaryFileReader::PwstackBinaryFileReader(string fname)
@@ -50,17 +58,17 @@ PwstackBinaryFileReader::PwstackBinaryFileReader(string fname)
     long diroffset;
     if(fread(&diroffset,sizeof(long),1,fp)!=1) 
         throw SeisppError(base_error+"fread failed reading diroffset");
-    if(fseek(fp,diroffset,SEEK_SET))
-        throw SeisppError(base_error+"fseek error to diroffset value read");
     int nevents;
     if(fread(&nevents,sizeof(int),1,fp)!=1)
         throw SeisppError(base_error+"attempt to read nevents of index failed");
-    int64_t *idin,*foffin;
-    idin = new int64_t[nevents];
-    foffin = new int64_t[nevents];
-    if(fread(idin,sizeof(int64_t),nevents,fp)!=nevents)
+    if(fseek(fp,diroffset,SEEK_SET))
+        throw SeisppError(base_error+"fseek error to diroffset value read");
+    long *idin,*foffin;
+    idin = new long[nevents];
+    foffin = new long[nevents];
+    if(fread(idin,sizeof(long),nevents,fp)!=nevents)
         throw SeisppError(base_error+"attempt to read evid vector in index failed");
-    if(fread(foffin,sizeof(int64_t),nevents,fp)!=nevents)
+    if(fread(foffin,sizeof(long),nevents,fp)!=nevents)
         throw SeisppError(base_error+"attempt to read file offset vector in index failed");
     /* A potential memory lead above if either of the two throws are
        executed.  Did this intentionally because in this use if any of these
@@ -83,6 +91,9 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
 {
     ThreeComponentEnsemble *result;
     const string base_error("PwstackBinaryFileReader::read_gather method:  ");
+    //DEBUG
+    cerr << "Attempting to read gather for index id="<<id<<" which is set as evid="<<ids[id]<<endl
+        <<"fseek offset for this event is "<<foffs[id]<<endl;
     if(fseek(fp,foffs[id],SEEK_SET))
     {
         stringstream ss;
@@ -112,19 +123,26 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
         for(int i=0;i<gh.number_members;++i)
         {
             PwstackTraceHeader th;
-            if(fread(&th,sizeof(PwstackTraceHeader),1,fp))
+            //DEBUG
+            cerr << "File position reading header="<<ftell(fp)<<endl;
+            if(fread(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
             {
                 stringstream ss;
                 ss << base_error <<" fread failed reading trace header for "
                     <<i<<"th member of ensemble of size"<<gh.number_members;
-                delete result;
+                // Temporarily remove this delete.  Generating a double free 
+                // error
+                //delete result;
                 throw SeisppError(ss.str());
             }
             Metadata trmd=THtoMD(th);
             ThreeComponentSeismogram seis(trmd,false);
+            //DEBUG
+            cerr << "Header for member "<< i<<endl
+                << dynamic_cast<Metadata&>(seis)<<endl;
             /* Set required parameters.  Some of these may reset attributes 
                set by constructor.  Intentional to make this more stable*/
-            seis.dt=1.0/th.time;
+            seis.dt=1.0/th.samprate;
             seis.t0=th.time;
             seis.ns=th.nsamp;
             seis.tref=relative;  // We assume arrival time reference frame
@@ -132,7 +150,10 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
             /* temporary pointer just to make this less obscure.
                Used to point to first byte of u matrix memory block*/
             double *uptr=seis.u.get_address(0,0);
-            if(fread(uptr,sizeof(double),th.nsamp,fp)!=th.nsamp)
+            int nsamp3c=3*th.nsamp;
+            //DEBUG
+            cerr << "File position before fread of sample data="<<ftell(fp)<<endl;
+            if(fread(uptr,sizeof(double),nsamp3c,fp)!=nsamp3c)
             {
                 stringstream ss;
                 ss << base_error <<" fread failed reading 3C data samples for "

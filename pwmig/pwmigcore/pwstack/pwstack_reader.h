@@ -22,13 +22,13 @@ public:
     int number_events(){return(ids.size());};
 private:
     FILE *fp;
-    vector<int64_t> ids;
-    vector<int64_t> foffs;
+    vector<long> ids;
+    vector<long> foffs;
 };
 typedef struct PwstackGatherHeader
 {
-    int32_t number_members;
-    int64_t evid;
+    int number_members;
+    long evid;
     /* These are event location  (radians) */
     double lon;
     double lat;
@@ -40,7 +40,7 @@ typedef struct PwstackTraceHeader
     char sta[8];
     double time;
     double endtime;
-    int32_t nsamp;
+    int nsamp;
     double samprate;
     double atime;
     /* These hold receiver location (lat lon in radians internally)*/
