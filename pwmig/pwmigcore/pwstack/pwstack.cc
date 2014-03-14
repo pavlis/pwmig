@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 		rank=0;
 	}
     /* this sets defaults */
-    if(pfin == NULL) pfin = strdup("pwstack");
+    if(pfin == NULL) pfin = strdup("pwstack.pf");
 
     try
     {
@@ -231,13 +231,13 @@ int main(int argc, char **argv)
 	/* These will throw an exception if not defined.  
 	We use a parameter to turn these off if desired.
 	Not very elegant, but functional. */
-        TopMute mute(control,"Data_Top_Mute");
+        TopMute mute(control,string("Data_Top_Mute"));
 	bool enable_data_mute=control.get_bool("enable_data_mute");
 	if(enable_data_mute)
 		mute.enabled=true;
 	else
 		mute.enabled=false;
-        TopMute stackmute(control,"Stack_Top_Mute");
+        TopMute stackmute(control,string("Stack_Top_Mute"));
 	bool enable_stack_mute=control.get_bool("enable_stack_mute");
 	if(enable_stack_mute)
 		stackmute.enabled=true;
