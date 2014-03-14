@@ -38,10 +38,10 @@ void LoadTraceHeader(ThreeComponentSeismogram& d,PwstackTraceHeader& th)
     try {
         string sta=d.get_string("sta");
         strncpy(th.sta,sta.c_str(),8);
-        th.time=d.get_double("time");
-        th.endtime=d.get_double("endtime");
-        th.nsamp=static_cast<int32_t>(d.get_int("nsamp"));
-        th.samprate=d.get_double("samprate");
+        th.time=d.t0;
+        th.endtime=d.endtime();
+        th.nsamp=d.ns;
+        th.samprate=1.0/d.dt;
         th.atime=d.get_double("arrival.time");
         th.lat=d.get_double("site.lat");
         th.lon=d.get_double("site.lon");
@@ -62,6 +62,9 @@ int write_ensemble(ThreeComponentEnsemble& g,FILE *fp)
         for(gptr=g.member.begin(),count=0;gptr!=g.member.end();++gptr,++count)
         {
             LoadTraceHeader(*gptr,th);
+            //DEBUG
+            cout << "Output file position for start of "<<th.sta<<" number "
+                << count << " is " << ftell(fp)<<endl;
             if(fwrite(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
                 throw SeisppError(base_error
                         + "fwrite error writing trace header for station "
@@ -83,20 +86,23 @@ void usage()
     cerr << "db2pwstack db outfile [-v -pf pffile]"<<endl;
     exit(-1);
 }
-void write_directory(int64_t *ids,int64_t *foffs, int nevents,FILE *fp)
+void write_directory(long *ids,long *foffs, int nevents,FILE *fp)
 {
     const string base_error("write_error procedure:  ");
     /* Probably should do a seek to end of file, but not necessary 
        with current logic */
     long diroffset=ftell(fp);
-    if(fwrite(ids,sizeof(int64_t),nevents,fp)!=nevents)
+    if(fwrite(ids,sizeof(long),nevents,fp)!=nevents)
         throw(base_error + "fwrite failed writing id vector");
-    if(fwrite(foffs,sizeof(int64_t),nevents,fp)!=nevents)
+    if(fwrite(foffs,sizeof(long),nevents,fp)!=nevents)
         throw(base_error + "fwrite failed writing foff vector");
     rewind(fp);
     if(fwrite(&diroffset,sizeof(long),1,fp)!=1)
         throw(base_error + "fwrite failed writing director offset address");
-    if(fwrite(&nevents,sizeof(int),1,fp)!=1) 
+    // Converted to long to avoid mixed types for this pair of values
+    // written at top of the file
+    long nevout=(long)nevents;
+    if(fwrite(&nevout,sizeof(long),1,fp)!=1) 
         throw(base_error + "fwrite failed writing nevents value");
 }
 
@@ -220,11 +226,12 @@ int main(int argc, char **argv)
         int nevents=dbh.number_tuples();
 	cout << "This run will process data from "<<nevents<<" events."<<endl;
         PwstackGatherHeader gh;
-        int64_t *ids=new int64_t[nevents];
-        int64_t *foffs=new int64_t[nevents];
-        int64_t diroffset(0);
+        long *ids=new long[nevents];
+        long *foffs=new long[nevents];
+        long diroffset(0);
         /* This is a dummy write for now - filled in as last step*/
-        fwrite(&diroffset,sizeof(int64_t),1,fp);
+        fwrite(&diroffset,sizeof(long),1,fp);
+        fwrite(&diroffset,sizeof(long),1,fp);
         int rec;
         for(rec=0,dbh.rewind();rec<dbh.number_tuples();++rec,++dbh)
         {
