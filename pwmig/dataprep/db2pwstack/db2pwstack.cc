@@ -46,9 +46,6 @@ void LoadTraceHeader(ThreeComponentSeismogram& d,PwstackTraceHeader& th)
         th.lat=d.get_double("site.lat");
         th.lon=d.get_double("site.lon");
         th.elev=d.get_double("site.elev");
-        /* convert coordinates to radians */
-        th.lat=rad(th.lat);
-        th.lon=rad(th.lon);
     }catch(...){throw;};
 }
 int write_ensemble(ThreeComponentEnsemble& g,FILE *fp)
@@ -62,9 +59,6 @@ int write_ensemble(ThreeComponentEnsemble& g,FILE *fp)
         for(gptr=g.member.begin(),count=0;gptr!=g.member.end();++gptr,++count)
         {
             LoadTraceHeader(*gptr,th);
-            //DEBUG
-            cout << "Output file position for start of "<<th.sta<<" number "
-                << count << " is " << ftell(fp)<<endl;
             if(fwrite(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
                 throw SeisppError(base_error
                         + "fwrite error writing trace header for station "
