@@ -8,9 +8,10 @@ using namespace SEISPP;
 
 void usage()
 {
-	cerr << "project1dmod db gridname vmodname "
-	<< "[-field fieldname -mt modtype -p rayparameter -V]"<<endl
-	<< "Default fieldname=vmodname, modtype=P, rayparameter=0(s/km)"<<endl;
+	cerr << "project1dmod db gridname vmodfile "
+	<< "[-field fieldname -mt modtype -p rayparameter -fileoutput -V]"<<endl
+	<< "Default fieldname=vmodfile, modtype=P, rayparameter=0(s/km)"<<endl
+        << "-fileoutput writes to a file with base name fieldname instead of db"<<endl;;
 	exit(-1);
 }
 bool SEISPP::SEISPP_verbose(false);
@@ -22,6 +23,7 @@ int main(int argc, char **argv)
 	string vmodname(argv[3]);
 	string modtype("P");
 	string fieldname=vmodname;
+        bool fileoutput(false);
 	double rayp(0.0);
 	int i;
 	for(i=4;i<argc;++i)
@@ -42,6 +44,10 @@ int main(int argc, char **argv)
 			++i;
 			rayp=atof(argv[i]);
 		}
+                else if(argstr=="-fileoutput")
+                {
+                        fileoutput=true;
+                }
 		else if(argstr=="-V")
 		{
 			SEISPP_verbose=true;
@@ -55,15 +61,13 @@ int main(int argc, char **argv)
 	try {
 		cout << "Building database handles"<<endl;
 		DatascopeHandle dbh(dbname,false);
-		DatascopeHandle dbhmod(dbh);
-		dbhmod.lookup("mod1d");
 		DatascopeHandle dbhgrid(dbh);
 		dbhgrid.lookup("gclgdisk");
 		cout << "Loading gridname="<<gridname<<endl;
 		GCLgrid3d grid(dbhgrid,gridname);
 		GCLscalarfield3d mod(grid);
-		cout << "Loading 1d velocity model with name="<<vmodname<<endl;
-		VelocityModel_1d Vmod(dbhmod.db,vmodname,modtype);
+		cout << "Loading 1d velocity model with file name="<<vmodname<<endl;
+		VelocityModel_1d Vmod(vmodname,string("mod1d"),modtype);
 		/* the following works only when the grid has constant
 		depth slices for index 3 constant */
 		vector<double> zi,vi;
@@ -75,7 +79,7 @@ int main(int argc, char **argv)
 			zi.push_back(z);
 			double vel,slow;
 			vel=Vmod.getv(z);
-			cout << vel <<"  ";
+			cout <<z<<" "<< vel <<"  ";
 			if(rayp>0.0)
 			{
 				slow=1/vel;
@@ -101,21 +105,26 @@ int main(int argc, char **argv)
 		}
 		/* for now this is a frozen directory name */
 		string fielddir("vmodels");
-		string gclgdir("");  /* null as save is not needed*/
-		/* Use the fieldname as the file name.  Restrictive,
-		but this code may never leave the neighborhood. */
-		mod.save(dbhgrid,gclgdir,fielddir,fieldname,fieldname);
-	} catch (SeisppError serr)
+                if(fileoutput)
+                {
+                    /* output name is set to field name */
+                    mod.save(fieldname,fielddir);
+                }
+                else
+                {
+                    // This is db output mode.   
+		    string gclgdir("");  /* null as save is not needed*/
+                    /* We use the fieldname as the file name.   A bit
+                       restrictive, but better than adding the baggage of a
+                       pf file */
+		    mod.save(dbhgrid,gclgdir,fielddir,fieldname,fieldname);
+                }
+	} catch (SeisppError& serr)
 	{
 		serr.log_error();
 	}
-	catch (int ierr)
+	catch (std::exception& sterr)
 	{
-		cerr << "Some GCLgrid routine threw error number="<<ierr<<endl;
-	}
-
-	catch (GCLgrid_error gclerr)
-	{
-		gclerr.log_error();
+		cerr << sterr.what();
 	}
 }
