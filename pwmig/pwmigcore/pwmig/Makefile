@@ -3,7 +3,6 @@ DIRS=
 PF=pwmig.pf
 
 #MAN1=pwmig.1
-#cflags=-O
 ldlibs=-lpwmig -lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
 
 include $(ANTELOPEMAKE) 
