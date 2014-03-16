@@ -3,8 +3,8 @@
 aperture_taper_length 2.0
 centroid_cutoff 35.0  # half the nominal station spacing for TA
 use_fresnel_aperture true
-fresnel vs 4.5
-fresnel vp 8.1
+fresnel_vs 4.5
+fresnel_vp 8.1
 fresnel_cutoff_multiplier 2.0
 fresnel_period 5.0
 fresnel_lag_time_sampling_interval 1.0
@@ -48,12 +48,11 @@ depth_dependent_aperture	&Tbl{
    700.0 75.0 150.0
 }
 ensemble_metadata	&Tbl{
-dir string
 evid int
-origin.lat real
-origin.lon real
-origin.time real
-origin.depth real
+lat real
+lon real
+time real
+depth real
 
 }
 pf_revision_time	1107002513
