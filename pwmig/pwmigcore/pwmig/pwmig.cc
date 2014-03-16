@@ -5,7 +5,6 @@
 #include <memory>
 #include "stock.h"
 #include "coords.h"
-#include "pf.h"
 #include "dbpp.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
@@ -31,11 +30,11 @@ MatlabProcessor mp(stdout);
 #endif
 void usage()
 {
-        cbanner((char *)"$Revision: 1.16 $ $Date: 2010/02/09 11:52:47 $",
-                (char *)"db  listfile [-np np -rank r -V -v -pf pfname]",
-                (char *)"Gary Pavlis",
-                (char *)"Indiana University",
-                (char *)"pavlis@indiana.edu") ;
+    cerr << "Usage: "<<endl
+        << "pwmig listfile outdir [-np np -rank r -V -v -pf pfname]"<<endl
+        << "  listfile contains names of output files from pwstack that drive processing"
+        << "  Files of results are written to outdir"<<endl
+        << "  -np and -rank are used for cluster processing"<<endl;
         exit(-1);
 }
 
@@ -594,7 +593,8 @@ mp.process(string("plotrays(pdx1,pdx2,pdy1,pdy2)"));
 	}  catch (GCLgrid_error& err)
 	{
 		err.log_error();
-		die(0,"Unrecoverable error:  requires a bug fix\n");
+                cerr << "Unrecoverable error:  requires a bug fix"<<endl;
+                exit(-1);
 	}
 	//
 	// get gradS values by first computing tangents as unit vector and then
@@ -993,7 +993,6 @@ int main(int argc, char **argv)
 	int kk;
 	string pfin("pwmig");
 	dmatrix gradTs;
-	Pf *pf;
 	int border_pad;
 	/* This constant controls when premature cutoff of the travel
 	time lag estimates is considered an error.  That is, time are computed
@@ -1005,22 +1004,27 @@ int main(int argc, char **argv)
 	const double N3_FRACTION_ERROR(0.9);
 
         ios::sync_with_stdio();
-        elog_init(argc,argv);
 	/* Initialize these to invalid numbers as a error check against
 	inconsistent use in parallel environment */
         int rank(-1), np(-1);
 
 
         if(argc < 3) usage();
-	string dbname(argv[1]);
 	/* We will open this file immediately because if that fails we 
 	should exit right away */
-	FILE *flistfp=fopen(argv[2],"r");
+	FILE *flistfp=fopen(argv[1],"r");
 	if(flistfp==NULL)
 	{
-		cerr << "Cannot open list of pwmig files = "<<argv[2]<<endl;
+		cerr << "Cannot open list of pwstack output files = "<<argv[2]<<endl;
 		usage();
 	}
+        string outdir(argv[2]);
+        if(makedir(argv[2]))
+        {
+            cerr << "makedir failed to create output directory = "
+                << outdir<<endl;
+            usage();
+        }
 	string dfile;  // used repeatedly below for data file names
 
         for(i=3;i<argc;++i)
@@ -1105,15 +1109,8 @@ int main(int argc, char **argv)
 		rank=0;
 	}
 #endif
-        if(pfread(const_cast<char *>(pfin.c_str()),&pf)) die(1,(char *)"pfread error\n");
 	try {
-		Metadata control(pf);
-		string Pvelocity_grid_name=control.get_string("Pvelocity_model_grid");
-		string Svelocity_grid_name=control.get_string("Svelocity_model_grid");
-		string Pmodel3d_name=control.get_string("P_velocity_model3d_name");
-		string Smodel3d_name=control.get_string("S_velocity_model3d_name");
-		string Pmodel1d_name=control.get_string("P_velocity_model1d_name");
-		string Smodel1d_name=control.get_string("S_velocity_model1d_name");
+		PfStyleMetadata control=pfread(pfin);
 		border_pad = control.get_int("border_padding");
 		double zpad = control.get_double("depth_padding_multiplier");
 		if( (zpad>1.5) || (zpad<=1.0) )
@@ -1123,8 +1120,6 @@ int main(int argc, char **argv)
 				<< "Must be a number between 1 and 1.5"<<endl;
 			exit(-1);
 		}
-		string parent_grid_name=control.get_string("Parent_GCLgrid_Name");
-		string stack_grid_name=control.get_string("stack_grid_name");
 		string fielddir=control.get_string("output_field_directory");
 		// Make sure this directory exists
 		if(makedir(const_cast<char *>(fielddir.c_str())))
@@ -1198,11 +1193,10 @@ int main(int argc, char **argv)
 		stack_only=control.get_bool("stack_only");  
 		bool save_partial_sums;
 		save_partial_sums=control.get_bool("save_partial_sums");
-		// Create a database handle for reading data objects
-                DatascopeHandle dbh(dbname,false);
-		// These constructors load a velocity model into a GCLgrid
-		GCLscalarfield3d Up3d(dbh,Pvelocity_grid_name,Pmodel3d_name);
-		GCLscalarfield3d Us3d(dbh,Svelocity_grid_name,Smodel3d_name);
+		string Pmodel3d_name=control.get_string("P_velocity_model3d_name");
+		string Smodel3d_name=control.get_string("S_velocity_model3d_name");
+		GCLscalarfield3d Up3d(Pmodel3d_name);
+		GCLscalarfield3d Us3d(Smodel3d_name);
 		if(SEISPP_verbose)
 		{
 			cout << "P velocity model"<<endl;
@@ -1210,8 +1204,10 @@ int main(int argc, char **argv)
 			cout << "S velocity model"<<endl;
 			cout << Us3d;
 		}
-		// CHANGE ME:  hack fix for test model.  Units wrong
 /*
+		Hack fix for test model.  Units wrong
+                Retained in case I ever need to run that data through
+                this program again for testing.
 cout << "WARNING:  Using special version for simulation data with velocity "
  << "scaling problem"<<endl;
 		Up3d *= 0.001;
@@ -1254,25 +1250,33 @@ cout << "Display S velocity model horizontal slices"<<endl;
 sleep(5);
 HorizontalSlicer(mp,Us3d);
 */
+		string Pmodel1d_name=control.get_string("P_velocity_model1d_name");
+		string Smodel1d_name=control.get_string("S_velocity_model1d_name");
 		VelocityModel_1d Vp1d,Vs1d;
 		if(Pmodel1d_name=="derive_from_3d")
-			//Caution this procedure assumes Up3d is slowness
-			Vp1d=DeriveVM1Dfrom3D(Up3d);
+		    //Caution this procedure assumes Up3d is slowness
+		    Vp1d=DeriveVM1Dfrom3D(Up3d);
 		else
-			Vp1d=VelocityModel_1d(dbh.db,Pmodel1d_name,pvfnm);
+                    Vp1d=VelocityModel_1d(Pmodel1d_name,string("plain"),
+                            string("P"));
 		if(Smodel1d_name=="derive_from_3d")
-			Vs1d=DeriveVM1Dfrom3D(Us3d);
+		    Vs1d=DeriveVM1Dfrom3D(Us3d);
 		else
-			Vs1d=VelocityModel_1d(dbh.db,Smodel1d_name,svfnm);
-		GCLgrid parent(dbh,const_cast<char*>(parent_grid_name.c_str()) );
+                    Vs1d=VelocityModel_1d(Smodel1d_name,string("plain"),
+                            string("S"));
+		string parent_grid_name=control.get_string("Parent_GCLgrid_Name");
+                GCLgrid parent(parent_grid_name);
 
 		// This loads the image volume assuming this was precomputed with
 		// makegclgrid
-		/* Changed June 2007 for efficiency.  Used to have separate grid
-		for omega and weights.  Now vector data are 0,1,2; omega is 3; and
-		weights are 4 */
 
-		GCLvectorfield3d migrated_image(dbh,stack_grid_name,"",5);
+		string stack_grid_name=control.get_string("stack_grid_name");
+                GCLgrid3d *imggrid=new GCLgrid3d(stack_grid_name);
+                /* Create the vectorfield from this pattern with 5 components
+                   per node point.   Then delete the grid */
+		GCLvectorfield3d migrated_image(*imggrid,5);
+                delete imggrid;
+                migrated_image.zero();
 		/* This group of parameters relate to storing coherence values
                 in a separate 4-vector field.  This was derived from an earlier
                 inappropriate approach to put coherence weighting inside this
@@ -1283,7 +1287,9 @@ HorizontalSlicer(mp,Us3d);
 		we include a smoothing parameter that reduces errors when the 
 		result is mapped to depth and then decimated. */
 		string cohgridname=control.get_string("coherence_grid_name");
-		GCLvectorfield3d cohimage(dbh,cohgridname,"",4);
+                GCLgrid3d *cohgrdtmp=new GCLgrid3d(cohgridname);
+		GCLvectorfield3d cohimage(*cohgrdtmp,4);
+                delete cohgrdtmp;
 		initialize_cohimage(cohimage);
 		int cohsl=control.get_int("coherence_smoother_length");
 		int cohdecfac=control.get_int("coherence_raygrid_decimation");
@@ -1872,13 +1878,12 @@ delete sfptr;
 //cout << cohimage;
 			if(save_partial_sums)
 			{
+                                // Oddity note:
 				// This will write final result twice 
-				// but for now we'll include this during
-				// the debugging stage
+				// with different names.  
 				dfile=MakeDfileName(dfilebase
 					+string("_psum"),gridid+1000);
-                		migrated_image.save(dbh,"",fielddir,
-					dfile,dfile);
+                                migrated_image.save(dfile,outdir);
 			}
 			cout << "Total time for this plane wave component="<<now()-rundtime<<endl;
 //DEBUG  save partial sums
@@ -1942,14 +1947,14 @@ const string merge_command("F=cat(3,F,f);");
 		if(!skip_this_event)
 		{
 			dfile=MakeDfileName(dfilebase+string("_data"),evid);
-			migrated_image.save(dbh,"",fielddir,dfile,dfile);
+			migrated_image.save(dfile,fielddir);
 			//
 			// zero field values so when we loop back they can
 			// be reused
 			//
 			migrated_image.zero();
 			dfile=MakeDfileName(dfilebase+string("_coh"),evid);
-			cohimage.save(dbh,"",fielddir,dfile,dfile);
+			cohimage.save(dfile,fielddir);
 		}
 		} // Bottom of np%rank conditional 
 		++filecount;
@@ -1977,7 +1982,8 @@ const string merge_command("F=cat(3,F,f);");
 	}
 	catch (...)
 	{
-		die(1,"Unhandled exception was thrown\n");
+            cerr << "Something threw an undefined exception type"
+                <<endl;
 	}
 }
 
