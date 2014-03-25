@@ -1,0 +1,32 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:48 $
+.TH TTTAUP 3 "$Date: 1997/04/12 04:18:48 $"
+.SH NAME
+tttaup \- tt interface to tau-p travel time library
+.SH SYNOPSIS
+.nf
+int tttaup ( char *model, char *phase_code, int mode, TTGeometry *geometry, Tbl **timesp, Hook **hookp );
+.fi
+.SH DESCRIPTION
+This is the tt(3) interface to the tau-p travel time library.
+.SH OPTIONS
+.SH FILES
+Uses travel time tables in a binary format.
+.SH ENVIRONMENT
+see dsapenv(5)
+.SH EXAMPLE
+.SH RETURN VALUES
+.SH LIBRARY
+-ltttaup
+.SH DIAGNOSTICS
+.SH "SEE ALSO"
+.nf
+tt(3)
+ptime(3)
+slowness(3)
+mktt(3)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: tttaup.3,v 1.1.1.1 1997/04/12 04:18:48 danq Exp $ 

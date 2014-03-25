@@ -1,0 +1,115 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:47 $
+.TH PTIME 3F "$Date: 1997/04/12 04:18:47 $"
+.SH NAME
+ptime, pphasetime, stime, sphasetime, phasetime, arrtimes \- calculate phase arrival times 
+.SH SYNOPSIS
+.nf
+#include "tttaup.i" 
+
+real*8 ptime ( delta, depth )
+
+real*8 stime ( delta, depth )
+
+real*8 phasetime ( phase, delta, depth )
+
+integer arrtimes ( delta, depth, phases, times )
+
+character phase(*)
+real*8 delta, depth
+character*10 phases(60)
+real*8 times(60)
+.fi
+.SH DESCRIPTION
+These routines 
+are based on Bob Engdahl's ttau-p library, 
+available from the USGS in Golden, and return travel times for
+various phases from a specified 
+distance \fIdelta\fR (in degrees) at a specified \fIdepth\fR
+(in kilometers).   
+.IP \fBptime, sphasetime\fR
+.br
+returns the first P arrival.  This is sometimes deceptive around 100 
+degrees, where the ttaup library calculates a seldom seen diffracted wave.
+Consequently, for distances greater than 105 degrees, the routine
+returns the next p arrival rather than Pdiff.
+.IP \fBstime, sphasetime\fR
+.br
+returns the first S arrival
+.IP \fBphasetime\fR
+.br
+returns the time for a specified phase
+.IP \fBarrtimes\fR
+.br
+returns all the calculated phases.  
+This copies phase names and times into arrays in your program which
+must have adequate sizes.  A character length of 10 should suffice, 
+and internally, the libtttaup library uses
+60 as the maximum number of phases.
+Arrtimes returns the number of phases.
+.SH FILES
+.IP $DSAP/data/tables/taup_ttimes/iasp91
+.br
+The actual travel time table used.
+.SH EXAMPLE
+.nf
+
+        subroutine show ( delta, depth ) 
+        implicit none
+        real *8 delta, depth
+        character *10 phases(60)
+        real *8 times(60)
+        real *8 ptime, stime, phasetime
+        integer i, nphases, arrtimes
+        real *8 p, s
+
+        p = ptime(delta, depth)  
+        s = stime(delta, depth)  
+        write(*,100) delta, depth, p, s
+100     format ( " delta=", f10.3, " depth=", f10.3, " ptime=", f10.3, 
+     *          " stime=", f10.3 ) 
+
+        nphases = arrtimes ( delta, depth, phases, times ) 
+        do i=1, nphases
+            write (*,200) phases(i), times(i), 
+     *          phasetime(phases(i), delta, depth)
+200     format ( a, f10.3, f10.3 ) 
+        end do
+        end
+
+.fi
+.SH ENVIRONMENT
+TAUP_PATH and TAUP_TABLE override the default directory for the travel
+time tables ($DSAP/data/tables/taup_ttimes), and the default
+travel time model (isap91).
+.SH RETURN VALUES
+\fBPhasetime\fR, \fBptime\fR and \fBstime\fR return -1.0 if no arrival is found (This should
+never happen).
+.SH LIBRARY
+-ltttaup -lF77 -lm
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+Because the libtttaup.a library uses FORTRAN i/o, you must also specify
+the F77 library.  This often causes linking and debugging problems.
+.LP 
+The fortran portion of the libraries likes to reread the travel
+time tables; consequently \fBptime\fR, \fBstime\fR and \fBphasetime\fR
+all calculate all phase arrivals, slowing execution considerably.  However,
+it is slowed even more when the tables are reread.
+.LP
+It's possible to use different travel time tables, by specifying
+TAUP_PATH.  However, the method of
+generating the necessary travel time tables is undocumented.
+.LP
+
+.SH AUTHOR
+.nf
+Bob Engdahl, USGS
+Danny Harvey
+Daniel Quinlan
+
+
+.\" $Id: ptime.3f,v 1.1.1.1 1997/04/12 04:18:47 danq Exp $ 

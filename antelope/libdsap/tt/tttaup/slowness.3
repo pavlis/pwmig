@@ -1,0 +1,96 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:47 $
+.TH SLOWNESS 3 "$Date: 1997/04/12 04:18:47 $"
+.SH NAME
+pphase_slowness, sphase_slowness, phase_slowness, arr_slowness \- calculate phase slowness
+.SH SYNOPSIS
+.nf
+#include "tttaup.h" 
+
+double pphase_slowness ( double delta, double depth );
+
+double sphase_slowness ( double delta, double depth );
+
+double phase_slowness ( char *phase, double delta, double depth );
+
+int arr_slowness ( double delta, double depth, char ***phases, double **slowness );
+.fi
+.SH DESCRIPTION
+These routines 
+are based on Bob Engdahl's ttau-p library, 
+available from the USGS in Golden, and return travel times for
+various phases from a specified 
+distance \fIdelta\fR (in degrees) at a specified \fIdepth\fR
+(in kilometers).   
+.IP "\fBpphase_slowness\fR"
+.br
+returns the slowness at the first P arrival.  
+.br
+The first p arrival is sometimes deceptive around 100 
+degrees, where the ttaup library calculates a seldom seen diffracted wave.
+Consequently, for distances greater than 105 degrees, the routine
+returns a later p arrival rather than Pdiff.
+.IP "\fBsphase_slowness\fR"
+.br
+returns the slowness for the first S arrival.
+.IP \fBphase_slowness\fR
+.br
+returns the slowness for a specified phase
+.IP \fBarr_slowness\fR
+.br
+returns slowness for all the calculated phases.  
+The returned arrays of phase names
+and _slowness are static arrays internal to the tttaup library, and are
+modified at each execution.   Arr_slowness returns the number of phases.
+.SH FILES
+.IP $DSAP/data/tables/taup_ttimes/iasp91
+.br
+The actual travel time table used.
+.SH EXAMPLE
+.nf
+.fi
+.SH ENVIRONMENT
+TAUP_PATH and TAUP_TABLE override the default directory for the travel
+time tables ($DSAP/data/tables/taup_ttimes), and the default
+travel time model (isap91).
+.SH RETURN VALUES
+\fBPhase_slowness\fR, \fBp_slowness\fR and \fBs_slowness\fR return -1.0 if no arrival is found (This should
+never happen).
+.SH LIBRARY
+-ltttaup -lF77 -lm
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+Because the libtttaup.a library uses FORTRAN i/o, you must also specify
+the F77 library.  This often causes linking and debugging problems.
+In particular, with the old bundled c compiler and fortran, it's
+often necessary to bracket the -lF77 with -Bstatic and -Bdynamic.
+Doing so makes the executables less portable to Solaris, however, 
+and such link lines don't work in Solaris.  With later bundled
+compilers, you may need to add -lM77 and -lsunmath to successfully
+link the tttaup library.
+.LP 
+The fortran portion of the libraries likes to reread the travel
+time tables; consequently \fBpphase_slowness\fR, \fBsphase_slowness\fR 
+and \fBphase_slowness\fR
+all calculate all phase arrivals, slowing execution considerably.  However,
+it is slowed even more when the tables are reread.
+.LP
+It's possible to use different travel time tables, by specifying
+TAUP_PATH.  However, the method of
+generating the necessary travel time tables is undocumented.
+Recent note: see mktt(1) for a bit more detail.
+.LP
+The lists of values returned by arr_slowness are in static arrays inside
+the subroutine, hence this code is not thread safe, and the values 
+change at every call.
+.SH AUTHOR
+.nf
+Bob Engdahl, USGS
+Danny Harvey
+Daniel Quinlan
+
+
+.\" $Id: slowness.3,v 1.1.1.1 1997/04/12 04:18:47 danq Exp $ 
