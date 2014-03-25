@@ -1,0 +1,99 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:00 $
+
+
+.TH ERROR_HANDLING 3F "$Date: 1997/04/12 04:19:00 $"
+.SH NAME
+complain, die, register_error, clear_register \- handle error messages in a standard way
+.SH SYNOPSIS
+.ft B
+.LP
+.ft B
+.fi
+subroutine complain(\fIsysflag\fP, \fImsg\fP )
+.nf
+.ta 10nR +0n 
+integer \fIsysflag\fP
+character*(*) \fIformat\fP 
+.LP
+.ft B
+.fi
+subroutine die(\fIsysflag\fP, \fImsg\fP )
+.nf
+.ta 10nR +0n 
+integer \fIsysflag\fP
+character*(*) \fIformat\fP 
+.LP
+.ft B
+.fi
+subroutine register_error(\fIsysflag\fP, \fImsg\fP )
+.nf
+.ta 10nR +0n 
+integer \fIsysflag\fP
+character*(*) \fIformat\fP 
+.LP
+.ft B
+.fi
+subroutine clear_register(\fIprintflag\fP) 
+.nf
+.ta 10nR +0n 
+integer \fIprintflag\fP
+.LP
+.ft B
+.fi
+.LP
+.ft B
+.SH DESCRIPTION
+This family of routines is intended to standardize the handling of errors,
+by funneling error messages through a central routine.  It provides
+convenient and concise facilities for announcing problems for both library
+routines and programs.
+.LP
+\fBComplain()\fR prints a message immediately, and always returns.  If
+\fIsysflag\fP is nonzero, the system error message is also printed.
+It also prints all messages in the error log, using \fBclear_register\fR. 
+.LP 
+\fBDie()\fR prints a message immediately, and exits with error code
+\fI1\fP; it never returns.  If \fIsysflag\fP is nonzero, the system error
+message is also printed.
+It also prints all messages in the error log, using \fBclear_register\fR. 
+.LP
+Library routines should almost never exit, but should instead return an
+error code.  However, an error code alone may be quite limiting.
+\fBRegister_error()\fR allows a library routine to post an error message,
+which the calling program can choose (or choose not) to print out.  Just
+like \fBcomplain()\fP, it takes a flag to indicate whether to include the
+system error message, and a standard set of printf arguments.
+.LP
+\fBClear_register()\fR clears the existing register of error messages,
+printing the messages if printflag is non-zero.
+.SH FILES
+.LP
+The error messages are printed on stderr.
+.SH EXAMPLE
+.nf
+lemond% cat ferr.f
+
+        call complain ( 0, "This will print immediately" )  
+        call register_error ( 0, "This will be put in a log" )  
+        call die ( 0, "This will print the error log and die" ) 
+
+        write ( *, * ) "This will never get executed."
+        stop 
+        end
+lemond% ferr
+***: This will print immediately
+*** *fatal error* : This will print the error log and die
+***: This will be put in a log
+lemond%
+.fi
+.SH DIAGNOSTICS
+.IP "** Too many error messages -- Error Buffer Overflow."
+\fBregister_error()\fP allows a limited number (20) of error messages to
+be posted at a time; if more errors are posted, then the earliest are
+lost, and this message is printed when the error log is printed.
+.SH "SEE ALSO"
+perror(3)
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: error_handling.3f,v 1.1.1.1 1997/04/12 04:19:00 danq Exp $ 

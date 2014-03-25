@@ -1,0 +1,82 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:01 $
+
+
+.TH ISORT 3F "9/17/94"
+.SH NAME
+isort \- insertion sort implementation
+.SH SYNOPSIS
+.nf
+subroutine isort ( a, n, size, compare, private )
+{integer, real, ...} a(n)
+integer n, size
+integer compare
+external compare
+{integer, real, ...} private
+.fi
+.SH DESCRIPTION
+This is an implementation of an insertion sort, taken from 
+\fIAlgorithms in Modula-3\fR by Robert Sedgewick, pp 100.  
+This is a good sort for small lists or lists which are mostly in
+order already. 
+.LP
+A is the array (of arbitrary type) to be sorted, 
+n is the number of elements in the array, 
+size is the size (in bytes) of an element of the array, compare is a comparison
+routine which is called as follows:
+.nf
+(*compare) ( element1, element2, private ) 
+.fi
+where element1 and element2 are elements of the array, and
+private is whatever you like (which may be nothing).
+On the other hand, \fIa\fR might be an array of indexes into a second 
+array which is given by private.
+Compare should return an integer which is (<0, ==0, >0) when
+(element1 < element2, element1 == element2, element1 > element2 ). 
+.LP
+\fBIsort\fR sorts the array in memory by moving the elements of the
+array.
+.SH EXAMPLE
+.nf
+        implicit none
+        integer n 
+        parameter ( n = 10 ) 
+        integer a(n) 
+        integer compare
+        external compare
+        data a / 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 / 
+        call show_table ( a, n ) 
+        call isort ( a, n, 4, compare, 0 ) 
+        call show_table ( a, n ) 
+        stop
+        end
+ 
+        integer function compare ( a, b, private ) 
+        integer a, b, private
+        compare =  a-b 
+        end
+ 
+        subroutine show_table ( a, n ) 
+        integer n 
+        integer a(n)
+        integer i 
+        do i=1,n
+            write (*,*) i, a(i)
+            end do
+        end
+.fi
+.SH RETURN VALUES
+none
+.SH LIBRARY
+libstock.a
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+qsort(3), quicksort(3), shellsort(3)
+.fi
+.SH "BUGS AND CAVEATS"
+Qsort or quicksort may often be a better choice.
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: isort.3f,v 1.1.1.1 1997/04/12 04:19:01 danq Exp $ 

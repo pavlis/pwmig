@@ -1,0 +1,13 @@
+# This file describes a pattern replacement algorithm for
+# mapping SunOS automounted directories to their equivalent
+# "canonical" form.  
+
+# This should be entirely unnecessary for 
+# Solaris, as the Solaris automounter has some different algorithm
+# and pwd under solaris actually returns the path used to access
+# a file or directory.
+#
+# pattern	replacement
+#^/auto/		/
+#^/export/	/
+#^/tmp_mnt/	/

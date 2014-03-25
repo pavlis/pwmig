@@ -1,0 +1,370 @@
+.TH TMPL 3 "$Date: 1997/04/12 04:19:03 $" "DSAP Release 1.0"
+.SH NAME
+get_argument, get_directory, get_input_file, get_output_file,
+last_argument, last_input_file, last_output_file, next_file,
+readable_file, writable_file \- Standard command line parsing routines
+.SH SYNOPSIS
+\fB#include ``tmpl.h''\fP
+.LP
+.nf
+.ft B
+char get_option(\fIargc\fP, \fIargv\fP, \fIoption_list\fP, \fInum_options\fP)
+.ta 10n +1n +1n
+int      		*	\fIargc\fP;
+char     	**		\fIargv\fP;
+option_t		*	\fIoption_list\fP;
+int      			\fInum_options\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *get_argument()
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *get_directory()
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *get_input_file(\fIinput_file\fP)
+FILE      	**\fIinput_file\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *get_output_file(\fIoutput_file\fP)
+FILE    	**\fIoutput_file\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *last_argument()
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *last_input_file(\fIinput_file\fP)
+FILE    	**\fIinput_file\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *last_output_file(\fIoutput_file\fP)
+FILE       	**\fIoutput_file\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+FILE *next_file(\fIold_file\fP, \fInew_name\fP, \fIaccess\fP)
+FILE       	*\fIold_file\fP;
+char       	*\fInew_name\fP;
+char       	*\fIaccess\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+int readable_file(\fIfile_name\fP)
+char       	*\fIfile_name\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+int writable_file(\fIfile_name\fP)
+char      	*\fIfile_name\fP;
+.ft
+.fi
+.LP
+.nf
+.ft B
+typedef struct
+{
+.ta 10n +1n
+  char    		\fIterse\fP;
+  char     	*	\fIverbose\fP;
+  int      		\fIarg\fP;
+} option_t;
+.fi
+.ft
+.SH DESCRIPTION
+.LP
+These routines are designed to allow the user to easily develop a
+sophisticated command interface for general applications.  Facilities
+include command parsing for terse and verbose options, command syntax
+checking, and argument access functions which provide testing for
+directories and file access.  The file \fBtemplate.c\fP provides an
+example for how to use these functions, and is a good starting point for
+building new applications  (see \fBtemplate(3)\fP).
+.LP
+This package is an attempt to be both \fIPOSIX\fP compliant and user
+friendly.  Options are specified by a leading ``-'' character.  Every
+option can be used in verbose mode (\fB-verbose_option\fP) or terse mode
+(\fB-v\fP) which are functionally equivalent.  Any option accepting an
+argument must \fIalways\fP be provided with an argument.  Or as was so
+eloquently expresed in the \fIPOSIX\fP standard ``option arguments are not
+optional.''  Finally, for options that don't require an argument, the
+terse forms can be combined behind a single ``-'' in the normal UN*X
+fashion.
+.SH "OPTION SPECIFICATION"
+Legal options are specified in an \fBoption_t\fP array, with each element
+in this array describing one option.  An option is specified in three
+parts: \fBterse\fP which is the single character description,
+\fBverbose\fP which is the string description, and \fBarg\fP which
+specifies whether the option requires an argument, as well as the argument
+type.  (Note that the ``-'' is \fInot\fP included in the \fBoption_t\fP
+descriptions.)
+.LP
+For each option, \fBarg\fP specifies whether the option requires an
+argument, along with restrictions on the form for that option.  If the
+user specifies a \fBNORMAL_ARG\fP, for example, the option requires a
+single argument that does not begin with a ``-'' character.  These
+restrictions greatly reduce the error checking required within the
+application.  If the option requires an argument that begins with a ``-''
+character, such as a negative number, there are two choices: the
+application can specify a \fBSPECIAL_ARG\fP which turns off this error
+checking, or the user can protect the argument by preceding it with ``--''
+(see below).
+.LP
+There are two default symbols that have special significance within these
+routines.  The first is a single ``-''.  The ``-'' character will not be
+identified as an option, and can only be retrieved through the
+\fBget_*()\fP routines.  The ``-'' is normally used to specify \fIstdin\fP
+or \fIstdout\fP, and is used this way with the file operations specified
+below.
+.LP
+The other special symbol is the ``--'', and can be used two ways.  If
+``--'' is encountered as an \fIoption\fP, it causes an end to option
+processing, and prevents any of the subsequent arguments from being
+interpreted as options.  This is typically used for passing command
+arguments to subsequent programs.  If ``--'' is encountered before an
+option's \fIargument\fP, it prevents that argument from being interpreted
+as an option, but leaves the following options/arguments uneffected.
+(Note that the application will never see the ``--'', as this is all
+provided internally.)
+.LP
+The legal values for \fBarg\fP are as follows:
+.TP
+\fBNO_ARGUMENT\fP
+This specifies that the option is not associated with any arguments.  An
+error will be generated if the user attempts to get an argument following
+this option.
+.TP
+\fBNORMAL_ARG\fP 
+This specifies that the option is associated with a single normal
+argument.  Using \fBNORMAL_ARG\fP provides additional error checking so
+the user won't accidentally retrieve the next option as the argument.  An
+error will be generated if the user attempts to get another option without
+retrieving the argument, or if the argument begins with a ``-''.  (The
+application can recieve an argument beginning with a ``-'' by preceding it
+with a ``--''.  For example the arguments ``-- -output'' will be returned
+as ``-output''.)
+.TP
+\fBNORMAL_ARGS\fP 
+This behaves analogously to \fBNORMAL_ARG\fP, with the exception that the
+user can retrieve one or more ``normal'' arguments.  The user can continue
+to retrieve arguments with the \fBget_*()\fP routines until the next
+option is reached, at which point \fBget_*()\fP will return \fINULL\fP.
+.TP
+\fBSPECIAL_ARG\fP
+This specifies that the option is associated with a single special
+argument.  A special argument is any argument whatsoever.  Using
+\fBSPECIAL_ARG\fP allows arguments to be passed that would otherwise be
+taken as options.  An error will be generated if the user attempts to get
+another option without retrieving argument.  It is preferable to use
+\fBNORMAL_ARG\fP whenever possible.
+.TP
+\fBSPECIAL_ARGS\fP 
+This behaves analogously to SPECIAL_ARG, with the exception that the user
+can retrieve one or more special arguments.  It is the user's
+responsibility to determine when the last argument is received and the
+next option is required.  It is preferable to use \fBNORMAL_ARGS\fP
+whenever possible.
+.SH "OPTION PROCESSING"
+The user calls \fBget_option()\fP to retrieve each command line option.
+After an option is returned, the user retrieves any associated arguments
+by using one of the \fBget_*()\fP routines.  Calling \fBget_option()\fP
+when an argument is expected, or \fBget_*()\fP when an option is expected
+will be caught as errors.  All arguments not retrieved by
+\fBget_option()\fP and \fBget_*()\fP calls are collected, and may be
+accessed after the remaining options are retrieved.
+.LP
+When \fBget_option()\fP is called the command arguments are scanned until
+an option is found and the associated \fIterse\fP character is returned.
+Options are identified by an initial ``-'' character.  If the
+\fBverbose\fP form is used, it is translated to the \fBterse\fP form.
+Similarly, compound options are parsed and returned one per call.  If any
+errors occur during parsing, the ``-'' character is returned.  It is
+suggested that a \fIdefault:\fP or \fIelse\fP is provided to catch any
+unexpected return values.
+.LP
+If the option requires an argument, that argument must then be retrieved
+using one of the \fBget_*()\fP routines below.  Failure to \fBget_*()\fP a
+required argument causes an error.  Likewise, and error is generated if
+\fBget_*()\fP is called when an argument is not expected.  If more than
+one argument is associated with the option, then subsequent calls of
+\fBget_*()\fP will return another value.  If the option specifies
+\fBNORMAL_ARGS\fP, the \fBget_*()\fP routines will return \fINULL\fP when
+the next option is reached.  If the option specifies \fBSPECIAL_ARGS\fP,
+the \fBget_*()\fP user will have to determine when to go for the next
+option.
+.LP
+When all options are retrieved, or the special option ``--'' is reached,
+\fBget_option()\fP returns \fBEND_OPTIONS\fP.  It is important that
+\fBget_option()\fP be called repeatedly until all options are processed,
+since \fBget_option()\fP modifies the \fIargc\fP and \fIargv\fP variables
+as it proceeds.  Once all options have been retrieved \fIargc\fP and
+\fIargv\fP are reset so they contain any remaining arguments in the normal
+way.  Note that \fIargc\fP and \fIargv\fP should not be modified by the
+user, or unpredictable results may occur.
+.LP
+Function \fBget_argument()\fP returns the next argument, subject to the
+\fBarg\fP type specifications given above.
+.LP
+Function \fBget_directory()\fP returns the next argument so long as it
+specifies a valid directory, otherwise it returns NULL.
+.LP
+Function \fBget_input_file()\fP returns the next argument so long as it
+specifies a legal input file, otherwise it returns NULL.  The file will be
+opened for input at the same time.
+.LP
+Function \fBget_output_file()\fP returns the next argument so long as it
+specifies a legal output file, otherwise it returns NULL.  The file will
+be opened for output at the same time.
+.LP
+Function \fBnext_file()\fP closes the previous open file and opens the
+next argument for reading / writing.  This provides a simple way to
+process a series of files in a sequential order.  Note that the only
+access modes currently supported are ``r'' and ``w''.
+.LP
+Functions \fBlast_argument()\fP, \fBlast_input_file()\fP and
+\fBlast_output_file()\fP will retrieve the last argument from the list,
+and open it for reading / writing if appropriate.  This is useful for
+cases where the last file has special significance.  Note that these
+functions should only be called after \fBget_option()\fP has returned
+null.
+.LP
+Functions \fBreadable_file()\fP and \fBwritable_file()\fP return 1 if
+their argument is a ``normal'' file, (ie not a directory), and if it can
+be opened for reading / writing.  Note that the file remains closed.
+.bp
+.SH EXAMPLE
+Here is an example that, while worthless, illustrates the possibilities. 
+.LP
+.RS
+.nf
+static option_t option_list[] =
+{
+  `a', ``a-option'', NO_ARGUMENT,
+  `b', ``b-option'', NO_ARGUMENT,
+  `c', ``c-option'', NORMAL_ARG
+};
+#define NUM_OPTIONS (sizeof(option_list) / sizeof(option_t))
+.fi
+.RE
+.LP
+.RS
+.nf
+main (argc, argv)
+int     argc;
+char  **argv;
+{
+.ta 2n +2n +2n +2n +2n +2n +2n +2n +2n +2n +2n
+	while ((option = get_option(&argc, argv, option_list, NUM_OPTIONS)) != NULL)
+		{
+			switch (option)
+				{
+					case ('a'):
+						print(``A-OPTION '');
+						break;
+					case ('b'):
+						print(``B-OPTION '');
+						break;
+					case ('c'):
+						while ((arg = get_argument()) != NULL)
+							printf(``C-OPTION: %s '', arg);
+						break;
+					default:
+						USAGE();
+				}
+		}
+	while ((arg = get_argument()) != NULL)
+	printf(``EXTRA: %s '', arg);
+} 
+.fi
+.RE
+.LP
+Here is the output produced by a variety of calls
+.LP
+.RS
+.nf
+shell% foo -a -b-option
+A-OPTION B-OPTION
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -ab
+A-OPTION B-OPTION
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -ab bar snork
+A-OPTION B-OPTION EXTRA: bar EXTRA: snork
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -c bar snork
+C-OPTION: bar C-OPTION: snork
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -c bar snork -ab
+C-OPTION: bar C-OPTION: snork A-OPTION B-OPTION
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -c bar snork -a-option -b bar snork
+C-OPTION: bar C-OPTION: snork A-OPTION B-OPTION EXTRA: bar EXTRA: snork
+.fi
+.RE
+.LP
+.RS
+.nf
+shell% foo -c bar -- -c bar snork
+C-OPTION: bar EXTRA: -c EXTRA: bar EXTRA: snork
+.fi
+.RE
+.SH FILES
+.TP 25
+template.c
+Standard template using these routines
+.SH "SEE ALSO"
+template(1)
+.SH AUTHOR
+Eric Winkelman
+.br
+University of Colorado \- Physics department
+.br
+ewink@lemond.Colorado.EDU
+
+.\" $Id: tmpl.3,v 1.1.1.1 1997/04/12 04:19:03 danq Exp $ 

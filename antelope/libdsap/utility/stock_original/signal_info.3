@@ -1,0 +1,44 @@
+.\" $Name:  $ $Revision: 1.1 $ $Date: 1997/06/18 13:36:07 $
+.TH SIGNAL_INFO 3 "$Date: 1997/06/18 13:36:07 $"
+.SH NAME
+signal_bysig, signal_byname \- translate between signal code and name and description
+.SH SYNOPSIS
+.nf
+#include "elog.h"
+
+Signal_info *signal_bysig PL_(( int sig ));
+
+Signal_info *signal_byname PL_(( char *name ));
+.fi
+.SH DESCRIPTION
+These routines translate between signal numbers and their
+corresponding names and corresponding descriptions.
+They return the following information:
+.nf
+
+    typedef struct Signal_info {
+	int sig ;
+	char *name, *description ;
+    } Signal_info ;
+ 
+.fi
+.SH RETURN VALUES
+If no mapping exists, the routines return a null pointer.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+sigaction(2)
+.fi
+.SH "BUGS AND CAVEATS"
+The information returned by these routines
+is presumably extremely specific to SunOS 5.5;
+it was created by processing /usr/include/sys/signal.h
+from a Sun running Solaris 2.5.  
+There's no guarantee that the
+mapping from integer to name will be the same for
+other manufacturers or different versions of the OS.
+.SH AUTHOR
+Daniel Quinlan

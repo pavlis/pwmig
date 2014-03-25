@@ -1,0 +1,80 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:03 $
+
+
+.TH TBL 3F "$Date: 1997/04/12 04:19:03 $"
+.SH NAME
+strtbl, strgettbl, strputtbl, maxtbl, strfreetbl \- routines to manipulate lists of strings
+.SH SYNOPSIS
+.nf
+
+subroutine strtbl ( itbl, s, ..., 0 )  
+subroutine strgettbl ( itbl, i, s ) 
+subroutine strputtbl ( itbl, i, s ) 
+subroutine strfreetbl ( itbl ) 
+integer maxtbl ( itbl ) 
+
+integer itbl, i
+character *(*) s, 
+
+.fi
+.SH DESCRIPTION
+These routines manipulate lists of strings, suitable for use with many
+of the db library routines.  
+.LP
+A new list is created with \fBstrtbl\fR. Its first argument is an
+integer which will hold the pointer to the list; following that
+are an arbitrary number of strings, ending with zero.  These strings
+are converted to the c (zero terminated, with trailing blanks
+stripped) format.  In this form, the list is suitable for db library
+calls like dbjoin or dbsort which may need a list of strings.
+.LP
+\fBStrgettbl\fR copies the \fIi\fR'th string from the list to a 
+FORTRAN string (padded with blanks).   \fBStrputtbl\fR copies a 
+string to the \fIi\fR'th element of the list.  \fRStrfreetbl\fR
+frees all the memory associated with a list.
+.LP
+\fBMaxtbl\fR returns the number of elements in the list.  Elements
+are numbered from zero to \fRmaxtbl\fR - 1.
+.SH EXAMPLE
+.nf
+
+    lemond% cat trytbl.F
+	    character *10 s
+	    integer tbl 
+
+	    call strtbl(tbl, "hi", "dan", 0 )  
+	    n = maxtbl ( tbl )  
+	    write (*,*) "tbl has ", n, " entries"
+	    do i=0, n-1
+		call strgettbl (tbl, i, s )  
+		write ( *, * ) "element ", i, " is ", s 
+		end do
+
+	    call strsettbl(tbl, 0, "bye" )  
+	    call strgettbl (tbl, 0, s )  
+	    write ( *, * ) "changed hi to ", s 
+	    stop
+	    end
+    lemond% trytbl
+    tbl has   2 entries
+    element   0 is hi        
+    element   1 is dan       
+    changed hi to bye       
+    lemond%
+
+.fi
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+.SH "SEE ALSO"
+.nf
+arr(3)
+stbl(3)
+pf(3)
+clear_register(3)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: tbl.3f,v 1.1.1.1 1997/04/12 04:19:03 danq Exp $ 

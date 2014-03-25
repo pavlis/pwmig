@@ -1,0 +1,32 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:59 $
+
+
+.TH ALIGN 3 "$Date: 1997/04/12 04:18:59 $"
+.SH NAME
+align_double, align_int \- align address to multiple of double or int
+.SH SYNOPSIS
+.nf
+int align_double ( int i )
+int align_int ( int i )
+.fi
+.SH DESCRIPTION
+When creating structure on the fly in memory, one must be careful
+to align the various parts correctly, to avoid bus errors when 
+a field of the structure is accessed.  These routines take an 
+address and return an address which is properly aligned.
+.SH EXAMPLE
+.SH RETURN VALUES
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+This isn't quite right, but I'm not sure how to fix it.  The type 
+of the functions should probably be void *.  
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: align.3,v 1.1.1.1 1997/04/12 04:18:59 danq Exp $ 

@@ -1,0 +1,114 @@
+.\" $Name $Revision: 1.2 $ $Date: 1997/07/21 00:41:29 $
+.TH PATSUB 3 "$Date: 1997/07/21 00:41:29 $"
+.SH NAME
+patsub \- string substitution 
+.SH SYNOPSIS
+.nf
+#include "dsap_regex.h"
+
+int patsub ( char *old, 
+	    struct re_pattern_buffer *pattern_buffer, 
+	    char *substitution, 
+	    char *new );
+.fi
+.SH DESCRIPTION
+This routine uses GNU regular expression search routine to 
+implement a fairly standard substitution routine.  The input
+parameters are the old string, a compiled pattern buffer, 
+and the substitution string.  The result is returned in 
+new, which must have enough space allocated.
+.LP
+The substitution string may contain references in the style of
+sed(1) to matching sub patterns.  Such sub patterns must be
+indicated with parens in the search string, and are indicated in 
+the replacement string by \fB$n\fR, where n is 1 or more.  \fB$0\fR
+indicates the entire string matched.
+.SH EXAMPLE
+.nf
+% cat try_patsub.c
+#include <stdlib.h>
+#include <stdio.h>
+#include "dsap_regex.h"
+#include "stock.h"
+
+main (argc, argv ) 
+int argc ; 
+char *argv ; 
+{
+    char pattern[STRSZ], string[STRSZ], *s ; 
+    char substitution[STRSZ], newstr[STRSZ] ; 
+    int result ;
+    struct re_pattern_buffer *pattern_buffer = 0 ; 
+
+    re_syntax_options = RE_SYNTAX_EGREP ;  
+
+    allot ( struct re_pattern_buffer *, pattern_buffer, 1 ) ; 
+    pattern_buffer->buffer = 0 ; 
+    pattern_buffer->allocated = 0 ; 
+    pattern_buffer->translate = 0 ; 
+    pattern_buffer->regs_allocated = REGS_UNALLOCATED ;  
+    pattern_buffer->fastmap = 0 ;  
+
+    printf ( "Pattern: " ) ; 
+    gets(pattern) ; 
+    printf ( "Substitution: " ) ; 
+    gets(substitution) ; 
+    while  ( pattern != 0 && *pattern != 0 )
+	{
+	if (  (s = re_compile_pattern ( pattern, 
+		    strlen(pattern), pattern_buffer ) ) != 0 ) 
+	    complain ( 0, "Pattern did not compile: %s.\en", s ) ;
+	else
+	    {
+	    printf ( "String: " ) ; 
+	    for  ( s = gets(string)  ; s != 0 && *s != 0 ; s = gets(string) ) 
+		{
+		result = patsub ( string, pattern_buffer, substitution, newstr ) ; 
+		printf ( "Result of substitution is %s\en", newstr ) ; 
+
+		printf ( "String: " ) ; 
+		}
+	    }
+	printf ( "Pattern: " ) ; 
+	gets(pattern) ; 
+	printf ( "Substitution: " ) ; 
+	gets(substitution) ; 
+	}
+    re_free ( pattern_buffer ) ; 
+    return 0 ; 
+}
+% try_patsub
+Pattern: \fI/a/b/c/\fR
+Substitution: 
+String: \fI/a/b/c/file\fR
+Result: 'file'
+String: 
+Pattern: \fI/a/b/c/\fR
+Substitution: \fIwf/\fR
+String: \fI/a/b/c/file\fR
+Result: \fI'wf/file'\fR
+String: 
+Pattern: \fI([^ ]+) ([0-9]+)\fR
+Substitution: \fI$2 $1\fR
+String: \fIreverse string 123\fR
+Result: 'reverse 123 string'
+String: 
+Pattern: 
+Substitution: 
+%
+.fi
+.SH RETURN VALUES
+Returns 0 if no substitutions are made, 1 if a substitution was made
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+regex(3)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: patsub.3,v 1.2 1997/07/21 00:41:29 danq Exp $ 

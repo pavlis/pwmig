@@ -1,0 +1,249 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:08 $
+.TH TT 3 "$Date: 1997/04/12 04:19:08 $"
+.SH NAME
+ttcalc \- general purpose travel time interface.
+.SH SYNOPSIS
+.nf
+#include "tt.h"
+
+int ttcalc ( char *method, char *model, char *phase_code, 
+	    int mode, TTGeometry *geometry, 
+	    Tbl **timesp, Hook **hook );
+
+.fi
+.SH DESCRIPTION
+ttcalc is intended to be a general interface to a travel time calculator.
+It should be possible to run a variety of different travel time calculators
+through this interface; the particular method will be dynamically 
+loaded when it is first called.
+.SH PARAMETERS
+.IP method
+This character string is a name for the calculation method.  \fBttcalc\fR
+expects to find a dynamic library lib\fImethod\fR.so with an internal function
+.nf
+
+    int \fImethod\fR( char *model, char *phase_code, 
+	    int mode, TTGeometry *geometry, 
+	    Tbl **timesp, Hook **hook );
+
+.fi
+
+.nf
+
+    Examples:
+	tttaup
+	iasp91
+
+.fi
+
+.LP
+.IP model
+The model name is intended to correspond to an actual earth structure model.
+Different methods may have different models to use.
+.nf
+
+    Examples:
+	iasp91
+	kyrghyz
+
+.fi
+.IP phase_code
+The phase_code may be a single standard phase name, a comma separated 
+list of phases, or some key which corresponds to a whole set of phases.
+.nf
+
+    Examples:
+	P
+	Pn,Sn
+	all
+	P+,S
+
+.fi
+.IP mode
+The mode is an integer with individual bit flags controlling the
+calculator behavior.  The following options may be OR'd together:
+.RS .5i
+.IP TT_SLOWNESS 		
+return slowness, not travel time
+.IP TT_DERIVATIVES 		
+return derivatives also 
+.IP TT_APPLY_CORRECTIONS	
+apply (station) corrections 
+.IP TT_CORRECTION_ONLY		
+return (station) corrections only 
+
+.RE
+.IP geometry
+This structure contains the source and receiver locations 
+
+.nf
+
+    typedef struct TTPoint {
+	double lat, lon ; 	     
+	double z ;		    
+	double time ;	     
+	char name[TTNAME_SIZE] ; 
+    } TTPoint ; 
+
+    typedef struct TTGeometry {
+	TTPoint	source ; 
+	TTPoint	receiver ;
+    } TTGeometry ; 
+
+.fi
+lat and lon are in degrees; z is positive downward in kilometers.
+(see km2deg(3) for some approximate conversion routines).
+For travel time calculations, the value of source.time is added to the
+calculated travel time.
+source.name will typically be a (null-terminated) 
+station name, and is intended as an 
+index to static station corrections.
+.IP timesp
+timesp is a tbl(3) list of results; it should initially be 
+a pointer to zero.  ttcalc will initialize this list and 
+clear it at each call thereafter.
+The calculator will oftentimes return
+multiple results corresponding to different phases; each entry in the
+list is a TTTime structure:
+.nf
+
+typedef struct TTTime {
+    double value ;		/* seconds or seconds/kilometer */
+    double deriv[3] ; 		/* seconds/kilometer or seconds/kilometer^2 */
+    char phase[TTPHASE_SIZE] ; 	/* phase name (null terminated) */
+} TTTime ;
+
+.fi
+.IP hook
+This pointer should also be initialized to zero; ttcalc will use it
+to save the calculator's internal state.  This state may be freed with
+free_hook(3).
+.SH EXAMPLE
+.nf
+
+    #include <stdio.h>
+    #include <dlfcn.h>
+
+    #include "tt.h"
+    #include "db.h"
+    #include "stock.h"
+
+    static void
+    show_results ( Tbl *times ) 
+    {
+	TTTime *atime ; 
+	int i, n ;
+
+	n = maxtbl (times) ;
+	printf ( "%d results\n", n ) ; 
+	for ( i=0 ; i<n ; i++ ) {
+	    atime = (TTTime *) gettbl(times, i) ;
+	    printf ( "%-16s %10.3f   %10.3f %10.3f %10.3f\n", 
+		atime->phase, atime->value, 
+		atime->deriv[0],
+		atime->deriv[1],
+		atime->deriv[2] ) ; 
+	}
+    }
+
+    int
+    main (argc, argv)
+    int             argc;
+    char          **argv;
+    {
+
+	extern char    *optarg;
+	extern int      optind;
+	void	   *library ;
+	int             c,
+			errflg = 0;
+	char 	    aline[STRSZ] ;
+	TTGeometry	    geometry ;
+	Hook	   *hook = 0 ;
+	char	    method[STRSZ], model[STRSZ], phase[STRSZ] ; 
+	int		    mode = 0 ; 
+	Tbl	 	   *times = 0;
+	double	    distance, depth ;
+	int		    result ;
+
+	elog_init ( argc, argv ) ; 
+
+	geometry.source.lat = 0.0 ; 
+	geometry.source.lon = 0.0 ; 
+	geometry.source.z = 0.0 ; 
+	geometry.source.time = 0.0 ; 
+	strcpy(geometry.source.name, "SOURCE" ) ;
+
+	geometry.receiver.lat = 0.0 ; 
+	geometry.receiver.lon = 0.0 ; 
+	geometry.receiver.z = 0.0 ; 
+	geometry.receiver.time = 0.0 ; 
+	strcpy(geometry.receiver.name, "RECEIVER" ) ;
+
+	fprintf (stderr, "method model phase distance depth :" ) ;
+	while ( gets(aline) ) {
+	    sscanf ( aline, "%s %s %s %lf %lf\n", 
+		    method, model, phase, &distance, &depth ) ; 
+	    geometry.source.z = depth ; 
+	    geometry.receiver.lon = distance ; 
+	    result = ttcalc ( method, model, phase, mode, &geometry, &times, &hook ) ; 
+	    if ( result < 0 ) {
+		complain ( 0, "ttcalc failed\n" ) ; 
+	    } else {
+		if (result & 2)
+		    complain ( 0, "No station corrections available\n" ) ;
+		if (result & 1)
+		    complain ( 0, "No derivatives\n" ) ;
+	    }
+	    show_results ( times ) ; 
+
+	    fprintf (stderr, "method model phase distance depth :" ) ;
+	}
+
+	free_hook ( &hook ) ; 
+	return 0;
+    }
+.fi
+.SH RETURN VALUES
+Zero indicates success, with negative numbers indicating failure.
+In these cases, there should be no results in the returned list
+times; when ttcalc returns an error code less than zero, the caller
+should expect a more verbose error message on the error log.
+.IP -1 
+no phases
+.IP -2 
+parameter error
+.IP -3 
+no method library
+.IP -4 
+no model
+.LP
+A number greater than zero indicates that 
+some calculation was completed, but perhaps not
+the entire calculation: 
+.IP 1  
+no derivatives
+.IP 2  
+no (station) corrections 
+.SH LIBRARY
+-ltt
+.SH DIAGNOSTICS
+.IP "Can't open travel time library '\fIlibrary_name\fR' (for method '\fImethod\fR')"
+.IP "Can't find entry point '\fImethod\fR' in library '\fIlibrary_name\fR'"
+.SH "SEE ALSO"
+.nf
+tttaup(3)
+km2deg(3)
+hook(3)
+.fi
+.SH "BUGS AND CAVEATS"
+Probably needs a couple of query routines to return all the 
+models available and all of the possible phase_codes.
+.SH AUTHOR
+.nf
+Daniel Quinlan
+Danny Harvey
+Gary Pavlis
+.fi
+
+.\" $Id: tt.3,v 1.1.1.1 1997/04/12 04:19:08 danq Exp $ 

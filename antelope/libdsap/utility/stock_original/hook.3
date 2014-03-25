@@ -1,0 +1,45 @@
+.\" %%W%% %$Date: 1997/04/12 04:19:00 $%
+
+
+.TH HOOK 3 "$Date: 1997/04/12 04:19:00 $"
+.SH NAME
+new_hook, free_hook \- create and free opaque pointer 
+.SH SYNOPSIS
+.nf
+
+Hook * new_hook ( void (*hookfree)() );
+
+void free_hook ( void **hookp );
+
+typedef struct Hook {
+    int magic ; 
+    void (*free)() ;
+    void *p ;
+} Hook ; 
+
+.fi
+.SH DESCRIPTION
+It's often desirable to perform some set of initializations just
+once the first time a function is called.   A typical approach to 
+this is to write a "new" function which returns a pointer to some
+initialized variables.  This approach proliferates new_xxx and 
+free_xxx functions.  
+.LP
+An alternative is to provide a pointer to the function of interest
+which is initialized to zero.  The function tests and initializes this
+area if necessary.  Later, the area should be free'd, and the single
+(user visible) routine free_hook does this, calling the specific free
+routine needed for the hook.
+.SH EXAMPLE
+.SH RETURN VALUES
+.SH LIBRARY
+.SH DIAGNOSTICS
+.SH "SEE ALSO"
+.nf
+dbmatches
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: hook.3,v 1.1.1.1 1997/04/12 04:19:00 danq Exp $ 

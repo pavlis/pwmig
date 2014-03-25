@@ -1,0 +1,82 @@
+'\" te
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:59 $
+.EQ
+delim $$
+.EN
+.TH ABSPATH 3 "$Date: 1997/04/12 04:18:59 $"
+.SH NAME
+abspath, dirbase \- utilities for pathname manipulation
+.SH SYNOPSIS
+.nf
+void dirbase ( char *path, char *dir, char *base );
+int abspath ( char *relp, char *absp );
+.fi
+.SH DESCRIPTION
+\fBDirbase\fR separates a path into directory and basename 
+components, returning the components in the supplied strings
+\fIdir\fR and \fIbase\fR.  It is the analog of the commands
+dirname and basename.  Note that it does not check that 
+the path exists, or that basename is a file and not a directory
+name.
+.LP
+\fBAbspath\fR takes a pathname in \fIrelp\fR and 
+returns an absolute pathname in \fIabsp\fR.  It uses 
+mappath to return a path in a standard form, eliminating
+the results of the automounter.
+The path must be valid at least up to the last component, because
+abspath uses chdir and getcwd to figure out the absolute
+pathname.  The last component need not exist.
+.SH EXAMPLE
+.nf
+    lemond% cat try_abspath.c
+
+    #include "stock.h"
+
+    main(argc, argv)
+    int             argc;
+    char          **argv;
+    {
+     
+	char aline[STRSZ], absp[STRSZ], 
+	    absdir[STRSZ], absbase[STRSZ] ; 
+
+	Program_Name = argv[0];
+
+	while ( gets(aline) ) 
+	    {
+	    if ( abspath(aline, absp) )
+		clear_register ( 1 ) ; 
+	    dirbase ( absp, absdir, absbase ) ; 
+	    printf ( "%-25s %-25s %-15s %-10s\n", aline, absp, absdir, absbase ) ; 
+	    }
+     
+	return 0 ; 
+    }
+    lemond% try_abspath
+    try_abspath: directory does not exist: a
+    a/b                                                 .                         
+    /export/home/moser/danq   /home/moser/danq          /home/moser     danq      
+    /spc/lemond1/danq         /spc/lemond1/danq         /spc/lemond1    danq      
+    /auto/spc/lemond1/danq    /spc/lemond1/danq         /spc/lemond1    danq      
+    .                         /dsap/sw/src/lib/utility/stock /dsap/sw/src/lib/utility stock     
+    ..                        /dsap/sw/src/lib/utility  /dsap/sw/src/lib utility   
+    ../..                     /dsap/sw/src/lib          /dsap/sw/src    lib       
+    lemond%
+.fi
+.SH RETURN VALUES
+\fBabspath\fR returns 0 for success, -1 for failure.
+\fBdirbase\fR has no return value.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+.IP "directory does not exist"
+.IP "Can't cd to directory"
+.SH "SEE ALSO"
+.nf
+mappath(3), uwd(1)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: abspath.3,v 1.1.1.1 1997/04/12 04:18:59 danq Exp $ 

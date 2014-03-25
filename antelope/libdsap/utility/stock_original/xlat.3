@@ -1,0 +1,51 @@
+.\" $Name:  $ $Date: 1997/09/22 16:31:07 $
+
+.\" Copyright (c) 1997 Boulder Real Time Technologies, Inc.           
+.\"                                                                   
+.\" This software module is wholly owned by Boulder Real Time         
+.\" Technologies, Inc. Any use of this software module without        
+.\" express written permission from Boulder Real Time Technologies,   
+.\" Inc. is prohibited.                                               
+
+.TH XLAT 3 "$Date: 1997/09/22 16:31:07 $"
+.SH NAME
+xlatname, xlatnum \- convert between name and number
+.SH SYNOPSIS
+.nf
+#include "stock.h"
+
+int xlatname ( char *name, Xlat *xlat, int nxlat );
+char * xlatnum ( int num, Xlat *xlat, int nxlat );
+.fi
+.SH DESCRIPTION
+It's frequently useful to have a static translation table 
+between a set of ascii names and some corresponding integers.
+These routines use tables which are arrays of the following
+structure:
+.nf
+
+    typedef struct Xlat {
+	    char *name ;   
+	    int num ;
+    } Xlat ;
+
+.fi
+to provide the translation in either direction.
+.LP
+The script def2xlat can be used to create a file
+containing the necessary Xlat translation table.
+.SH EXAMPLE
+.SH RETURN VALUES
+xlatname returns -1 if no corresponding string is found in the xlat table.
+xlatnum returns 0 if no corresponding integer is found in the xlat table.
+.SH LIBRARY
+-lstock 
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+def2xlat(1)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan

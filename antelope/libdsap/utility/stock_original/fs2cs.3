@@ -1,0 +1,47 @@
+'\" te
+
+
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:00 $
+.EQ
+delim $$
+.EN
+.TH FS2CS 3 "$Date: 1997/04/12 04:19:00 $"
+.SH NAME
+fs2cs, cs2fs \- string conversion between fortran and c
+.SH SYNOPSIS
+.nf
+int fs2cs ( char *dst, char *src, int nmax );
+
+int cs2fs ( char *dst, char *src, int nmax );
+
+int strcpy_pad ( char *dst, int dstmax, char *src, int srcmax, char pad);
+.fi
+.SH DESCRIPTION
+These routines simplify passing strings between c and fortran.  C
+wants strings to be null terminated, while fortran fills the string
+with spaces up to its maximum length.  
+.LP
+\fBfs2cs\fR copies a fortran
+string to a new location, and terminates with null
+after the last non-blank character.
+.LP
+\fBcs2fs\fR copies a c string from src to dst, filling with blanks
+up to the maximum length of the string.
+.LP
+\fBstrcpy_pad\fR copies a string from src to dst, filling with the 
+pad character or truncating as necessary.
+.SH EXAMPLE
+.SH RETURN VALUES
+Both routines return 0.
+.SH LIBRARY
+libstock.a
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: fs2cs.3,v 1.1.1.1 1997/04/12 04:19:00 danq Exp $ 

@@ -1,0 +1,31 @@
+.\" $Name:  $ $Date: 1997/08/14 21:48:54 $
+.TH RUNCMD 3 "$Date: 1997/08/14 21:48:54 $"
+.SH NAME
+runcmd \- execute a command, returning a result and the exit code
+.SH SYNOPSIS
+.nf
+int runcmd ( char *argv[], char **result );
+.fi
+.SH DESCRIPTION
+This is a simple method for running a command as a subprocess, and getting
+a (short) \fIresult\fR back in a string, as well as the exit status.
+\fIargv[]\fR is a standard argv argument list, where argv[0] is the name of
+the command to run; the command should be found along the PATH.
+\fIresult\fR is a string which has been malloc'ed; the caller must free it.
+.SH OPTIONS
+.SH FILES
+.SH ENVIRONMENT
+.SH PARAMETER FILE
+.SH EXAMPLE
+.SH RETURN VALUES
+Returns -1 if unable to create pipes or to fork, 
+otherwise the exit code of the command.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
