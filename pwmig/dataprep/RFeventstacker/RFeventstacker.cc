@@ -101,9 +101,9 @@ Hypocenter MakeHypocentroid(ThreeComponentEnsemble& d,double otime,
     } catch (...){throw;};
 }
 
-DatascopeHandle BuildWaveformView(DatascopeHandle& dbhin,string phase)
+DatascopeHandle BuildWaveformView_wfprocess(DatascopeHandle& dbhin,string phase)
 {
-	const string base_error("RFEventStacker::BuildWaveformView(Fatal Error):  ");
+	const string base_error("RFEventStacker::BuildWaveformView_wfprocess(Fatal Error):  ");
 	try {
 		DatascopeHandle dbh(dbhin);
 		dbh.lookup("hypocentroid");
@@ -164,6 +164,58 @@ DatascopeHandle BuildWaveformView(DatascopeHandle& dbhin,string phase)
 		dbh.rewind();
 		return(dbh);
 	} catch (...) {throw;};
+}
+DatascopeHandle BuildWaveformView_wfdisc(DatascopeHandle& dbhin,string phase)
+{
+    try{
+        const string base_error("RFEventStacker::BuildWaveformView_wfdisc(Fatal Error):  ");
+	DatascopeHandle dbh(dbhin);
+	dbh.lookup("hypocentroid");
+	dbh.natural_join("cluster");
+	dbh.natural_join("event");
+	dbh.natural_join("origin");
+	dbh.subset("orid==prefor");
+	dbh.natural_join("assoc");
+	dbh.natural_join("arrival");
+	string phase_subset;
+	phase_subset="phase=~/"+phase+"/";
+	dbh.subset(phase_subset);
+	if(dbh.number_tuples()<=0) throw SeisppError(base_error
+		+ "hypocentroid->cluster->catalogdata"
+		+ "view has no data");
+	if(SEISPP_verbose) cout << "hypocentroid->cluster->catalogdata "
+		<< "view size="<<dbh.number_tuples()<<endl;
+        list<string> j1,j2;
+        j1.push_back("sta");
+        j1.push_back("wfdisc.time::wfdisc.endtime");
+        j2.push_back("sta");
+        j2.push_back("arrival.time");
+        dbh.leftjoin("wfdisc",j1,j2);
+        dbh.natural_join("sitechan");
+        dbh.natural_join("site");
+        if(SEISPP_verbose) cout << "working view size="
+            << dbh.number_tuples()<<endl;
+        list<string> sortkeys;
+        sortkeys.push_back("gridid");
+        sortkeys.push_back("evid");
+        sortkeys.push_back("sta");
+        sortkeys.push_back("chan");
+        dbh.sort(sortkeys);
+        list<string> gkey;
+        gkey.push_back("gridid");
+        gkey.push_back("evid");
+        gkey.push_back("sta");
+        dbh.group(gkey);
+        if(SEISPP_verbose) cout << "Number of three-component"
+            <<" bundles in working view="<<dbh.number_tuples()<<endl;
+        gkey.clear();
+        gkey.push_back("gridid");
+        gkey.push_back("evid");
+        dbh.group(gkey);
+        dbh.rewind();
+        if(SEISPP_verbose) cout << "Number of ensembles in working view="
+            <<dbh.number_tuples()<<endl;
+    }catch(...){throw;};
 }
 /* exit with a message if a table has any existing content.
 Required for this program.  Bad bad form, but moves us forward.
@@ -464,11 +516,16 @@ int main(int argc, char **argv)
 		string dir=control.get_string("output_dir");
 		string dfile_base=control.get_string("output_dfile_base");
                 string dfile;
+                bool use_wfdisc=control.get_bool("use_wfdisc");
 		DatascopeHandle dbh(string(dbinname),true);
-		DatascopeHandle dbhwf=BuildWaveformView(dbh,phase);
+                DatascopeHandle dbhwf(dbh);
+                if(use_wfdisc)
+		    dbhwf=BuildWaveformView_wfdisc(dbh,phase);
+                else
+		    dbhwf=BuildWaveformView_wfprocess(dbh,phase);
 		if(dbhwf.number_tuples()<1)
 		{
-			cerr << "Waveform view has not data"<<endl
+			cerr << "Waveform view has no data"<<endl
 				<< "This join must be defined:  "
 				<< "(wfprocess->sclink)<-"
 				<< "hypocentroid->cluster->event->origin->assoc->arrival"
