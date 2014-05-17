@@ -26,6 +26,8 @@ wavelet_width_parameter 2.0
 # In this program all data are written to a single file directory set by output_dir
 output_dir stackdata
 output_dfile stackdata.w
+# If true expect to read from wfdisc.  If false, assume wfprocess
+use_wfdisc false
 # The user must never change these 
 Station_mdlist &Tbl{
 sta string
