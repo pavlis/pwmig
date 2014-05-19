@@ -51,6 +51,8 @@ PointSourcePSSynthetic::PointSourcePSSynthetic(VelocityModel_1d& vsmods, Velocit
 	//vmodel is a private member in this class
 	//use the member function VelocityModel_1d::getv(double zin)
 	distance_cutoff=control.get_double("distance_cutoff");
+        // convert that to radians for efficiency
+        distance_cutoff=rad(distance_cutoff);
         //t=pfget_tbl(pf,"point_sources");
         //if(t==NULL) throw SeisppError(base_error + "Missing required parameter point_sources");
 	string pointsrcf=control.get_string("pointsrcfile");
@@ -504,8 +506,9 @@ int PointSourcePSSynthetic::initPtime4event(Hypocenter& hypo){
 	 	}
 		else{		
 		 P_scatter(pointidepth, points[i].lat, hypo.z, deltap , p_2scatter_time, Pinc_theta);
-		 cout<<"P to scatterer time:"<<p_2scatter_time<<", point i:"
+		 /*cout<<"P to scatterer time:"<<p_2scatter_time<<", point i:"
 			<<i<<endl;
+                        */
 		}
 		Ptimearray.push_back(p_2scatter_time);
 		Panglearray.push_back(Pinc_theta);
@@ -543,6 +546,8 @@ ThreeComponentSeismogram PointSourcePSSynthetic::Compute3C(const ThreeComponentS
 		double pointidepth=r0_ellipse(deg(points[i].lat))-points[i].r;
 		//using this dist() to get delta between scattering point and receiver
 		dist(rlat,rlon,points[i].lat,points[i].lon,&delta,&azimuth);
+                // Silently skip points outside cutoff distance
+                if(delta>distance_cutoff) continue;
 		azimuth-=M_PI;//convert backazimuth to azimuth @ receiver
 		// the return values are put into a std::pair struct;
 		// note that rays is a SphericalRayPathArray object;
