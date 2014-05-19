@@ -190,31 +190,45 @@ DatascopeHandle BuildWaveformView_wfdisc(DatascopeHandle& dbhin,string phase)
         j1.push_back("wfdisc.time::wfdisc.endtime");
         j2.push_back("sta");
         j2.push_back("arrival.time");
-        dbh.leftjoin("wfdisc",j1,j2);
-        dbh.natural_join("sitechan");
-        dbh.natural_join("site");
+        dbh.leftjoin(string("wfdisc"),j1,j2);
+        if(SEISPP_verbose) cout << "size after wfdisc join="
+            << dbh.number_tuples()<<endl;
+        dbh.natural_join(string("site"));
+        /* Natural join of sitechan is problematic because it uses
+           chanid.   This has been problematic since dogmatic 
+           requirement of sensor table to run dbfixchanids.   
+           Consequently have to do this with explicit keys */
+        j1.clear();
+        j2.clear();
+        j1.push_back("sta");
+        j1.push_back("chan");
+        j2=j1;
+        j1.push_back("arrival.time");
+        j2.push_back("ondate::offdate");
+        dbh.join(string("sitechan"),j1,j2);
         if(SEISPP_verbose) cout << "working view size="
             << dbh.number_tuples()<<endl;
         list<string> sortkeys;
         sortkeys.push_back("gridid");
-        sortkeys.push_back("evid");
         sortkeys.push_back("sta");
+        sortkeys.push_back("evid");
         sortkeys.push_back("chan");
         dbh.sort(sortkeys);
         list<string> gkey;
         gkey.push_back("gridid");
-        gkey.push_back("evid");
         gkey.push_back("sta");
+        gkey.push_back("evid");
         dbh.group(gkey);
         if(SEISPP_verbose) cout << "Number of three-component"
             <<" bundles in working view="<<dbh.number_tuples()<<endl;
         gkey.clear();
         gkey.push_back("gridid");
-        gkey.push_back("evid");
+        gkey.push_back("sta");
         dbh.group(gkey);
         dbh.rewind();
         if(SEISPP_verbose) cout << "Number of ensembles in working view="
             <<dbh.number_tuples()<<endl;
+        return(dbh);
     }catch(...){throw;};
 }
 /* exit with a message if a table has any existing content.
@@ -422,7 +436,7 @@ TimeSeries build_filter_wavelet(Metadata& control)
         double dt=control.get_double("target_sample_interval");
         if(filter_type=="ricker")
         {
-            return(ricker_wavelet(wavelet_length,dt,width_parameter,AREA));
+            return(ricker_wavelet(wavelet_length,dt,width_parameter,PEAK));
         }
         else if (filter_type=="gaussian")
         {
