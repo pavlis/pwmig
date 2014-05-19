@@ -1,9 +1,0 @@
-This application has an optional plotting mode with matlab.  
-Compile with Makefile.matlab to get plotting features enabled.  Otherwise just type make
-
-run this application requires this evil construct on my laptop:
-setenv DYLD_LIBRARY_PATH /Applications/MATLAB_R2009a.app/bin/maci
-
-This is the Mac equivalent of LD_LIBRARY_PATH.  Do not use this unless you get symbol loading 
-errors with the matlab engine library.
-
