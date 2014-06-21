@@ -2,10 +2,15 @@ azimuth_y_axis	20.0
 origin_latitude	60.5
 origin_longitude	-142.8
 origin_radius	6162.94
-pf_revision_time	1291687224
 x1high	259.928
 x1low	-259.947
 x2high	139.989
 x2low	-140.004
 x3high	209.025
 x3low	-16.614
+# These are used only with the -vectors flag
+use_constant_vector_amplitude false
+vector_scale_factor 100.0
+scalars_tag amplitude
+vectors_tag vectors
+pf_revision_time	1291687224
