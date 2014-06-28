@@ -109,6 +109,7 @@ int main(int argc, char **argv)
             vectors_tag=control.get_string("vectors_tag");
         }
 	vector<Cartesian_point> cplist;
+	vector<Geographic_point> gplist;
 	Geographic_point gp;
 	Cartesian_point cp;
 	double lat,lon,depth,radius;
@@ -216,14 +217,21 @@ int main(int argc, char **argv)
 		if(clip)
 		{
 		    if(bb.inside(cp))
+                    {
 			cplist.push_back(cp);
+                        east.push_back(e);
+                        north.push_back(n);
+                        vertical.push_back(z);
+                        gplist.push_back(gp);
+                    }
 		}
 		else
                 {
 		    cplist.push_back(cp);
-                            east.push_back(e);
-                            north.push_back(n);
-                            vertical.push_back(z);
+                    east.push_back(e);
+                    north.push_back(n);
+                    vertical.push_back(z);
+                    gplist.push_back(gp);
                 }
             }
             break;
@@ -255,6 +263,7 @@ int main(int argc, char **argv)
 	};
 	cout << "POINTS " << cplist.size() << " float"<<endl;
 	vector<Cartesian_point>::iterator cpptr;
+        vector<Geographic_point>::iterator gpptr;
 	for(cpptr=cplist.begin();cpptr!=cplist.end();++cpptr)
 	{
 	    cout << cpptr->x1 << " "
@@ -282,7 +291,7 @@ int main(int argc, char **argv)
             else
             {
                 for(ie=east.begin(),in=north.begin(),iz=vertical.begin();
-                                ie!=east.end();++ie,++in,++iz)
+                            ie!=east.end();++ie,++in,++iz)
                 {
                 /* A bit obscure way to sum squares because
                                of iterators*/
@@ -300,12 +309,23 @@ int main(int argc, char **argv)
                        Note amps values are intentionally NOT scaled by
                        this factor so they retain original vector units. */
                 cout << "VECTORS "<<vectors_tag<<" float"<<endl;
-                for(ie=east.begin(),in=north.begin(),iz=vertical.begin();
-                            ie!=east.end();++ie,++in,++iz)
+                for(ie=east.begin(),in=north.begin(),
+                        iz=vertical.begin(),gpptr=gplist.begin();
+                        ie!=east.end();++ie,++in,++iz,++gpptr)
                 {
-                    cout << (*ie)*vector_scale_factor<<" "
-                         << (*in)*vector_scale_factor <<" "
-                         << (*iz)*vector_scale_factor <<endl;
+                    dmatrix l2r=coords.l2rtransformation(gpptr->lat,
+                            gpptr->lon);
+                    dvector v(3);
+                    v(0)=(*ie);
+                    v(1)=(*in);
+                    v(2)=(*iz);
+                    v=l2r*v;
+                    /* dvector at time this written did not support
+                       multiplication by scale like dmatrix does so
+                       need this loop */
+                    for(i=0;i<3;++i)
+                        v(i)*=vector_scale_factor;
+                    cout << v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
                 }
             }
             break;
