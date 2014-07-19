@@ -42,7 +42,7 @@ using namespace SEISPP;
 enum ObjectType{POINTS,LINES,POLYGONS,VECTORS};
 void usage()
 {
-	cerr << "vtk_gcl_converter [ [-lines|polygons|vectors] -2d -noz -clip -pf pffile] < infile "<<endl
+	cerr << "vtk_gcl_converter [ [-lines|polygons|vectors] -noz -clip -pf pffile] < infile "<<endl
 		<< "Converted data written to stdout.  Default format points"<<endl;
 	exit(-1);
 }
