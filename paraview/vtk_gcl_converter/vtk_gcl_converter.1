@@ -1,0 +1,166 @@
+.TH VTK_GCL_CONVERTER 1
+.SH NAME
+vtk_gcl_converter - converts various primitives for vtk/paraview
+.SH SYNOPSIS
+.nf
+vtk_gcl_converter [ [-lines|polygons|vectors] -noz -clip -pf pffile] 
+.fi
+.SH DESCRIPTION
+.LP
+This is a unix filter that can be used to convert geographic data of 
+several common types to 3D graphic primitives that can be displayed
+with paraview (www.paraview.org).   
+Accepted primitives are:  (1) points (the default), (2) lines, 
+(3) polygons, and (4) vectors. 
+Expected input varies with the
+type of objects to be drawn.  Output is always an ascii format
+"legacy vtk file" that should be given the file extension ".vtk".  
+.LP
+Techniques to view the results also are variable.  
+\fIPoints\fR are not viewable in paraview, but the file output must be 
+passed through the Glphy paraview filter.  Experience has shown that small 
+radius spheres a useful primitive to view points.  \fIlines\fR and 
+\fIpolygons\fR display directly, but commonly require color changes to 
+complement other elements of a 3D scene.  \fIvectors\fR like points need
+to be passed through the Glyph filter to be visible.   However, in the
+vector case the current default glyph is a vector that can be displayed 
+well provided a reasonable scaling is used to make the vectors visible.
+.LP
+In all cases the input data is geographic and converted for viewing by
+paraview to a local coordinate system defined by the parameter file
+(see below for details).  
+.SH OPTIONS
+.LP
+First note the -lines, -vectors, or -polygon switch.   If none of these
+appear the default of points is used.  If more than one appear the last one 
+in the argument list will be used.  
+.IP -noz
+If this flag appears the depth coordinate is set to zero for all input.
+This flag is only used for points or lines.   I is simply ignored for
+other inputs.
+.IP -clip
+This is a boolean switch.  If this flag is given the output will
+be clipped in a box defined by the
+parameter file.  This option is not available for polygons because
+of the complexity of truncating polygons at the edge of a box.   For 
+the -line option the curves will be truncated at the clip edge not 
+extended to the edge of the box.  
+This option is not available for polygons because
+of the complexity of truncating polygons at the edge of a box.   For 
+the -line option the curves will be truncated at the clip edge not 
+extended to the edge of the box.  
+.IP -pf
+Use pffile instead of the default of vtk_gcl_converter.pf.   Very 
+important warning about this program is that it does not provide
+the normal antelope pf feature of a path search but the pf file
+must be in the current directory.   This was done to allow this
+program to be used outside of antelope.
+.SH FILES
+.LP
+The input is always assumed to be a simple ascii file with columns
+of numbers.   Files can have comments defined as having a # sign in 
+column 1 of the file.   (Warning:  no leading blank characters 
+should appear before a # sign as the test used is the character in 
+column 1.)  A column header line with a leading # sign is thus strongly
+advised for all input files.  Note that in all cases longitude and
+latitude input are assumed to be in decimal degrees and depths are 
+assumed to be in kilometers.
+.LP
+\fIPoint\fR data have the simplest format.  Three columns of free field
+input in this order:  longitude, latitude, and depth. 
+.LP
+\fIVector\fR data have added columnes to define the vector to be drawn
+at a given position.   The order is:
+longitude, latitude, depth, east component of vector, north component
+of vector, vertical component of vector.   Note the vector is assumed
+in geographic coordinates at the point give.  That is, east, north,
+and up positive with north defined by geographic north at that point.
+.LP
+\fILines\fR and \fIpolygons\fR assume a gmt style line drawing format.
+That is, the basic file is three columns like points (longitude,
+latitude, and depth values).  These points are linked by line segments.
+Line breaks are defined by a break sentinel.   This is currently frozen
+as the gmt default "<" character.  
+.SH PARAMETER FILE
+.LP
+The most important parameters for this program are the following 
+that define the Cartesian coordinate system the data are translated
+to for viewing with paraview.  \fIorigin_latitude\fR,
+\fIorigin_longitude\fR, and \fIorigin_radius\fR define the origin 
+of the coordinate system (latitude and longitude in degrees and
+radius in km).  Note that elevation data are measured relative to 
+a reference ellipsoid used in gclgrid library so this radius needs
+to be consistent with that definition.   One final important
+coordinate parameter is \fIazimuth_y_axis\fR, which is the azimuth of
+the Cartesian y axis from local north at the origin. This is 
+inherited from the coordinate system used in libgclgrid for defining
+a regular grid rotated by a specified angle.   
+This angle is assumed in degrees.
+.LP
+The following parameters are used to define the bounding box when
+the -clip option is requested:  
+\fIx1low, x1high, x2low, x2high, x3low,\fR and \fIx3high\fR.
+These define a box in the Cartesian system with clipping outside
+the range of the low to high value.  All are assume in units of km.
+.LP
+The following are used only with the -vector data type:
+\fIuse_constant_vector_amplitude, vector_scale_factor, scalars_tag_amplitude,
+vectors_tag,\fR and \fIvectors_tag\fR.  
+The most important parameter that may require tweeking is \fIvector_scale_factor\fR.
+All input vector data are multiplied by this constant to be drawn at a 
+size that will be visible in the given scene.  That constant depends on the
+scale of the scene.  Note this is just a base scale factor as the 
+Glyph filter in paraview has a scaling parameter that can be used to tweek
+the scale factor interactively.   Generally one should choose this to 
+make sure the original vectors are at least visible so you aren't confused 
+by no visible vectors.
+If \fIuse_constant_amplitude\fR is set true (default is false) all vectors
+will be first converted to unit vectors before applying the scale factor.
+Two final parameters are used to set tags in the output vtk file:  
+\fIscalars_tag\fR defines that tag to label the legend for a color
+map applied to vector amplitude and \Ivectors_tag\fR sets the tag on 
+the vectors section of the output vtk file.  At this writing I do not
+know how this could be used as it seems like pure baggage for now. Made
+it a variable as there is likely some use I don't know about.
+.SH EXAMPLE
+.LP
+To convert a set polygon data in file polys.dat.
+.nf
+vtk_gcl_converter -polygons < polys.dat > polys.vtk
+.fi
+Note that the .vtk extension is used by paraview to recognize this as
+a "legacy vtk file".
+.LP
+A less than obvious example of the use of this program is
+to draw pscoast data that can be obtained from gmt using 
+forms similar to this:
+.nf
+pscoast -R-94/-80/32/42 -JM5.0 -Df -m | vtk_gcl_converter -lines > coast.vtk
+.fi
+where the critical parameters are the region (defined by -R) and the 
+-m flag that caues pscoast to spit out coordinates instead of a postscript
+graphic (see GMT documentation for details).   
+.SH DIAGNOSTICS
+.LP
+Various "MetadataGetError" messages can appear for parameter file 
+deficiences.
+.SH "SEE ALSO"
+.nf
+makegclgrid(1)
+.fi
+.SH "BUGS AND CAVEATS"
+.LP
+This program has evolved with feature creep.  It started with 
+points and line and everything else is version creep.   
+There are thus a variety of inconsistencies.   
+.LP
+Because the program is a unix filter just typing the command name 
+can produce confusing output.  Use a --help or any other random illegal
+argument to get the usage line.  That is not the ideal way to do that.
+.SH AUTHOR
+.nf
+Gary L. Pavlis
+Department of Geological Sciences
+Indiana University
+pavlis@indiana.edu
+.fi
