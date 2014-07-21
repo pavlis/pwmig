@@ -136,11 +136,28 @@ void build_db_view(DatascopeHandle& dbh, Metadata& control,Pf *pf)
 		j2.push_back("sta");
 		j2.push_back("arrival.time");
 		dbh.leftjoin("wfdisc",j1,j2);
+		if(SEISPP_verbose) cout << "wfdisc<-arrival join size="
+			<<dbh.number_tuples()<<endl;
 		dbh.natural_join("assoc");
 		dbh.natural_join("origin");
 		dbh.natural_join("event");
 		dbh.subset("orid==prefor");
-		dbh.natural_join("sitechan");
+		if(SEISPP_verbose) 
+                    cout << "wfdisc,<-arrival->assoc->origin->event size="
+			<<dbh.number_tuples()<<endl;
+                /* Natural join is problematic - use explicity keys
+                   so we don't have to run dbfixchanids which requires
+                   a sensor table.  */
+		//dbh.natural_join("sitechan");
+                j1.clear();
+		j1.push_back("sta");
+                j1.push_back("chan");
+		j1.push_back("wfdisc.time::wfdisc.endtime");
+                j2.clear();
+                j2.push_back("sta");
+                j2.push_back("chan");
+                j2.push_back("ondate::offdate");
+                dbh.join("sitechan",j1,j2);
 		dbh.natural_join("site");
 		if(SEISPP_verbose) cout << "working view size="
 			<<dbh.number_tuples()<<endl;
@@ -153,6 +170,8 @@ void build_db_view(DatascopeHandle& dbh, Metadata& control,Pf *pf)
 		gkey.push_back("evid");
 		gkey.push_back("sta");
 		dbh.group(gkey);
+		if(SEISPP_verbose) cout << "Number of event:sta groups="
+			<<dbh.number_tuples()<<endl;
 	}
 	else if(dbviewmode=="use_wfprocess")
 	{
@@ -453,6 +472,9 @@ int main(int argc, char **argv){
                 syndata.rtoa(atime);
                 string algorithm("migsimulation");
                 syndata.put("wfprocess.algorithm",algorithm);
+                /* This is hack fix for handling data read with wfdisc
+                   In that case timetype is not set so we force it always*/
+                syndata.put("timetype","a");
                 int wfrec=dbsave(syndata,dbhout.db,string("wfprocess"),
                         output_mdl,am);
                 int pwfid;
