@@ -180,6 +180,9 @@ void build_db_view(DatascopeHandle& dbh, Metadata& control,Pf *pf)
 		dbh.subset("orid==prefor");
 		dbh.natural_join("assoc");
 		dbh.natural_join("arrival");
+		if(SEISPP_verbose) 
+		  cout << "Number of rows in event->origin->assoc->arrival view="
+		  	<< dbh.number_tuples()<<endl;
 		DatascopeHandle ljhandle(dbh);
 		ljhandle.lookup("wfprocess");
 		ljhandle.natural_join("sclink");
@@ -188,7 +191,15 @@ void build_db_view(DatascopeHandle& dbh, Metadata& control,Pf *pf)
 		jk.push_back("evid");
 		jk.push_back("sta");
 		dbh.join(ljhandle,jk,jk);
-		dbh.natural_join("site");
+		if(SEISPP_verbose) 
+		  cout << "Number of rows of view after leftjoin of wfprocess view"
+		  	<< dbh.number_tuples()<<endl;
+		jk.clear();
+		jk.push_back("sta");
+		dbh.join("site",jk,jk);
+		if(SEISPP_verbose) 
+		  cout << "Number of rows in final working view="
+		  	<< dbh.number_tuples()<<endl;
 		list<string> sortkeys;
 		sortkeys.push_back("evid");
 		sortkeys.push_back("sta");
@@ -202,6 +213,8 @@ void build_db_view(DatascopeHandle& dbh, Metadata& control,Pf *pf)
         list<string> group_keys;
         group_keys.push_back("evid");        
         dbh.group(group_keys);        
+	if(SEISPP_verbose) 
+           cout << "Number of ensembles to process="<<dbh.number_tuples()<<endl;
         dbh.rewind();
     }catch(...) {throw;};
 }
