@@ -3,7 +3,7 @@ PF=migsimulation.pf
 # F77LIBS required by layered model simulator 
 ldlibs=-lseispp -lsynthetic -ltrvltm -lbrttutil $(TRLIBS) $(DBLIBS)  \
        $(F77LIBS) \
-               -lperf -lgclgrid -lpwmig 
+               -lperf -lgclgrid -lpwmig -lseispp
 
 include $(ANTELOPEMAKE) 
 CXXFLAGS += -g
