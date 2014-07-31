@@ -9,8 +9,8 @@ x2low	-140.004
 x3high	209.025
 x3low	-16.614
 # These are used only with the -vectors flag
-use_constant_vector_amplitude false
 vector_scale_factor 100.0
 scalars_tag amplitude
 vectors_tag vectors
+read_vector_attribute false
 pf_revision_time	1291687224

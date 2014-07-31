@@ -104,7 +104,7 @@ These define a box in the Cartesian system with clipping outside
 the range of the low to high value.  All are assume in units of km.
 .LP
 The following are used only with the -vector data type:
-\fIuse_constant_vector_amplitude, vector_scale_factor, scalars_tag_amplitude,
+\fIread_vector_attribure, vector_scale_factor, scalars_tag_amplitude,
 vectors_tag,\fR and \fIvectors_tag\fR.  
 The most important parameter that may require tweeking is \fIvector_scale_factor\fR.
 All input vector data are multiplied by this constant to be drawn at a 
@@ -114,11 +114,12 @@ Glyph filter in paraview has a scaling parameter that can be used to tweek
 the scale factor interactively.   Generally one should choose this to 
 make sure the original vectors are at least visible so you aren't confused 
 by no visible vectors.
-If \fIuse_constant_amplitude\fR is set true (default is false) all vectors
-will be first converted to unit vectors before applying the scale factor.
-Two final parameters are used to set tags in the output vtk file:  
-\fIscalars_tag\fR defines that tag to label the legend for a color
-map applied to vector amplitude and \Ivectors_tag\fR sets the tag on 
+If \fIread_vector_attribure\fR is set true (default is false) the 
+scalars attribute that paraview uses to for color mapping will be read
+from the input file.  
+\fIscalars_tag\fR defines the tag to label the legend for the 
+associated color map for this vector attribute.
+\Ivectors_tag\fR sets the tag on 
 the vectors section of the output vtk file.  At this writing I do not
 know how this could be used as it seems like pure baggage for now. Made
 it a variable as there is likely some use I don't know about.

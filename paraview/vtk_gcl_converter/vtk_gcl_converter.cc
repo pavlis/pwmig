@@ -97,16 +97,15 @@ int main(int argc, char **argv)
         double x3l=control.get_double("x3low");
         double x3h=control.get_double("x3high");
         BoundingBox bb(x1l,x1h,x2l,x2h,x3l,x3h);
-        bool use_constant_vector_amplitude(false);
         double vector_scale_factor(1.0);
         string scalars_tag,vectors_tag;
+        bool read_vector_attribute;
         if(objtype==VECTORS)
         {
-            use_constant_vector_amplitude=control.get_bool(
-                    "use_constant_vector_amplitude");
             vector_scale_factor=control.get_double("vector_scale_factor");
             scalars_tag=control.get_string("scalars_tag");
             vectors_tag=control.get_string("vectors_tag");
+            read_vector_attribute=control.get_bool("read_vector_attribute");
         }
 	vector<Cartesian_point> cplist;
 	vector<Geographic_point> gplist;
@@ -124,7 +123,7 @@ int main(int argc, char **argv)
 		typedef list<int> LineLinks;
 		LineLinks thissegment;
 		list<LineLinks> segments;
-        list<double> east,north,vertical;  //for VECTORS
+        list<double> east,north,vertical,attributes;  //for VECTORS
 		char line[256];
 		int i=0;
         switch(objtype)
@@ -208,8 +207,21 @@ int main(int argc, char **argv)
 	    while(cin.getline(line,256))
 	    {
                 double e,n,z;
+                double magvec;
+                double vector_attribute;
+                stringstream ss(line);
+                /*
                 sscanf(line,"%lf%lf%lf%lf%lf%lf",
                                 &lat,&lon,&depth,&e,&n,&z);
+                                */
+                ss >> lon; ss >> lat; ss >> depth;
+                  ss>>e;  ss>>n;  ss>>z;
+                magvec=sqrt(e*e+n*n+z*z);
+                if(read_vector_attribute) 
+                    ss >>vector_attribute;
+                else
+                    /* Default is amplitude */
+                    vector_attribute=magvec;
 		gp.lat=rad(lat);
 		gp.lon=rad(lon);
 		gp.r=r0_ellipse(gp.lat)-depth;
@@ -223,6 +235,7 @@ int main(int argc, char **argv)
                         north.push_back(n);
                         vertical.push_back(z);
                         gplist.push_back(gp);
+                        attributes.push_back(vector_attribute);
                     }
 		}
 		else
@@ -232,6 +245,7 @@ int main(int argc, char **argv)
                     north.push_back(n);
                     vertical.push_back(z);
                     gplist.push_back(gp);
+                    attributes.push_back(vector_attribute);
                 }
             }
             break;
@@ -274,7 +288,6 @@ int main(int argc, char **argv)
 	list<LineLinks>::iterator llptr;
 	LineLinks::iterator lineptr;
         list<double>::iterator ie,in,iz,ia;
-        list<double> amps;
         int nv;
         switch(objtype)
 	{
@@ -284,35 +297,17 @@ int main(int argc, char **argv)
             cout << "POINT_DATA "<<nv<<endl;
             cout << "SCALARS "<<scalars_tag<<" float 1"<<endl;
             cout << "LOOKUP_TABLE default"<<endl;
-            if(use_constant_vector_amplitude)
-            {
-                for(i=0;i<nv;++i) amps.push_back(1.0);
-            }
-            else
-            {
-                for(ie=east.begin(),in=north.begin(),iz=vertical.begin();
-                            ie!=east.end();++ie,++in,++iz)
-                {
-                /* A bit obscure way to sum squares because
-                               of iterators*/
-                    double a;
-                    a=(*ie)*(*ie);
-                    a+=(*in)*(*in);
-                    a+=(*iz)*(*iz);
-                    a=sqrt(a);
-                    amps.push_back(a);
-                }
-                for(ia=amps.begin();ia!=amps.end();++ia)
+            for(ia=attributes.begin();ia!=attributes.end();++ia)
                         cout << *ia <<endl;
-                    /* Last thing is to write the vectors block.  These
+             /* Last thing is to write the vectors block.  These
                        we scale by the factor given in the parameter file.
                        Note amps values are intentionally NOT scaled by
                        this factor so they retain original vector units. */
-                cout << "VECTORS "<<vectors_tag<<" float"<<endl;
-                for(ie=east.begin(),in=north.begin(),
+            cout << "VECTORS "<<vectors_tag<<" float"<<endl;
+            for(ie=east.begin(),in=north.begin(),
                         iz=vertical.begin(),gpptr=gplist.begin();
                         ie!=east.end();++ie,++in,++iz,++gpptr)
-                {
+            {
                     dmatrix l2r=coords.l2rtransformation(gpptr->lat,
                             gpptr->lon);
                     dvector v(3);
@@ -326,7 +321,6 @@ int main(int argc, char **argv)
                     for(i=0;i<3;++i)
                         v(i)*=vector_scale_factor;
                     cout << v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
-                }
             }
             break;
         case POLYGONS:
