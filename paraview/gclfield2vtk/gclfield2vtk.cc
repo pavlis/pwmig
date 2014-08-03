@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <float.h>
 #include "stock.h"
-#include "elog.h"
 #include "pf.h"
 #include "seispp.h"
 #include "Metadata.h"
@@ -62,7 +61,7 @@ void agc_scalar_field(GCLscalarfield3d& g, int iwagc)
 
 void usage()
 {
-	cerr << "gclfield2vtk db|file outfile [-i -g gridname -f fieldname -r remapgridname "
+	cerr << "gclfield2vtk db|file outfile [-i -g gridname -f fieldname -r "
 		<< "-odbf outfieldname -xml -binary -pf pffile] -V" << endl;
 	exit(-1);
 }
@@ -73,7 +72,6 @@ int main(int argc, char **argv)
 
         bool dbmode(true);  // default is db input mode
         ios::sync_with_stdio();
-	elog_init(argc,argv);
 	if(argc<3) usage();
 	string dbname(argv[1]);
         string infile(argv[1]);  // redundant but easier to do this way
@@ -83,7 +81,6 @@ int main(int argc, char **argv)
 	const string nodef("NOT DEFINED");
 	string gridname(nodef);
 	string fieldname(nodef);
-	string remapgridname(nodef);
 	bool saveagcfield(false);
 	string outfieldname;
 	bool remap(false);
@@ -102,11 +99,7 @@ int main(int argc, char **argv)
                     dbmode=false;
 		else if(argstr=="-V")
 		{
-		    cbanner("1.0",
-			"gclfield2vtk db outfile [-pf pffile]",
-			"Gary L. Pavlis",
-			"Indiana University",
-			"pavlis@indiana.edu");
+                    usage();
 		}
 		else if(argstr=="-g")
 		{
@@ -122,9 +115,6 @@ int main(int argc, char **argv)
 		}
 		else if(argstr=="-r")
 		{
-			++i;
-			if(i>=argc)usage();
-			remapgridname=string(argv[i]);
 			remap=true;
 		}
 		else if(argstr=="-odbf")
@@ -149,8 +139,10 @@ int main(int argc, char **argv)
 	}
         Pf *pf;
         if(pfread(const_cast<char *>(pffile.c_str()),&pf))
-                elog_die(1,"pfread error\n");
-
+        {
+            cerr << "pfread error with pf file="<<pffile<<endl;
+            exit(-1);
+        }
 	try {
         	Metadata control(pf);
                 DatascopeHandle dbh;
@@ -175,41 +167,29 @@ int main(int argc, char **argv)
 		the -r flag was used */
 		if(!remap) remap=control.get_bool("remap_grid");
 		BasicGCLgrid *rgptr;
+                rgptr=NULL;
 		if(remap)
 		{
-                        if(!dbmode)
-                        {
-                            cerr << "Illegal argument combination"<<endl
-                                << "remap option only available with db input"
-                                <<endl;
-                            exit(-1);
-                        }
-			if(remapgridname==nodef)
-				remapgridname=control.get_string("remapgridname");
-			cout << "Remapping emabled.  "
-				<<"Will use coordinate system of grid "
-				<< remapgridname<<endl;
-			int griddim=control.get_int("remapgrid_number_dimensions");
-			if(griddim==3)
-			{
-                                GCLgrid3d *gtmp;
-                                 gtmp=new GCLgrid3d(dbh,
-					remapgridname);
-				rgptr=dynamic_cast<BasicGCLgrid*>(gtmp);
-			}
-			else if(griddim==2)
-			{
-                            GCLgrid *gtmp;
-                            gtmp=new GCLgrid(dbh,
-					remapgridname);
-			    rgptr=dynamic_cast<BasicGCLgrid*>(gtmp);
-			}
-			else
-			{
-				cerr << "Illegal remap grid dimension="
-					<<griddim<<endl
-					<<"Fix parameter file"<<endl;
-			}
+			cout << "Remapping enabled"<<endl;
+                        /* We create a small temporary GCLgrid to allow
+                           use of remap_grid procedure.   */
+                        double lat0,lon0,r0,azm;
+                        lat0=control.get_double("latitude_origin");
+                        lon0=control.get_double("longitude_origin");
+                        r0=control.get_double("radius_origin");
+                        azm=control.get_double("azimuth_y_axis");
+                        cout << "Origin lat,lon,r="
+                            <<lat0<<", "<<lon0<<", "<<r0<<endl;
+                        cout << "Coordinate system y axis rotation="
+                            <<azm<<endl;
+                        lat0=rad(lat0);
+                        lon0=rad(lon0);
+                        azm=rad(azm);
+                        GCLgrid *gtmp=new GCLgrid(2,2,string("reference"),
+                                lat0,lon0,r0,azm,
+                                1.0,1.0,0,0);
+                        rgptr=dynamic_cast<BasicGCLgrid*>(gtmp);
+
 		}
 			
 		bool SaveAsVectorField;
@@ -248,7 +228,7 @@ int main(int argc, char **argv)
 			{
 				// Used to make this optional.  force
 				//if(field!=(*rgptr))
-					remap_grid(dynamic_cast<GCLgrid3d&>(field),
+				remap_grid(dynamic_cast<GCLgrid3d&>(field),
 						*rgptr);
 			}
 			if(rmeanx3) remove_mean_x3(field);
@@ -325,7 +305,7 @@ int main(int argc, char **argv)
 			if(remap)
 			{
 				//if(g!=(*rgptr))
-					remap_grid(g,*rgptr);
+				remap_grid(g,*rgptr);
 			}
 			npoly=vtk_output_GCLgrid(g,outfile);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
@@ -372,6 +352,6 @@ int main(int argc, char **argv)
         }
 	catch (...)
 	{
-		elog_die(1,"Something threw an unhandled excepton\n");
+	    cerr << "Something threw an unhandled exception"<<endl;
 	}
 }

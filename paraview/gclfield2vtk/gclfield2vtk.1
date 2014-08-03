@@ -4,7 +4,7 @@ gclfield2vtk \- convert internal gclfield objects to vtk format files
 .SH SYNOPSIS
 .nf
 \fBgclfield2vtk\fR db|infile outfile [-i | -g gridname -f fieldname] 
-             -r remapgridname -odbf outfieldname -xml|-binary -pf pffile] -V
+             -odbf outfieldname -r -xml|-binary -pf pffile] -V
 .fi
 .SH DESCRIPTION
 .LP
@@ -34,41 +34,51 @@ This is ignored if the -i flag is used.
 Defines the related key for the field name used to index the desired 
 data.  This is ignored if the -i flag is used.
 .IP -r
-Because visualizations use a Cartesian coordinate system it is frequently
-essential to make sure a set of outputs are in a common reference frame. 
-We commonly do this by defining one grid as a master.  Use the -r option 
-to make sure all conversions use the coordinate system of this master.
+Because visualizations use a Cartesian coordinate system it is always
+essential to make sure a set of scene components are in a common reference frame. 
+This flag is a switch to turn on this option (default is false). 
+When used the program will look for remap parameters in the parameter file 
+(see below).
 .IP -odbf
-This is most commonly used to build apply an internal agc operator to 
+This is most commonly used to apply an internal agc operator to 
 a field and save the result.  This parameter should be avoided an 
 will probably eventually be depricated.
 .IP -xml
-Ue the -xml to have the output written in vtk's xml format.
+Use the -xml to have the output written in vtk's xml format.
+This is strongly recommended for large 3D structured grid as the resulting
+files are platform indepenent binary files that are much faster to read than
+the default ascii file.
 .IP -binary
-Use the -binary format to have the output written as binary.  The program
-should automatically test byte order and flag the file appropriately.
+Use the -binary format to have the output written as binary.  This is 
+comparable to -xml but the vtk control parameters are written in ascii 
+instead of being coded in xml.  This format may be slightly faster to 
+read than -xml, but the authors experience is it is not significant if 
+true at all.   Generally -xml should be used in preference to -binary 
+as the output file is more generic.
 .IP -pf
 Use pffile.pf as the alternative parameter file to the standard gclfield2vtk.pf.
 .SH FILES
 .LP
-The output file is a legacy VTK file described in documentation for the Visualization Tool Kit (VTK) library.
+The default output file is a legacy VTK file described in documentation 
+for the Visualization Tool Kit (VTK) library.
+Structured grids can optionally be written in the newer XML format also
+described in the VTK documentation.
 .SH PARAMETER FILE
 .LP
-Several parameters can be viewed as defaults for command line arguments.  
-The \fBgridname\fR parameter is the default for -g, 
-\fBfieldname\fR provides the default for -f, and 
-\fBremapgridname\fR provides the default for -r. 
-Related is the \fBremap_grid\fR boolean.  If false (the default) \fBremapgridname\fR is ignored 
-unless the -r command line argument is used.  Using the -r command line options implicitly turns on 
-the remap option.
+Two parameters can be viewed as defaults for command line arguments.  
+The \fBgridname\fR parameter is the default for -g abd
+\fBfieldname\fR provides the default for -f.
 .LP
 The \fBfieldtype\fR defines the type of grid object the program will convert.  Allowed 
-options are:  grid2d, scalar2d, scalar3d, and vector3d.  Note that vector3d currently produces
-a sequence of scalar field objects for with each vector component in a different file.
+options are:  grid2d, scalar2d, scalar3d, and vector3d.  
 .LP
-The \fBremapgrid_number_dimensions\fR parameter is used to sort out a potential ambiguity in 
-the grid geometry used when remapping is enabled.  That is, the GCLgrid library allows both 2d 
-and 3d structured grids.  This assure the coordinate system to use for mapping is unambiguous.
+Several parameters are linked to the -r option:  
+\fBorigin_latitude, origin_longitude, radius_origin,\fR and \fBazimuth_y_axis\fR.  
+The first three specific the latitude (degrees), longitude (degrees), and radius (km)
+of the Cartesian coordinate origin.  The coordinate axes can be rotated by the 
+angle specified by \fBazimuth_y_axis\fR.   As the name implies this is the rotation 
+in the geographic azimuth sense of the y (north) axis in degrees.  i.e. a positive 
+angle rotates the y (north) axis toward the east direction.
 .LP
 The boolean parameter \fBsave_as_vector_field\fR is a switch for handling vector field data.
 When true output is VTK's vector field format.  When false vector fields are output with one 
@@ -102,6 +112,7 @@ numbers that overflow the exponent field on floats.  (e.g. a number like
 1.6698897e-258 will cause the VTK reader for legacy VTK files to throw
 an exception and cause paraview, which uses this routine, to abort).  
 For this reason use only the -xml or -binary option on 64 bit platforms. 
+Later versions of paraview may have fixed this bug.
 .IP (4)
 This program is a bit of an abomination in that as it evolved it developed a scitzo approach to 
 parameter information.  The command line arguments were added to allow easier interaction with
