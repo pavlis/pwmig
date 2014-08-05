@@ -239,7 +239,8 @@ int main(int argc, char **argv)
 			}
 			if(rmeanx3) remove_mean_x3(field);
 			if(apply_agc) agc_scalar_field(field,iwagc);
-			output_gcl3d_to_vtksg(field,outfile,component_names,xmloutput,binaryout);
+			output_gcl3d_to_vtksg<GCLscalarfield3d&>(field,outfile,
+                                component_names,xmloutput,binaryout);
 			if(saveagcfield) 
 				field.save(dbh,string(""),fielddir,
 				  outfieldname,outfieldname);
@@ -267,8 +268,8 @@ int main(int argc, char **argv)
 			}
                         if(SaveAsVectorField)
                         {
-                            output_gcl3d_to_vtksg(vfield,outfile,component_names,
-                                    xmloutput,binaryout);
+                            output_gcl3d_to_vtksg<GCLvectorfield3d&>(vfield,outfile,
+                                    component_names,xmloutput,binaryout);
                         }
                         else
                         {
@@ -286,7 +287,7 @@ int main(int argc, char **argv)
 					ss<<".vtk";
                                 thiscomponent.clear();
                                 thiscomponent.push_back(component_names[i]);
-				output_gcl3d_to_vtksg(*sfptr,ss.str(),
+				output_gcl3d_to_vtksg<GCLscalarfield3d&>(*sfptr,ss.str(),
                                         thiscomponent,xmloutput,binaryout);
 				/*This is not ideal, but will do this now
 				for expedience.  This creates a series of 

@@ -1,11 +1,5 @@
-#include <vtkStructuredGrid.h>
-#include <vtkStructuredGridWriter.h>
-#include <vtkXMLStructuredGridWriter.h>
-#include <vtkPoints.h>
-#include <vtkDoubleArray.h>
-#include <vtkPointData.h>
-#include <string>
 #include <iostream>
+#include "vtk_output.h"
 #include "gclgrid.h"
 
 using namespace std;
@@ -113,37 +107,3 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLvectorfield3d &g,vector<string> tag
 
 	return(pGrid);
 }
-
-
-void output_gcl3d_to_vtksg(GCLgrid3d &g, const string filename,
-                vector<string> tags,
-		bool use_xml = false, bool use_binary=true)
-{
-	
-	vtkStructuredGrid *pGrid = 0; 	
-
-	pGrid = convert_gcl3d_to_vtksg(g,tags);
-	if(use_xml)
-	{
-		vtkXMLStructuredGridWriter *pWriter
-			= vtkXMLStructuredGridWriter::New();
-		pWriter->SetFileName(filename.c_str());
-		pWriter->SetInput(pGrid);
-		pWriter->Write();
-		pWriter->Delete();
-	}
-	else
-	{
-		vtkStructuredGridWriter *pWriter
-			= vtkStructuredGridWriter::New();
-		pWriter->SetFileName(filename.c_str());
-		pWriter->SetFileTypeToBinary();
-		pWriter->SetInput(pGrid);
-		pWriter->Write();
-		pWriter->Delete();
-	}
-	pGrid->Delete();
-}
-
-
-
