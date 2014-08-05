@@ -64,6 +64,9 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLvectorfield3d &g,vector<string> tag
 
 	pData->SetNumberOfComponents(g.nv);
 	pData->SetNumberOfTuples(g.n1 * g.n2 * g.n3);
+        /* This name gets set as the "Scalars_" field that prepends component
+           names */
+        pData->SetName("Vector_");
 	int k,kk,l;
         string null_name("component");
         if( (g.nv) != (tags.size()) )
