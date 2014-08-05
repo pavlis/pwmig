@@ -21,7 +21,9 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLscalarfield3d &g, vector<string> ta
 
 	pData->SetNumberOfTuples(g.n1 * g.n2 * g.n3);
 	pData->SetNumberOfComponents(1);
+        /* this may not be necessary */
         pData->SetComponentName(0,tag[0].c_str());
+        pData->SetName(tag[0].c_str());
 
 	int kk;
 	for(int k=g.n3-1,kk=0;k>=0;k--,kk++)

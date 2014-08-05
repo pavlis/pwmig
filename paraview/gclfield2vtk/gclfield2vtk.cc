@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         string infile(argv[1]);  // redundant but easier to do this way
 	string outfile(argv[2]);
 	string argstr;
-	string pffile("gclfield2vtk");
+	string pffile("gclfield2vtk.pf");
 	const string nodef("NOT DEFINED");
 	string gridname(nodef);
 	string fieldname(nodef);
@@ -362,6 +362,10 @@ int main(int argc, char **argv)
         catch(std::exception& sexcp)
         {
             cerr << sexcp.what();
+        }
+        catch(SeisppError& serr)
+        {
+            serr.log_error();
         }
 	catch (...)
 	{
