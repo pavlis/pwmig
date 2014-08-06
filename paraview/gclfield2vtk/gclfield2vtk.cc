@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <list>
+#include <vector>
 #include <stdio.h>
 #include <float.h>
 #include "stock.h"
@@ -57,8 +59,15 @@ void agc_scalar_field(GCLscalarfield3d& g, int iwagc)
 			for(k=0;k<g.n3;++k) g.val[i][j][k]=x3vals[k]/nrmx3v;
 		}
 }
-		
-
+vector<string> list_to_vector(list<string> l)
+{
+    list<string>::iterator lptr;
+    vector<string> result;
+    result.reserve(l.size());
+    for(lptr=l.begin();lptr!=l.end();++lptr)
+        result.push_back(*lptr);
+    return(result);
+}
 void usage()
 {
 	cerr << "gclfield2vtk db|file outfile [-i -g gridname -f fieldname -r "
@@ -77,7 +86,7 @@ int main(int argc, char **argv)
         string infile(argv[1]);  // redundant but easier to do this way
 	string outfile(argv[2]);
 	string argstr;
-	string pffile("gclfield2vtk");
+	string pffile("gclfield2vtk.pf");
 	const string nodef("NOT DEFINED");
 	string gridname(nodef);
 	string fieldname(nodef);
@@ -127,24 +136,21 @@ int main(int argc, char **argv)
 		else if(argstr=="-xml")
 		{
 			xmloutput=true;
+                        binaryout=false;
 		}
 		else if(argstr=="-binary")
 		{
 			binaryout=true;
+                        xmloutput=false;
 		}
 		else
 		{
 			usage();
 		}
 	}
-        Pf *pf;
-        if(pfread(const_cast<char *>(pffile.c_str()),&pf))
-        {
-            cerr << "pfread error with pf file="<<pffile<<endl;
-            exit(-1);
-        }
 	try {
-        	Metadata control(pf);
+                
+        	PfStyleMetadata control=pfread(pffile);
                 DatascopeHandle dbh;
                 if(dbmode)
                     dbh=DatascopeHandle(dbname,true);
@@ -162,6 +168,9 @@ int main(int argc, char **argv)
                 {
                     nv_expected=control.get_int("nv_expected");
                 }
+                string scalars_tag=control.get_string("scalars_name_tag");
+                list<string> complist=control.get_tbl(string("data_component_names"));
+                vector<string> component_names=list_to_vector(complist);
 		/* Slightly odd logic here, but this allows remap off
 		to be the default.  pf switch is ignored this way if
 		the -r flag was used */
@@ -233,7 +242,8 @@ int main(int argc, char **argv)
 			}
 			if(rmeanx3) remove_mean_x3(field);
 			if(apply_agc) agc_scalar_field(field,iwagc);
-			output_gcl3d_to_vtksg(field,outfile,xmloutput,binaryout);
+			output_gcl3d_to_vtksg<GCLscalarfield3d&>(field,outfile,
+                               scalars_tag,component_names,xmloutput,binaryout);
 			if(saveagcfield) 
 				field.save(dbh,string(""),fielddir,
 				  outfieldname,outfieldname);
@@ -241,11 +251,6 @@ int main(int argc, char **argv)
 		else if(fieldtype=="vector3d")
 		{
 			SaveAsVectorField=control.get_bool("save_as_vector_field");
-			if(SaveAsVectorField)
-			{
-				cerr << "Vector field output not yet supported but planned"
-					<< endl;
-			}
 			if(rmeanx3)
 			{
 				cerr << "remove_mean_x3_slices set true:  "
@@ -258,15 +263,24 @@ int main(int argc, char **argv)
                                     fieldname,nv_expected);
                         else
                             vfield=GCLvectorfield3d(infile);
-			GCLscalarfield3d *sfptr;
 			if(remap)
 			{
 				//if(vfield!=(*rgptr))
 					remap_grid(dynamic_cast<GCLgrid3d&>(vfield),
 						*rgptr);
 			}
-			for(i=0;i<vfield.nv;++i)
-			{
+                        if(SaveAsVectorField)
+                        {
+                            output_gcl3d_to_vtksg<GCLvectorfield3d&>(vfield,outfile,
+                                    scalars_tag,component_names,
+                                    xmloutput,binaryout);
+                        }
+                        else
+                        {
+			    for(i=0;i<vfield.nv;++i)
+			    {
+			        GCLscalarfield3d *sfptr;
+                                vector<string> thiscomponent;
 				sfptr = extract_component(vfield,i);
 				if(apply_agc) agc_scalar_field(*sfptr,iwagc);
 				stringstream ss;
@@ -275,8 +289,11 @@ int main(int argc, char **argv)
 					ss<<".vts";
 				else
 					ss<<".vtk";
-				output_gcl3d_to_vtksg(*sfptr,
-					ss.str(),xmloutput,binaryout);
+                                thiscomponent.clear();
+                                thiscomponent.push_back(component_names[i]);
+				output_gcl3d_to_vtksg<GCLscalarfield3d&>(*sfptr,ss.str(),
+                                        scalars_tag,thiscomponent,
+                                        xmloutput,binaryout);
 				/*This is not ideal, but will do this now
 				for expedience.  This creates a series of 
 				scalar fields when saveagcfield is enabled
@@ -292,6 +309,7 @@ int main(int argc, char **argv)
 					  fielddir,ofld,ofld);
 				}
 				delete sfptr;
+                            }
 			}
 		}
 		else if(fieldtype=="grid2d")
@@ -349,6 +367,10 @@ int main(int argc, char **argv)
         catch(std::exception& sexcp)
         {
             cerr << sexcp.what();
+        }
+        catch(SeisppError& serr)
+        {
+            serr.log_error();
         }
 	catch (...)
 	{

@@ -23,3 +23,16 @@ agc_operator_length 20
 #   this is the expected size for a vector field read from a db
 #  ignored for other types
 nv_expected 5
+#
+#  This should be a list of names to be assigned to vector components
+#  in a vector field.   it is also used for scalar field data but 
+#  in that case should only contain one entry 
+#
+data_component_names &Tbl{
+T
+R
+L
+sum_omega
+fold
+}
+scalars_name_tag P2S
