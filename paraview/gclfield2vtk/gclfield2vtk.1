@@ -24,6 +24,8 @@ name without an extension for this file.  The program appends an appropriate
 extension depending on the output option.  This is necessary for paraview to
 grok the file type in windows, macos, or linux implementations.  The output 
 files should normally be readable directly by paraview. 
+Currently the extensions are "vtk" for binary or ascii legacy vtk files 
+and "vts" for 3D grid output using the -xml option.
 .SH OPTIONS
 .IP -g 
 Override the parameter file grid name to locate the gclfield to be converted.
@@ -46,7 +48,7 @@ will probably eventually be depricated.
 .IP -xml
 Use the -xml to have the output written in vtk's xml format.
 This is strongly recommended for large 3D structured grid as the resulting
-files are platform indepenent binary files that are much faster to read than
+files are platform indepenent files that are much faster to read than
 the default ascii file.
 .IP -binary
 Use the -binary format to have the output written as binary.  This is 
@@ -57,20 +59,25 @@ true at all.   Generally -xml should be used in preference to -binary
 as the output file is more generic.
 .IP -pf
 Use pffile.pf as the alternative parameter file to the standard gclfield2vtk.pf.
+Note this program does not use the Antelope pf feature to search for pf 
+files in a heirarchy of places.  Only the file referenced is read.
 .SH FILES
 .LP
 The default output file is a legacy VTK file described in documentation 
 for the Visualization Tool Kit (VTK) library.
 Structured grids can optionally be written in the newer XML format also
 described in the VTK documentation.
+The XML format, in fact, is highly recommended for 3D grids.
 .SH PARAMETER FILE
 .LP
 Two parameters can be viewed as defaults for command line arguments.  
-The \fBgridname\fR parameter is the default for -g abd
+The \fBgridname\fR parameter is the default for -g and
 \fBfieldname\fR provides the default for -f.
 .LP
 The \fBfieldtype\fR defines the type of grid object the program will convert.  Allowed 
 options are:  grid2d, scalar2d, scalar3d, and vector3d.  
+This parameter must match the type of the data your are attempting to convert
+or the program will abort with an error message.
 .LP
 Several parameters are linked to the -r option:  
 \fBorigin_latitude, origin_longitude, radius_origin,\fR and \fBazimuth_y_axis\fR.  
@@ -82,8 +89,21 @@ angle rotates the y (north) axis toward the east direction.
 .LP
 The boolean parameter \fBsave_as_vector_field\fR is a switch for handling vector field data.
 When true output is VTK's vector field format.  When false vector fields are output with one 
-file per vector component.  The default is false.  (This capability is not currently implemented.
-If set true an error message will be posted and the program will abort.)
+file per vector component.  If not defined this will default to false.
+.LP
+The output for 3D vector and scalar fields allow an option for name tags
+used by VTK to tag each data tuple.   Two closely linked parameters define
+this naming:  (1) \fBscalars_name_tag\fR sets the name used for color 
+mapping in paraview and (2) \fBdata_component_names\fR define added name tags
+for vector components.   For scalar data best practice is to make the two
+names the same.  For vector data choose descriptive names for each 
+data component.   Note that the \fBdata_components_names\fR is a list 
+defined by the antelope &Tbl{} construct in the parameter file.   Use one
+line for each name tag.   Make sure the number of names matches the number of
+components in the data you are converting.   The program will not abort if
+there is a size mismatch, but you may not get the names set right.  Note for
+scalar data the &Tbl construct is still required but in that case there should
+only be one name. 
 .LP
 There are some special parameters used only in certain circumstances.  The user is warned these
 may one day be depricated in favor of editing and saving to new loction.  The boolean
@@ -99,13 +119,9 @@ Check stderr for errors.  Most problems will generate a relatively verbose messa
 .IP (1)
 Not all combinations of output format options are support.  The -xml and 
 -binary options will only work on 3D scalar or vector fields.  Either
-option will silently be ignored for any 2D object.
+option will silently be ignored for any 2D object which currently only
+use ascii output to vtk files..
 .IP (2)
-Vector fields are not actually properly supported in this version.  As noted
-above vector fields are actually output as multiple files that are actually
-scalar fields.  VTK supports vector fields, but an output writer has not
-yet been implemented.  
-.IP (3)
 For version 3.8 of paraview on 64 bit platforms a bug seems to exist in libc for reading ascii data created by this program.  The VTK reader for ascii files 
 will abort when trying to read numbers with exponents that define tiny
 numbers that overflow the exponent field on floats.  (e.g. a number like
@@ -113,11 +129,7 @@ numbers that overflow the exponent field on floats.  (e.g. a number like
 an exception and cause paraview, which uses this routine, to abort).  
 For this reason use only the -xml or -binary option on 64 bit platforms. 
 Later versions of paraview may have fixed this bug.
-.IP (4)
-This program is a bit of an abomination in that as it evolved it developed a scitzo approach to 
-parameter information.  The command line arguments were added to allow easier interaction with
-shell scripts but create an inconsistent and (admittedly) confusing parameter definition.
-.IP (5)
+.IP (3)
 The agc and remove mean parameters really do not belong in this program.  There is a good chance these
 will be replaced with a more elaborate field editor or implemented as a python module in paraview in
 the future.
