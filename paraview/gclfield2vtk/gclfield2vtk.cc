@@ -136,10 +136,12 @@ int main(int argc, char **argv)
 		else if(argstr=="-xml")
 		{
 			xmloutput=true;
+                        binaryout=false;
 		}
 		else if(argstr=="-binary")
 		{
 			binaryout=true;
+                        xmloutput=false;
 		}
 		else
 		{
@@ -166,6 +168,7 @@ int main(int argc, char **argv)
                 {
                     nv_expected=control.get_int("nv_expected");
                 }
+                string scalars_tag=control.get_string("scalars_name_tag");
                 list<string> complist=control.get_tbl(string("data_component_names"));
                 vector<string> component_names=list_to_vector(complist);
 		/* Slightly odd logic here, but this allows remap off
@@ -240,7 +243,7 @@ int main(int argc, char **argv)
 			if(rmeanx3) remove_mean_x3(field);
 			if(apply_agc) agc_scalar_field(field,iwagc);
 			output_gcl3d_to_vtksg<GCLscalarfield3d&>(field,outfile,
-                                component_names,xmloutput,binaryout);
+                               scalars_tag,component_names,xmloutput,binaryout);
 			if(saveagcfield) 
 				field.save(dbh,string(""),fielddir,
 				  outfieldname,outfieldname);
@@ -269,7 +272,8 @@ int main(int argc, char **argv)
                         if(SaveAsVectorField)
                         {
                             output_gcl3d_to_vtksg<GCLvectorfield3d&>(vfield,outfile,
-                                    component_names,xmloutput,binaryout);
+                                    scalars_tag,component_names,
+                                    xmloutput,binaryout);
                         }
                         else
                         {
@@ -288,7 +292,8 @@ int main(int argc, char **argv)
                                 thiscomponent.clear();
                                 thiscomponent.push_back(component_names[i]);
 				output_gcl3d_to_vtksg<GCLscalarfield3d&>(*sfptr,ss.str(),
-                                        thiscomponent,xmloutput,binaryout);
+                                        scalars_tag,thiscomponent,
+                                        xmloutput,binaryout);
 				/*This is not ideal, but will do this now
 				for expedience.  This creates a series of 
 				scalar fields when saveagcfield is enabled

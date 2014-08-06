@@ -10,7 +10,8 @@ using namespace std;
    scalars field in the output data file.   It is a vector to allow polymorphic
    implementaiton of the writer later in this file.  Only the first element of the
    tag vector is accessed by this procedure.*/
-vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLscalarfield3d &g, vector<string> tag)
+vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLscalarfield3d &g, 
+        string name, vector<string> tag)
 {
 
 	vtkStructuredGrid	*pGrid 			= vtkStructuredGrid::New();
@@ -23,7 +24,7 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLscalarfield3d &g, vector<string> ta
 	pData->SetNumberOfComponents(1);
         /* this may not be necessary */
         pData->SetComponentName(0,tag[0].c_str());
-        pData->SetName(tag[0].c_str());
+        pData->SetName(name.c_str());
 
 	int kk;
 	for(int k=g.n3-1,kk=0;k>=0;k--,kk++)
@@ -53,7 +54,8 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLscalarfield3d &g, vector<string> ta
 /* g is the vectofield data to be converted.  
    tags is the a vector of strings to set as the component names in the vtk array.   
    length of tags array must match g.nv.  */
-vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLvectorfield3d &g,vector<string> tags)
+vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLvectorfield3d &g,string name,
+        vector<string> tags)
 {
 
 	vtkStructuredGrid	*pGrid 			= vtkStructuredGrid::New();
@@ -66,7 +68,7 @@ vtkStructuredGrid*	convert_gcl3d_to_vtksg(GCLvectorfield3d &g,vector<string> tag
 	pData->SetNumberOfTuples(g.n1 * g.n2 * g.n3);
         /* This name gets set as the "Scalars_" field that prepends component
            names */
-        pData->SetName("Vector_");
+        pData->SetName(name.c_str());
 	int k,kk,l;
         string null_name("component");
         if( (g.nv) != (tags.size()) )
