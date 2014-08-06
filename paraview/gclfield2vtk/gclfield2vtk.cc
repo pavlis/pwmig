@@ -242,6 +242,10 @@ int main(int argc, char **argv)
 			}
 			if(rmeanx3) remove_mean_x3(field);
 			if(apply_agc) agc_scalar_field(field,iwagc);
+                        if(xmloutput)
+                            outfile=outfile+".vts";
+                        else
+                            outfile=outfile+".vtk";
 			output_gcl3d_to_vtksg<GCLscalarfield3d&>(field,outfile,
                                scalars_tag,component_names,xmloutput,binaryout);
 			if(saveagcfield) 
@@ -271,6 +275,10 @@ int main(int argc, char **argv)
 			}
                         if(SaveAsVectorField)
                         {
+                            if(xmloutput)
+                                outfile=outfile+".vts";
+                            else
+                                outfile=outfile+".vtk";
                             output_gcl3d_to_vtksg<GCLvectorfield3d&>(vfield,outfile,
                                     scalars_tag,component_names,
                                     xmloutput,binaryout);
@@ -325,6 +333,7 @@ int main(int argc, char **argv)
 				//if(g!=(*rgptr))
 				remap_grid(g,*rgptr);
 			}
+                        outfile=outfile+".vtk";
 			npoly=vtk_output_GCLgrid(g,outfile);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
@@ -343,6 +352,7 @@ int main(int argc, char **argv)
 			    remap_grid(dynamic_cast<GCLgrid&>(field),
 						*rgptr);
 			}
+                        outfile=outfile+".vtk";
 			vtk_output_GCLgrid(dynamic_cast<GCLgrid&>(field),outfile);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
