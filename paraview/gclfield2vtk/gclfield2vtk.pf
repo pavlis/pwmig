@@ -29,9 +29,10 @@ nv_expected 5
 #  in that case should only contain one entry 
 #
 data_component_names &Tbl{
-transversePS
-radialPS
-verticalPS
-solid_angle
+T
+R
+L
+sum_omega
 fold
 }
+scalars_name_tag P2S
