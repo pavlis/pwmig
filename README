@@ -1,0 +1,6 @@
+This repository was extracted from my larger glpcode library August 8, 2014,
+using this git incantation:
+git filter-branch --subdirectory-filter public -- --all
+
+It will now become the master for pwmig codes to be released that
+do not depend upon antelope.   
