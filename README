@@ -4,3 +4,8 @@ git filter-branch --subdirectory-filter public -- --all
 
 It will now become the master for pwmig codes to be released that
 do not depend upon antelope.   
+
+Do note the older commit history before the files were rearranged 
+was lost through this process.   If anyone needs to ever dig through
+the old debris starting more than 10 years ago they will need to
+consult the older repository currently tagged as glpcode.
