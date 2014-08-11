@@ -1,0 +1,26 @@
+: # use perl
+eval 'exec perl -S $0 "$@"'
+if 0;
+
+foreach ( @ARGV ) { 
+    push @dirs, $_ ; 
+    $done{$_} = 1;
+}
+foreach ( sort <*> ) { 
+    next if ! -d $_ ; 
+    next if $_ =~ /^(CVS|(\+|\.).*|.*(-|\.dSYM)|SunWS_cache)$/ ;
+    next if $_ eq "certify" && -e "certify/certify.certify" ; 
+    push @dirs, $_ if ! $done{$_} ; 
+}
+
+print join("\n", @dirs) . "\n" ; 
+
+__DATA__
+
+darwin:DIRS=`find * -type d \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* \) -prune | sort -f`
+leopard:DIRS=${FIRSTDIRS} `find * -type d \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* ! -name \*.dSYM \) -prune | sort -f`
+linux:DIRS=${FIRSTDIRS} `find * -type d -prune \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* ! -name SunWS_cache \) | sort -f`
+solaris:DIRS=${FIRSTDIRS} `find * -type d -prune \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* ! -name SunWS_cache \) | sort -f`
+solaris-gcc:DIRS=`find * -type d -prune \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* ! -name SunWS_cache \) | sort -f`
+solaris-gcc-mix:DIRS=`find * -type d -prune \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* ! -name SunWS_cache \) | sort -f`
+tiger:DIRS=${FIRSTDIRS} `find * -type d \( ! -name CVS ! -name .\* ! -name \*- ! -name +\* \) -prune | sort -f`

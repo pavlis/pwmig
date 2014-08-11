@@ -1,0 +1,16 @@
+This files describes steps required for installing the plane wave migration package
+called pwmig.   
+
+1.  Decide where you want to put the top level directory for this package.
+The default is /opt/pwmig/XXX where XXX is a version number tag.  This should
+normally be in the user who will maintain this package's account and owned by 
+a regular user.   I do not recommend this package be installed as root.  If
+other people need to use the package, make sure the directory you choose for the
+installation is readable by others.
+
+2.  edit the file setup/setup.csh to set the location you chose above.  
+
+3.  In the setup directory run make.  This will create the directories for 
+different components of the package.   
+
+4.  In a terminal cd to the pwmig directory and run make
