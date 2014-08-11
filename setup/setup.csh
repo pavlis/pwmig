@@ -10,9 +10,10 @@ set BASE=/opt/pwmig
 # For now this is frozen as a release directory name.  May 
 # may be done more elegantly
 set RELEASE=1.0
+set TOPDIR=${BASE}/${RELEASE}
 # Require the top level directory exist or abort
-if ( ! -d /opt/antelope/5.4 ) then
-    echo "pwmig must be installed under /opt/antelope".
+if ( ! -d $TOPDIR ) then
+    echo "You need to create a directory $TOPDIR to install this package"
     exit 1
 endif
 setenv PWMIG $BASE/$RELEASE

@@ -1,6 +1,12 @@
-all : pwmigmake setup.csh subdirs
-	mkdir $(PWMIG)/bin
-	mkdir $(PWMIG)/include
+all : buildenv setup
+setup : setup.csh
 	cp setup.csh $(PWMIG)
-	cp pwmigmake $(PWMIG)/include
+buildenv : pwmigmake subdirs
+	if [ ! -d $(PWMIG)/bin ] ; then \
+		mkdir $(PWMIG)/bin ; \
+	fi ;
 	cp subdirs $(PWMIG)/bin
+	if [ ! -d $(PWMIG)/include ] ; then \
+		mkdir $(PWMIG)/include ; \
+	fi ;
+	cp pwmigmake $(PWMIG)/include
