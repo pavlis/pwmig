@@ -9,7 +9,7 @@
 set BASE=/opt/pwmig
 # For now this is frozen as a release directory name.  May 
 # may be done more elegantly
-set RELEASE=1.0
+set RELEASE=2.0
 set TOPDIR=${BASE}/${RELEASE}
 # Require the top level directory exist or abort
 if ( ! -d $TOPDIR ) then

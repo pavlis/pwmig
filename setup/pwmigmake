@@ -82,7 +82,11 @@ all ::
 # This would be later antelope version method to set this
 #DIRS=`$(PWMIG)/include/subdirs ${FIRSTDIRS}`
 # This is old method from dsapmake
-DIRS=`find * -type d \( ! -name SCCS ! -name CVS ! -name \*- ! -name TC.Cache ! -name .git -print \) -prune`
+#DIRS=`find * -type d \( ! -name SCCS ! -name CVS ! -name \*- ! -name TC.Cache ! -name .git -print \) -prune`
+#
+# alternative using subdirs
+#
+DIRS=`$(PWMIG)/bin/subdirs`
 PWMIG_BASE=$(PWMIG)
 DEST=$(PWMIG)
 
