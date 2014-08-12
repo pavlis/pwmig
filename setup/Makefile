@@ -10,3 +10,9 @@ buildenv : pwmigmake subdirs
 		mkdir $(PWMIG)/include ; \
 	fi ;
 	cp pwmigmake $(PWMIG)/include
+	if [ ! -d $(PWMIG)/static ] ; then \
+		mkdir $(PWMIG)/static ; \
+	fi ;
+	if [ ! -d $(PWMIG)/lib ] ; then \
+		mkdir $(PWMIG)/lib ; \
+	fi ;

@@ -79,7 +79,10 @@ MAKE=make -ke
 
 all ::
 
-DIRS=`$(PWMIG)/include/subdirs ${FIRSTDIRS}`
+# This would be later antelope version method to set this
+#DIRS=`$(PWMIG)/include/subdirs ${FIRSTDIRS}`
+# This is old method from dsapmake
+DIRS=`find * -type d \( ! -name SCCS ! -name CVS ! -name \*- ! -name TC.Cache ! -name .git -print \) -prune`
 PWMIG_BASE=$(PWMIG)
 DEST=$(PWMIG)
 
@@ -87,7 +90,7 @@ DBG=-g
 
 LEX=flex -v
 
-CC=$(CC)
+#CC=$(CC)
 
 STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS) 
 
@@ -112,13 +115,22 @@ LDLIBS= $(ldlibs)
 #    LDLIBS= $(ldlibs)
 #
 
-#INSTALL=deposit
+# This is for Macos and seems to be correct for linux as well
+INSTALL=/usr/bin/install
 
-all install :: FORCED
-	@-$(PWMIG)/bin/mdirmake -v $(PARALLEL) -f '$(FIRSTDIRS)' '$(MAKE) $(makeflags)' $@ $(DIRS)
+# Trying to hack these to avoid teh mdirmake script in antelope.   Aug 2014
+#all install :: FORCED
+#	make  $(makeflags) $@ $(DIRS)
+#
+#clean Include :: FORCED
+#	make $(makeflags) $@ $(DIRS)
+# This is from dsapmake
 
-clean Include :: FORCED
-	@-$(PWMIG)/bin/mdirmake -v $(PARALLEL) -f '$(FIRSTDIRS)' '$(MAKE) $(makeflags)' $@ $(DIRS)
+all clean purge Include install tags :: FORCED
+	@-DIRS="$(DIRS)" ;\
+	for i in $$DIRS ; do \
+                ( cd $$i && $(MAKE) $@ ; ) \
+        done
 
 OBJDIR=.
 static ::

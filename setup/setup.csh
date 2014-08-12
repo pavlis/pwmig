@@ -43,13 +43,13 @@ else
     setenv MANPATH $PWMIG/man:/opt/local/man:/usr/local/man:/usr/share/man
 endif
 
-setenv PWMIGMAKE     $PWMIG/setup/antelopemake
+setenv PWMIGMAKE     $PWMIG/include/pwmigmake
 
 if ( Darwin == Linux ) then
     setenv MANSECT 1:8:2:3:3p:3t:3y:4:5:6:7:9:tcl:n:l:p:o
 endif
 
-if ( -d $PWMIG/src/bin && -r $ANTELOPE/src/bin ) then
+if ( -d $PWMIG/src/bin && -r $PWMIG/src/bin ) then
     # if source is present, make it easy to browse by setting cdpath
     # and global tags file.  (There's a TAGS file for emacs enthusiasts also,
     # but I don't know if there's a corresponding environment variable.)
