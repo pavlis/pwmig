@@ -5,7 +5,7 @@ PF=pwmig.pf
 #MAN1=pwmig.1
 ldlibs=-lpwmig -lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
 
-include $(ANTELOPEMAKE) 
+include $(PWMIGMAKE) 
 OBJS= mdutils.o \
 pwmig.o \
 ray_transformation_operator.o \

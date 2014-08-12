@@ -12,7 +12,7 @@ ldlibs=-lpwmig -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBL
 #ldflags=-shared -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid
 
 
-include $(ANTELOPEMAKE) 
+include $(PWMIGMAKE) 
 
 pwstack_reader.cc : pwstack_reader.h
 OBJS=pwstack.o \

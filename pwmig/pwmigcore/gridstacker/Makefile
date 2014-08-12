@@ -5,7 +5,7 @@ PF=gridstacker.pf
 #MAN1=gridstacker.1
 ldflags=-lseispp -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lseispp -lm
 
-include $(ANTELOPEMAKE) 
+include $(PWMIGMAKE) 
 CXXFLAGS+=-D_FILE_OFFSET_BITS=64
 CXXFLAGS+=-D_LARGEFILE_SOURCE
 CXXFLAGS+=-D_LARGEFILE64_SOURCE

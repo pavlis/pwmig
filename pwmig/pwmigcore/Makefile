@@ -1,3 +1,3 @@
-include $(ANTELOPEMAKE)
+include $(PWMIGMAKE)
 
 # $Id$ 
