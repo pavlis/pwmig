@@ -6,11 +6,17 @@ The default is /opt/pwmig/XXX where XXX is a version number tag.  This should
 normally be in the user who will maintain this package's account and owned by 
 a regular user.   I do not recommend this package be installed as root.  If
 other people need to use the package, make sure the directory you choose for the
-installation is readable by others.
+installation is readable by others.  You need to first create the install
+directory.   
 
 2.  edit the file setup/setup.csh to set the location you chose above.  
 
-3.  In the setup directory run make.  This will create the directories for 
-different components of the package.   
+3.  In the setup directory run 
+
+source setup.csh
+make
+
+This will create the directories required by the package and copy some
+basic setup files.  
 
 4.  In a terminal cd to the pwmig directory and run make
