@@ -1,4 +1,13 @@
 LIB=libstock.a
+INCLUDE= arrays.h\
+ arrays.h \
+ deviants.h \
+ deviants_include.h \
+ dsap_regex.h \
+ elog.h \
+ rb.h \
+ stock.h \
+ stocktime.h
 OBJS=arr.o \
   elog.o \
   hook.o \
@@ -16,5 +25,6 @@ OBJS=arr.o \
   strings.o \
   tbl.o \
   wd.o
+include $(PWMIGMAKE)
 $(LIB) : $(OBJS)
 	ar rv $@ $(OBJS)

@@ -3,7 +3,7 @@ LIB=libtt.a
 INCLUDE=tt.h
 MAN3=tt.3
 
-include $(DSAPMAKE)
+include $(PWMIGMAKE)
 DIRS=
 
 OBJS=tt.o

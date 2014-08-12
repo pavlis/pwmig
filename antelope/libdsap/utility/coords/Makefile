@@ -1,4 +1,5 @@
 LIB=libcoords.a
+INCLUDE=coords.h
 OBJS=dist.o \
      dcarsph.o \
      dr3add.o \
@@ -10,5 +11,6 @@ OBJS=dist.o \
      dr3sub.o \
      dr3sxv.o \
      rotate.o
+include $(PWMIGMAKE)
 $(LIB) : $(OBJS)
 	ar rv $@ $(OBJS)

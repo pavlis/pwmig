@@ -8,7 +8,7 @@ DATADIR = tables
 
 ldlibs=-lstock -lcoords -lposix4 -lm 
 
-include $(DSAPMAKE)
+include $(PWMIGMAKE)
 DIRS=
 
 OBJS=f2ctaup.o tt_taup.o ptime.o ptime_.o slowness.o tttaup.o
@@ -19,7 +19,7 @@ $(LIB) : $(OBJS)
 
         
 $(DLIB) : $(OBJS)
-	$(DLD) $(DLDFLAGS) -L$(DSAP)/lib -lcoords -lstock -lposix4 -lm -o $@ $(LORDER) $(OBJS) $(TSORT)
+	$(DLD) $(DLDFLAGS) -L$(PWMIG)/lib -lcoords -lstock -lposix4 -lm -o $@ $(LORDER) $(OBJS) $(TSORT)
 
 
 # $Id: Makefile,v 1.2 1998/05/12 16:45:59 danq Exp $ 
