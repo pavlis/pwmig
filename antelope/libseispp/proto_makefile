@@ -1,0 +1,65 @@
+LIB=libseispp.a
+ldlibs=-lgclgrid
+#  Remove the -g after finished testing
+cxxflags=-g -DNO_ANTELOPE
+INCLUDE= \
+  AttributeMap.h \
+  BasicTimeSeries.h\
+  Hypocenter.h\
+  Metadata.h\
+  PfStyleMetadata.h \
+  SeisppError.h\
+  SeisppKeywords.h \
+  SphericalCoordinate.h\
+  ThreeComponentChannelMap.h\
+  ThreeComponentSeismogram.h\
+  TimeSeries.h\
+  TimeWindow.h\
+  VectorStatistics.h\
+  VelocityModel_1d.h\
+  ensemble.h\
+  interpolator1d.h\
+  mute.h\
+  ray1d.h\
+  seispp.h\
+  slowness.h\
+DBG=-g
+
+include $(PWMIGMAKE)  	
+
+OBJS=AttributeMap.o \
+  BasicTimeSeries.o \
+  Hypocenter.o \
+  Metadata.o \
+  PfStyleMetadata.o \
+  ThreeComponentChannelMap.o \
+  ThreeComponentSeismogram.o \
+  TimeSeries.o \
+  VelocityModel_1d.o \
+  VelocityModel_3d.o \
+  ensemble.o \
+  ensemble_helpers.o \
+  interpolator1d.o \
+  mdlist.o \
+  mute.o \
+  nint.o \
+  ray1d.o \
+  readwrite.o \
+  rotate_procedures.o \
+  slowness.o \
+  spherical_coordinate.o \
+  statics.o \
+  three_component_helpers.o \
+  tseries_helpers.o \
+
+$(LIB) : $(OBJS)
+	$(RM) $@
+	$(CXXAR)  $(CXXARFLAGS) $@ $(OBJS) 
+	$(RANLIB) $@
+
+#$(DLIB) : $(OBJS)
+#	$(RM) $@
+#	$(CXXDLD)  $(CXXDLDFLAGS) -o $(DLIB) $(OBJS) $(DLDLIBS) 
+#$(BUNDLE) : $(OBJS)
+#	$(RM) $@
+#	$(DLD)  -flat_namespace -bundle -undefined suppress -o $@   $(OBJS) $(LDFLAGS) $(DLDLIBS)
