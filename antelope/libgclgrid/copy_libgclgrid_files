@@ -1,0 +1,41 @@
+#!/bin/sh
+# This is a script to copy files from antelope contrib libseispp library
+# to this work area.  This probably will be called from a Makefile 
+# which would copy the files from regular antelope contrib to here
+# and then compile the code.
+# 
+# The Makefile will also require a make clean that will remove everything
+# but the makefile and this script.
+if [ -v $PWMIG ] ; then
+    echo The environment variable PWMIG is not set
+    echo Run the setup script for pwmig
+    exit -1
+fi
+if [ -v $ANTELOPE_CONTRIB ] ; then
+    echo Required environment variable ANTELOPE_CONTRIB not set
+    echo Must be set top level directory of antelope contrib repository
+    echo Standard is something like /opt/antelope/5.4/src/contrib
+    exit -1
+fi
+gclgridhome=$ANTELOPE_CONTRIB/lib/utility/libgclgrid
+if [ ! -d $gclgridhome ] ; then
+    echo "Required directory $gclgridhome does not exist"
+    echo "Check configuration"
+    exit -1
+fi
+outdir=$PWMIG/antelope_src/libgclgrid
+if [ ! -d $outdir ] ; then
+    echo "Required directory $outdir does not exist"
+    echo "Check configuration and create if necessary"
+    exit -1
+fi
+echo Attempting to copy required libgclgrid modules from $gclgridhome
+for f in `cat files_to_copy_from_libgclgrid`
+do
+    cp $gclgridhome/$f $outdir
+    echo Copied source code file $f to $outdir
+done
+echo Copying proto_makefile to $gclgridhome
+cp proto_makefile $outdir/Makefile
+echo Now cd to $gclgridhome and run make
+
