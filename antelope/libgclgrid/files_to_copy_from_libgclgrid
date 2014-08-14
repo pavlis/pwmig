@@ -3,7 +3,6 @@ dmatrix.h
 gclgrid.h
 converters.cc
 create_destroy.cc
-dbsubs.cc
 decimate.cc
 dmatrix.cc
 dx_output.cc

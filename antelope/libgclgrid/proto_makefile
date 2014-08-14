@@ -34,7 +34,6 @@ OBJS=converters.o \
 converters.cc:gclgrid.h
 converters.cc:dmatrix.h
 create_destroy.cc:gclgrid.h
-dbsubs.cc:gclgrid.h
 decimate.cc:gclgrid.h
 dmatrix.cc:dmatrix.h
 dx_output.cc:gclgrid.h
