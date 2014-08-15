@@ -3,7 +3,6 @@ ldlibs=-lgclgrid
 #  Remove the -g after finished testing
 cxxflags=-g -DNO_ANTELOPE
 INCLUDE= \
-  AttributeMap.h \
   BasicTimeSeries.h\
   Hypocenter.h\
   Metadata.h\
@@ -23,12 +22,10 @@ INCLUDE= \
   ray1d.h\
   seispp.h\
   slowness.h\
-DBG=-g
 
 include $(PWMIGMAKE)  	
 
-OBJS=AttributeMap.o \
-  BasicTimeSeries.o \
+OBJS=BasicTimeSeries.o \
   Hypocenter.o \
   Metadata.o \
   PfStyleMetadata.o \
