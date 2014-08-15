@@ -1,0 +1,7 @@
+This library is copied directly from antelope contrib.   pwmig uses
+the blas extensively and a few lapack routines.   Most of this library 
+is baggage and I have not sorted out what is and is not required.
+Furthermore, to improve performance many platforms have optimized
+versions of the blas, parallel versions, or versions that run on a
+GPU.   In any case, the point is that all users of this package 
+should consider alternatives to this more simplistic library.
