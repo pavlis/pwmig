@@ -1,25 +1,26 @@
-INCLUDE=tttaup.h tttaup.i
-LIB = libtttaup.a
+INCLUDE=Hypocenter.h TauPCalculator.h TravelTimeCalculator.h tttaup.i
+LIB = libttpp.a
 DLIB=$(LIB:.a=$(DSUFFIX))
 
-MAN3= ptime.3 ptime.3f slowness.3 tttaup.3
-REQUIRE_DATA = taup_ttimes
-DATADIR = tables
+#REQUIRE_DATA = taup_ttimes
+#DATADIR = tables
 
-ldlibs=-lstock -lcoords -lposix4 -lm 
+ldlibs=-lstock -lcoords -lseispp
 
 include $(PWMIGMAKE)
 DIRS=
 
-OBJS=f2ctaup.o tt_taup.o ptime.o ptime_.o slowness.o tttaup.o
+OBJS=TauPCalculator.o \
+  Hypocenter.o \
+  tt_taup.o \
+  delta.o \
+  subs.o 
 $(LIB) : $(OBJS)
 	$(RM) $@
 	$(AR) $(ARFLAGS) $@ $(LORDER) $(OBJS) $(TSORT)
 	$(RANLIB) $@
 
         
-$(DLIB) : $(OBJS)
-	$(DLD) $(DLDFLAGS) -L$(PWMIG)/lib -lcoords -lstock -lposix4 -lm -o $@ $(LORDER) $(OBJS) $(TSORT)
+#$(DLIB) : $(OBJS)
+#	$(DLD) $(DLDFLAGS) -L$(PWMIG)/lib -lcoords -lstock -lposix4 -lm -o $@ $(LORDER) $(OBJS) $(TSORT)
 
-
-# $Id: Makefile,v 1.2 1998/05/12 16:45:59 danq Exp $ 
