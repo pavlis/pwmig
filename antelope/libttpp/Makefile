@@ -12,7 +12,6 @@ DIRS=
 
 OBJS=TauPCalculator.o \
   Hypocenter.o \
-  tt_taup.o \
   delta.o \
   subs.o 
 $(LIB) : $(OBJS)
