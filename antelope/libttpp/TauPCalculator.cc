@@ -195,6 +195,13 @@ SlownessVector TauPCalculator::phaseslow(Geographic_point& s,
     direction of propagation. */
     azimuth=baz+M_PI;
     if(azimuth>(2.0*M_PI)) azimuth -= (2.0*M_PI);
+    try{
+    	return(this->phaseslow(distance,azimuth,s.z,phase));
+    } catch(...){throw;};
+}
+SlownessVector TauPCalculator::phaseslow(double delta,double azimuth,
+		double edepth, const char *phase)
+{
     double delta=deg(distance);
     int nphases ; 
     int i ; 
@@ -211,9 +218,9 @@ SlownessVector TauPCalculator::phaseslow(Geographic_point& s,
         /* In phasetime this call is behind an interface function.   here
            I chose to do this all in one and have Pslow and Sslow just call
            this function */
-	trtm_ (&del, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
-		&(this->dtdh[0]), &(this->dddp[0]), &(this->dpcd[0]),
-		SIZE_PHCD);
+		trtm_ (&del, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
+			&(this->dtdh[0]), &(this->dddp[0]), &(this->dpcd[0]),
+			SIZE_PHCD);
         /* Hunt for the requested phase.  For now throw and error if an exact
            match is not found.  As noted elsewhere this will probably require some
            modification after I find out how Bulland's code deals with ambiguous
@@ -250,13 +257,29 @@ SlownessVector TauPCalculator::phaseslow(Geographic_point& s,
 SlownessVector TauPCalculator::Pslow(Geographic_point& source,Geographic_point& receiver)
 {
     try {
-        SlownessVector result=this->phaseslow(source,receiver,"P");
+        SlownessVector result(this->phaseslow(source,receiver,"P"));
+        return result;
     }catch(...){throw;};
 }
 SlownessVector TauPCalculator::Sslow(Geographic_point& source,Geographic_point& receiver)
 {
     try {
-        SlownessVector result=this->phaseslow(source,receiver,"S");
+        SlownessVector result(this->phaseslow(source,receiver,"S"));
+        return result;
+    }catch(...){throw;};
+}
+SlownessVector TauPCalculator::Pslow(double rdelta,double az,double z)
+{
+    try {
+        SlownessVector result(this->phaseslow(rdelta,az,z,"P"));
+        return result;
+    }catch(...){throw;};
+}
+SlownessVector TauPCalculator::Sslow(double rdelta,double az,double z)
+{
+    try {
+        SlownessVector result(this->phaseslow(rdelta,az,z,"S"));
+        return result;
     }catch(...){throw;};
 }
 

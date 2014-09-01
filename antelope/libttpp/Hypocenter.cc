@@ -4,7 +4,7 @@
 
 #include "coords.h"
 #include "stock.h"
-#include "tt.h"
+#include "TauPCalculator.h"
 #include "Hypocenter.h"
 using namespace std;
 using namespace PWMIG;
@@ -12,7 +12,7 @@ namespace PWMIG
 {
 
 // copy constructor and = operators commonly are implicitly needed
-Hypocenter::Hypocenter(const Hypocenter& h0)
+Hypocenter::Hypocenter(const Hypocenter& h0) : ttcalc(h0.ttcalc)
 {
 	lat = h0.lat;
 	lon = h0.lon;
@@ -31,6 +31,7 @@ Hypocenter& Hypocenter::operator=(const Hypocenter& h0)
 	time = h0.time;
 	method = h0.method;
 	model = h0.model;
+	ttcalc=h0.ttcalc;
     }
     return(*this);
 }
@@ -55,14 +56,12 @@ Hypocenter::Hypocenter(Metadata& md)
 	// model and method not being defined -- a common thing
 	// we will probably need
 	//
-	method=string("tttaup");
+	//method=string("tttaup");
 	model = string("iasp91");
 	try {
-		method=md.get_string("TTmethod");
-		model=md.get_string("TTmodel");
-	} catch (MetadataError& mderr){}
+		ttcalc=TauPCalculator(model);
+	} catch (...){throw;};
 }
-// the obvious fully parameterized constructor
 Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
 		string meth0, string mod0)
 {
@@ -70,8 +69,17 @@ Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
 	lon=lon0;
 	z=z0;
 	time=t0;
-	method=meth0;
+	/* Dummy kept in the interface for consistency.   Write
+	a warning error if it is anything but tttaup */
+	if(meth0!="tttaup") 
+	   cerr << "Hypocenter constuctor:   ignoring method argument "
+		<< meth0<<endl
+		<< "This implementation only supports the tttaup "
+		<< "implemented in the TauPCalculator C++ object"<<endl;
 	model=mod0;
+	try {
+	    ttcalc=TauPCalculator(mod0);
+	} catch(...){throw;};
 }
 		
 
@@ -101,41 +109,12 @@ double Hypocenter::seaz(double lat0, double lon0)
 
 void Hypocenter::tt_setup(string meth, string mod)
 {
-	method=meth;
+   /* In this case silently ignore meth */
+  try {
+	ttcalc=TauPCalculator(mod);
+	// I think this may be redundant
 	model=mod;
-}
-// companion to below made a function to allow use in both tt and slowness calculations
-string tterror_code_translation(int ierr)
-{
-	string s;
-
-	switch (ierr)
-	{
-	case -1:
-		s="Phase name not specified";
-		break;
-	case -2:
-		s="Error in parameters passed to travel time function";
-		break;
-	case -3:
-		s="Requested travel time method function not found";
-		break;
-	case -4:
-		s="Requested slowness vector compute  method function not found";
-		break;
-	case -5:
-		s="Requested model unknown";
-		break;
-	case 1:
-		s="requested derivatives but calculation failed";
-		break;
-	case 2:
-		s="requested station corrections be applied but corrections aren't available";
-		break;
-	default:
-		s="travel time interface function return unknown error code";
-	}
-	return s;
+  } catch(...){throw;};
 }
 
 			
@@ -143,126 +122,40 @@ string tterror_code_translation(int ierr)
 double Hypocenter::phasetime(double lat0, double lon0, double elev, string phase)
 		throw(SeisppError)
 {
-	TTGeometry p;
-	int ierr;
-	Tbl *tt=NULL;
-	Hook *h=NULL;  // forced to be released on each call.  `
-	TTTime *t;
-
-	// note tt interface uses degrees as units for lat a lon.  I always use radians 
-	// internally
-	p.source.lat=deg(lat);
-	p.source.lon=deg(lon);
-	p.source.z=z;
-	p.source.time=time;
-	p.receiver.lat=deg(lat0);
-	p.receiver.lon=deg(lon0);
-	p.receiver.z=-elev;
-	p.receiver.time=0.0;
-	p.source.name[0]='\0';
-	p.receiver.name[0]='\0';
-	// the 0 in the mode arg means compute only the time
-	ierr = ttcalc(const_cast<char *>(method.c_str()),
-			const_cast<char *>(model.c_str()),
-			const_cast<char *>(phase.c_str()),0,&p,&tt,&h);
-	if(ierr) 
-	{
-		string mess;
-		mess = tterror_code_translation(ierr);
-		freetbl(tt,0);
-		free_hook(&h);
-		throw SeisppError(mess);
-	}
-	else
-	{
-		t=(TTTime *)gettbl(tt,0);
-		if(t==NULL) 
-			throw SeisppError("ttcalc function returned an empty list of times");
-	}	
-	// this temporary is needed to prevent as small leak
-	double tret = t->value;
-	freetbl(tt,0);
-	free_hook(&h);
-	return(tret);
+    double delta;
+    delta = this->distance(lat0,lon0);
+    try {
+    	return(this->ttcalc.phasetime(delta,z,phase.c_str()));
+    } catch(...){throw;};
 }
 
 double Hypocenter::ptime(double lat0, double lon0, double elev)
 		throw(SeisppError)
 {
-	string phs="P";
-	double ttime;
-
-	try{
-		ttime = this->phasetime(lat0,lon0,elev,phs);
-	} catch (SeisppError& tte)
-	{
-		throw tte;
-	}
-	return(ttime);
+    double delta;
+    delta = this->distance(lat0,lon0);
+    try {
+    	return(this->ttcalc.Ptime(delta,z));
+    } catch(...){throw;};
 }
 SlownessVector  Hypocenter::phaseslow(double lat0, double lon0, double elev, string phase)
 		throw(SeisppError)
 {
-	TTGeometry p;
-	int ierr;
-	Tbl *tt=NULL;
-	Hook *h=NULL;  // forced to be released on each call.  `
-	TTSlow *u;
-	SlownessVector uout;
-
-	// note tt interface uses degrees as units for lat a lon.  I always use radians 
-	// internally
-	p.source.lat=deg(lat);
-	p.source.lon=deg(lon);
-	p.source.z=z;
-	p.source.time=time;
-	p.receiver.lat=deg(lat0);
-	p.receiver.lon=deg(lon0);
-	p.receiver.z=-elev;
-	p.receiver.time=0.0;
-	p.source.name[0]='\0';
-	p.receiver.name[0]='\0';
-	// the 0 in the mode arg means compute only the time
-	ierr = ucalc(const_cast<char *>(method.c_str()),
-		const_cast<char *>(model.c_str()),
-		const_cast<char *>(phase.c_str()),0,&p,&tt,&h);
-	if(ierr) 
-	{
-		string mess;
-		mess = tterror_code_translation(ierr);
-		freetbl(tt,0);
-		free_hook(&h);
-		throw SeisppError(mess);
-	}
-	else
-	{
-		u=(TTSlow *)gettbl(tt,0);
-		if(u==NULL) 
-                {
-                    freetbl(tt,0);
-                    free_hook(&h);
-		    throw SeisppError("Returned list of computed slowness vectors was empty");
-                }
-		uout.ux=u->ux;
-		uout.uy=u->uy;
-		freetbl(tt,0);
-		free_hook(&h);
-	}	
-	return(uout);
+    double delta;
+    delta = this->distance(lat0,lon0);
+    try{
+        return(this->ttcalc.phaseslow(delta,z));
+    } catch(...){throw;};
 }
 SlownessVector Hypocenter::pslow(double lat0, double lon0, double elev)
 		throw(SeisppError)
 {
 	string phs="P";
-	SlownessVector u;
 
 	try{
 		u = this->phaseslow(lat0,lon0,elev,phs);
-	} catch (SeisppError& tte)
-	{
-		throw tte;
-	}
-	return(u);
+                return(u);
+	} catch (...){throw;};
 }
 } // Termination of namespace PWMIG definitions
 

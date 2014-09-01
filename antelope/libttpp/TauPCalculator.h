@@ -90,11 +90,11 @@ public:
       The Tau-P method assumes a radially symmetric earth model 
       so the result depends only on distance and depth. This 
       method is useful to avoid overhead of unnecessary great
-      circle path calculations that might appear in some uses 
+      circle path calculations that might appear in some cases 
       otherwise (e.g. computing a travel time curve).   
 
       Note the Tau-P calculator always assumes the datum for the
-      receiver is sea level so there is source elevation is not 
+      receiver is sea level so there source elevation is not 
       an argument.
 
       \param delta - epicentral distance in radians
@@ -139,15 +139,37 @@ public:
       distance and calls this method anyway.
 
       \param rdelta - epicentral distance (in radians)
-      \paam z_source - source depth in km.
+      \param azimuth - great circle path computed propagation azimuth(radians)
+      \param z_source - source depth in km.
       \param phase defines the seismological name of the required phase. 
+      
       \return predicted slowness vector for the specified phase.
       */
-    SlownessVector phaseslow(double rdelta, double z_source,const char *phase);
+    SlownessVector phaseslow(double rdelta, double azimuth,
+    	double z_source,const char *phase);
     /*! Simplified phaseslow with phase set to P. */
     SlownessVector Pslow(Geographic_point& source,Geographic_point& receiver);
-    /*! Simplified phaseslow with phase set to P. */
+    /*! P slowness calculation giving only distance  and depth.
+    
+      \param rdelta - epicentral distance (in radians)
+      \param azimuth - great circle path computed propagation azimuth(radians)
+      \param z_source - source depth in km.
+      
+      \return predicted slowness vector first arrival P phase.    
+     */
+    SlownessVector Sslow(double rdelta, double azimuth, double z_source);
+    /*! S slowness calculation giving only distance  and depth.
+    
+      \param rdelta - epicentral distance (in radians)
+      \param azimuth - great circle path computed propagation azimuth(radians)
+      \param z_source - source depth in km.
+      
+      \return predicted slowness vector of earliest S phase.    
+     */
+    SlownessVector Pslow(double rdelta, double azimuth, double z_source);
+    /*! Simplified phaseslow with phase set to S. */
     SlownessVector Sslow(Geographic_point& source,Geographic_point& receiver);
+    
 
     /*! \brief Compute travel time derivatives for a specified phase.
 

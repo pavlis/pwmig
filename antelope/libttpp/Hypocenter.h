@@ -158,6 +158,7 @@ public:
 	* used to compute these arrival times. */
 	string tt_definition(){return(method+":"+model);};
 private:
+	TauPCalculator ttcalc;
 	string method;
 	string model;
 };
