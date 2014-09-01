@@ -40,7 +40,32 @@ at least in the authors opinion.
 class TauPCalculator : public TravelTimeCalculator
 {
 public:
+    /*! Default constructor.   
+      
+      Assumes model is iasp91.
+     
+     \throw SeisppError if the constructor files.
+     */
+
     TauPCalculator();
+    /*! \brief Constructor specifying alternative model.
+
+      This implmentation uses a descendent of Ray Bulland's 
+      ancient fortran taup calculator as found in the old open
+      source datascope package that is an ancestory to antelope.
+      That algorithm uses precomputed tables that define a 
+      model name.  The default is iasp91, but it is possible to
+      compute tables for other models (best done with antelope
+      programs and transferring the files to the machine where
+      this object is to be used).  Point is the model ultimate
+      must link to a set of files the constructor looks for 
+      based on the PWMIG implementation of the datafile procedure
+      in dsap stock (see man datafile(3)).
+
+      \param model - alternative model name to default iasp91
+
+      \throw - SeisppError if the constructor files */
+
     TauPCalculator(const char *model);
     ~TauPCalculator();
     /*! \brief Compute travel time for a specified phase.
@@ -103,6 +128,22 @@ public:
       */
     SlownessVector phaseslow(Geographic_point& source,
 		Geographic_point& receiver,const char *phase);
+    /*! \brief Simplified slowness vector calculation for 1D model.
+
+      The taup calculator requires a radially symmetric earth model.  Hence
+      the extra parameters that describe both source and receiver coordinates
+      are not necessary.  Frequently we have already computed epicentral 
+      distance and here is no reason for the extra overhead of computing it
+      again inside the fully parameterized version of this method.  In 
+      fact, in this implementation the fully parameterized version computes
+      distance and calls this method anyway.
+
+      \param rdelta - epicentral distance (in radians)
+      \paam z_source - source depth in km.
+      \param phase defines the seismological name of the required phase. 
+      \return predicted slowness vector for the specified phase.
+      */
+    SlownessVector phaseslow(double rdelta, double z_source,const char *phase);
     /*! Simplified phaseslow with phase set to P. */
     SlownessVector Pslow(Geographic_point& source,Geographic_point& receiver);
     /*! Simplified phaseslow with phase set to P. */
@@ -176,7 +217,8 @@ private:
     float usrc[2];
     
     /* methods converted from tt_taup.c */
-    viud tt_taup_set_table(const char *table_path)
+    void tt_taup_set_table(const char *table_path)
+    int tt_taup_set_phases(string phases);
     /* an ugly routine that returns modname */
     string taup_get_modname();
     void taup_setup(const char *model, const char *phases);
