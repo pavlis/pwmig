@@ -21,6 +21,8 @@ int whitespace ( char *s )
     return *s == 0 ;
 }
 
+/* Remove this function to avoid Tbl */
+/*
 Tbl *split (char *s,char *c ) 
 {
     Tbl *tbl ; 
@@ -39,6 +41,7 @@ Tbl *split (char *s,char *c )
     
     return tbl ; 
 }
+*/
 
 /* copy source to dest, padding with blanks, no trailing zero */
 void sncopy(char *dest,char *source,int n)

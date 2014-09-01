@@ -4,11 +4,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "stock.h"
-#include "dsap_regex.h"
+//#include "dsap_regex.h"
 #include <errno.h>
 #include <dirent.h>
+/* Most of this file is commented out to get rid of Tbl 
+   dependency.   Some may need to be converted if we
+   find a hidden dependency */
 
 
+/*
 static Tbl     *patterns = NULL;
 typedef struct Replace {
     char           *pattern,
@@ -48,13 +52,13 @@ void setmapcf (char *cfname)
     if ((f = fopen (cfname, "r")) == NULL)
 			return;
     while ( fgets(aline, STRSZ, f) != NULL ) {
-	/* skip comments */
+	// skip comments 
 	for ( s=aline ; *s == ' ' ; s++ ) ; 
 	if ( *s == '#' ) 
 	    continue ;
 
 	if (sscanf (aline, "%s %s\n", pattern, replacement) != 2)
-	    /* skip bad lines */
+	    // skip bad lines 
 	    continue ;
 
 	allot (struct re_pattern_buffer *, pattern_buffer, 1);
@@ -79,9 +83,7 @@ void setmapcf (char *cfname)
     fclose (f);
 }
 
-/*
- * mappath - Map path from "pwd" name space to "canonical" name space.
- */
+// * mappath - Map path from "pwd" name space to "canonical" name space.
 int mappath (char *spath,char *upath)
 {
     long             i,
@@ -102,9 +104,7 @@ int mappath (char *spath,char *upath)
 
 
 
-/*
- * dirbase -- convert path to dirname, basename
- */
+// * dirbase -- convert path to dirname, basename
 
 void dirbase (char *path,char *dir,char *base)
 {
@@ -120,9 +120,7 @@ void dirbase (char *path,char *dir,char *base)
 }
 
 
-/*
- * abspath -- convert path to absolute pathname
- */
+// * abspath -- convert path to absolute pathname
 
 int abspath (char *relp,char *absp)
 {
@@ -164,6 +162,7 @@ int abspath (char *relp,char *absp)
     return 0;
 }
 
+*/
 int makedir (char *dir)
 {
     struct stat     statbuf;

@@ -1,3 +1,6 @@
+/* This file is a heavily modified version of a file from the open source
+   datascope library.  Early in BRTT's history the released this open
+   source version.  Here is their copyright notice:  */
 /*  Copyright (c) 1997 Boulder Real Time Technologies, Inc.           */
 /*                                                                    */
 /*  This software module is wholly owned by Boulder Real Time         */
@@ -14,87 +17,91 @@
 
 #include "stock.h"
 
-static char Dsappath[FILENAME_MAX] ; 
+//static char PWMIGpath[FILENAME_MAX] ; 
 /* This was the old version of this.   Changed to a home directory to be 
 less restrictive.
-static char *Default_dsappath = "/opt/dsap" ;
+static char *Default_pwmigpath = "/opt/pwmig" ;
 */
-static char *Default_dsappath = "~/dsap";
 
-char *
-getdsap ()
+char *getpwmig()
 {
-    char *me, *dsappath ;
+    char *me, *pwmigpath ;
     char *slash ; 
-    char **argv ;
     int n ;
+    const char *defaultpath="~/pwmig";
 
-    if ( (dsappath = getenv ( "DSAP" )) != 0 ) {
-	return dsappath ; 
+    if ( (pwmigpath = getenv ( "PWMIG" )) != 0 ) {
+	return pwmigpath ; 
     }
-
-    elog_query ( ELOG_ARGV, 0, (void *) &argv ) ; 
-    if ( argv == 0 ) { /* elog not initialized, give up */
-	return Default_dsappath ; 
-    } else { 
-	me = argv[0] ;
-    }
-
-    if ( strchr(me, '/') == 0 ) { 
-	/* bare name -- have to find along PATH */
-	char *path ; 
-	if ( (path = datapath ( "PATH", 0, me, "" )) == 0 ) { 
-	    return Default_dsappath ; /* can't figure out path to program */
-	} else { 
-	    strncpy ( Dsappath, path, FILENAME_MAX ) ; 
-	    free ( path ) ; 
-	}
-    } else {
-      strcpy ( Dsappath, me ) ;
-      slash = strrchr(Dsappath, '/' ) ; 
-      *slash = 0 ; 
-      if ( *me != '/' ) {
-	  char *old, *pwd ; 
-	  /* relative path! */
-	  old = getcwd(0, FILENAME_MAX) ; 
-	  if ( chdir(Dsappath) != 0 ) {
-	    return Default_dsappath ; /* die ( 1, "Can't cd to bin directory '%s'\n", Dsappath ) ; */
-	  }
-	  pwd = getcwd(0, FILENAME_MAX);
-	  strcpy ( Dsappath, pwd ) ; 
-	  free ( pwd ) ; 
-	  if ( chdir(old) != 0 ) {
-	    die ( 1, "getdsap can't return to original directory '%s'\n", old ) ; 
-	  }
-	  free ( old ) ; 
-      }
-    }
-
-    n = strlen(Dsappath) ; 
-    if (   Dsappath[n-4] != '/'
-	|| Dsappath[n-3] != 'b'
-	|| Dsappath[n-2] != 'i'
-	|| Dsappath[n-1] != 'n' ) {
-	return Default_dsappath ; /* 
-	    die ( 0, "bad configuration: '%s' has no final bin component.\n",
-	    Dsappath ) ; */
-	}
-    Dsappath[n-4] = 0 ; 
-
-    return Dsappath;
+    else
+        return defaultpath;
 }
+    /*Original had all this stuff - removed that functionality to get rid of elog
+      I am retaining it during debug in case I need to restore some of this 
+      functionality.  Eventually this debris should be removed. */
+
+//    elog_query ( ELOG_ARGV, 0, (void *) &argv ) ; 
+//    if ( argv == 0 ) { /* elog not initialized, give up */
+//	return Default_pwmigpath ; 
+//    } else { 
+//	me = argv[0] ;
+//    }
+//
+//    if ( strchr(me, '/') == 0 ) { 
+//	/* bare name -- have to find along PATH */
+//	char *path ; 
+//	if ( (path = datapath ( "PATH", 0, me, "" )) == 0 ) { 
+//	    return Default_pwmigpath ; /* can't figure out path to program */
+//	} else { 
+//	    strncpy ( PWMIGpath, path, FILENAME_MAX ) ; 
+//	    free ( path ) ; 
+//	}
+//    } else {
+//      strcpy ( PWMIGpath, me ) ;
+//      slash = strrchr(PWMIGpath, '/' ) ; 
+//      *slash = 0 ; 
+//      if ( *me != '/' ) {
+//	  char *old, *pwd ; 
+//	  /* relative path! */
+//	  old = getcwd(0, FILENAME_MAX) ; 
+//	  if ( chdir(PWMIGpath) != 0 ) {
+//	    return Default_pwmigpath ; /* die ( 1, "Can't cd to bin directory '%s'\n", PWMIGpath ) ; */
+//	  }
+//	  pwd = getcwd(0, FILENAME_MAX);
+//	  strcpy ( PWMIGpath, pwd ) ; 
+//	  free ( pwd ) ; 
+//	  if ( chdir(old) != 0 ) {
+//	    die ( 1, "getpwmig can't return to original directory '%s'\n", old ) ; 
+//	  }
+//	  free ( old ) ; 
+//      }
+//    }
+//
+//    n = strlen(PWMIGpath) ; 
+//    if (   PWMIGpath[n-4] != '/'
+//	|| PWMIGpath[n-3] != 'b'
+//	|| PWMIGpath[n-2] != 'i'
+//	|| PWMIGpath[n-1] != 'n' ) {
+//	return Default_pwmigpath ; /* 
+//	    die ( 0, "bad configuration: '%s' has no final bin component.\n",
+//	    PWMIGpath ) ; */
+//	}
+//    PWMIGpath[n-4] = 0 ; 
+//
+//    return PWMIGpath;
+//}
 
 char *datapath (char *envname,char *dirname,char *filename,char *suffix)
 {
     char            local[FILENAME_MAX];
 
-    local[0] = 0;
-    if (dirname != 0 && *dirname != 0) {
+    local[0] = '\0';
+    if (dirname != NULL && *dirname != '\0') {
 	strcpy (local, dirname);
 	strcat (local, "/");
     }
     strcat (local, filename);
-    if (suffix != 0 && *suffix != 0) {
+    if (suffix != NULL && *suffix != '\0') {
 	strcat (local, ".");
 	strcat (local, suffix);
     }
@@ -117,28 +124,41 @@ char *datafile (char *envname,char *filename)
     basename = strrchr (filename, '/');
     if (basename)
 	basename++;
-
+    /* This chain of conditionals strikes me as a tad 
+       dangerous, but known to work.   To work it depends on
+       an assumption about how this is executed that is pretty
+       subtle.   That is, it requires the set of conditionals
+       evaluate left to right and as soon as we get a false it
+       stops trying.  */
     if (envname != NULL
-	    && *envname != 0
+	    && *envname != '\0'
 	    && (path = getenv (envname)) != NULL) {
-	if (strchr (path, ':') == NULL) {
+/* Original code allowed a colon separated list of directories
+   to search for a file.   I am disabling that functionality as
+   it is not needed for this implementation and the code (below)
+   requires an datascope tbl list container that I do not want
+   to convert for pwmig */
+	//if (strchr (path, ':') == NULL) {
 	    if (stat (path, &statbuf) == NULL) {
 		if (S_ISDIR (statbuf.st_mode)) {
 		    strcpy (local, path);
 		    strcat (local, "/");
 		    save = local + strlen (local);
 		    strcat (local, filename);
-		    if (access (local, R_OK) == NULL)
+		    if (access (local, R_OK) == 0)
 			return strdup (local);
 		    if (basename) {
-			*save = 0;
+			*save = '\0';
 			strcat (local, basename);
-			if (access (local, R_OK) == NULL)
+			if (access (local, R_OK) == 0)
 			    return strdup (local);
 		    }
-		} else if (access (path, R_OK) == NULL)
+		} else if (access (path, R_OK) == 0)
 		    return strdup (path);
 	    }
+            /* Top of : list search logic.   Commented out for
+               now.  When sure this is ok should delete this. */
+            /*
 	} else {
 	    localpath = strdup (path);
 	    pathtbl = split (localpath, ':');
@@ -176,9 +196,10 @@ char *datafile (char *envname,char *filename)
 	    freetbl (pathtbl, 0);
 	    free (localpath);
 	}
+        */
     }
 
-    path = getdsap() ;
+    path = getpwmig() ;
 
     strcpy (local, path);
     strcat (local, "/data/");
@@ -186,7 +207,7 @@ char *datafile (char *envname,char *filename)
     if (access (local, R_OK) == 0)
 	return strdup (local);
 
-    return 0;
+    return NULL;
 }
 
 /* $Id: datafile.c,v 1.4 1998/02/16 21:26:13 danq Exp $ */

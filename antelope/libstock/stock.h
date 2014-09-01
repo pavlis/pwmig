@@ -12,26 +12,27 @@
 #define MAX_SIGNED_INT   (0x7fffffff)
 #define MAX_UNSIGNED_INT (0xffffffffU)
 
- 
+/* 
 #include "arrays.h"
 #include "elog.h"
-
+*/
 #define BITS_PER_ELEMENT (8*sizeof(char *))
 #define bitnew() inittbl(0L,1L,0,0L,(int)BITS_PER_ELEMENT/8)
 
 #define bitfree(B) freetbl(B,0)
 #define bitempty(B) clrtbl(B,0) 
-
+/*
 #define HOOK_MAGIC 814615491
 
 typedef struct Hook {
     int magic ; 
     void (*free)(void *) ;
-    /* These are not in old DSAP so comment out for now*/
+    // These are not in old DSAP so comment out for now
     //int type ;
     void *p ;
     //pthread_mutex_t lock ;
 } Hook ; 
+*/
 
 typedef struct Xlat {
         char *name ;
@@ -43,12 +44,12 @@ typedef struct Xlat {
 extern "C" {
 #endif
 
-extern Hook *new_hook ( void (*hookfree)(void *p) );
-extern void free_hook ( Hook **hookp );
+//extern Hook *new_hook ( void (*hookfree)(void *p) );
+//extern void free_hook ( Hook **hookp );
 
-extern int make_pathdirs ( char *filename );
-extern int makedir ( char *dir );
-extern int mkfile ( char *name, unsigned long nbytes, char *init, int initsize );
+//int make_pathdirs ( char *filename );
+int makedir ( char *dir );
+//int mkfile ( char *name, unsigned long nbytes, char *init, int initsize );
 char *datapath (char *envname,char *dirname,char *filename,char *suffix);
 char *datafile (char *envname,char *filename);
 
@@ -58,7 +59,7 @@ void sncopy(char *dest,char *source,int n);
 void szcopy(char *dest,char *source,int n);
 void copystrip(char *dest,char *source,int n);
 void *memdup ( void *a, int n );
-Tbl *split (char *s,char *c );
+//Tbl *split (char *s,char *c );
 
 #ifdef	__cplusplus
 }
