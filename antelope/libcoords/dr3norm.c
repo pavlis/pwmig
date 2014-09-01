@@ -15,7 +15,6 @@
 * ****************************************************************** */
 
 #include <math.h>
-static char *SccsId="$Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:49 $";
 
 void dr3norm(v)
 double v[3];

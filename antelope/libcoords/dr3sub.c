@@ -16,9 +16,6 @@
  *U-
  */
 
-#ifndef lint
-static char     SccsId[] = "$Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:49 $ UCB CEA";
-#endif
 
 void            dr3sub(v1, v2, v3)
     double          v1[3], v2[3], v3[3];
