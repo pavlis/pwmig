@@ -186,7 +186,7 @@ int makedir (char *dir)
     if (stat (dir, &statbuf) == -1
 	    || S_ISDIR (statbuf.st_mode) == 0
 	    || access (dir, W_OK) != 0) {
-	register_error (1, "Can't create writable directory %s\n", dir);
+        fprintf(stderr,"Can't create writable directory %s\n", dir);
 	return -1;
     }
     return 0;

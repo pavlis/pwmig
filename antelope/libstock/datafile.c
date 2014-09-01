@@ -25,16 +25,14 @@ static char *Default_pwmigpath = "/opt/pwmig" ;
 
 char *getpwmig()
 {
-    char *me, *pwmigpath ;
-    char *slash ; 
-    int n ;
+    char *pwmigpath ;
     const char *defaultpath="~/pwmig";
 
     if ( (pwmigpath = getenv ( "PWMIG" )) != 0 ) {
 	return pwmigpath ; 
     }
     else
-        return defaultpath;
+        return strdup(defaultpath);
 }
     /*Original had all this stuff - removed that functionality to get rid of elog
       I am retaining it during debug in case I need to restore some of this 
@@ -111,12 +109,8 @@ char *datapath (char *envname,char *dirname,char *filename,char *suffix)
 
 char *datafile (char *envname,char *filename)
 {
-    char           *path,
-                   *localpath;
+    char           *path;
     char            local[FILENAME_MAX];
-    Tbl            *pathtbl;
-    int             i,
-                    n;
     struct stat     statbuf;
     char           *basename,
                    *save;
@@ -139,7 +133,7 @@ char *datafile (char *envname,char *filename)
    requires an datascope tbl list container that I do not want
    to convert for pwmig */
 	//if (strchr (path, ':') == NULL) {
-	    if (stat (path, &statbuf) == NULL) {
+	    if (stat (path, &statbuf) == 0) {
 		if (S_ISDIR (statbuf.st_mode)) {
 		    strcpy (local, path);
 		    strcat (local, "/");
