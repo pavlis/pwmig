@@ -89,7 +89,8 @@ char *getpwmig()
 //    return PWMIGpath;
 //}
 
-char *datapath (char *envname,char *dirname,char *filename,char *suffix)
+char *datapath (const char *envname,const char *dirname,
+        const char *filename,const char *suffix)
 {
     char            local[FILENAME_MAX];
 
@@ -107,7 +108,7 @@ char *datapath (char *envname,char *dirname,char *filename,char *suffix)
 }
 
 
-char *datafile (char *envname,char *filename)
+char *datafile (const char *envname,const char *filename)
 {
     char           *path;
     char            local[FILENAME_MAX];

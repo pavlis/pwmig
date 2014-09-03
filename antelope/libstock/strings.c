@@ -44,7 +44,7 @@ Tbl *split (char *s,char *c )
 */
 
 /* copy source to dest, padding with blanks, no trailing zero */
-void sncopy(char *dest,char *source,int n)
+void sncopy(char *dest,const char *source,int n)
 {
     int             i = 0;
 
@@ -55,7 +55,7 @@ void sncopy(char *dest,char *source,int n)
 }
 
 /* copy source to dest, add trailing zero */
-void szcopy(char *dest,char *source,int n)
+void szcopy(char *dest,const char *source,int n)
 {
     int             i = 0;
 
@@ -65,7 +65,7 @@ void szcopy(char *dest,char *source,int n)
 }
 
 /* copy source to dest, add trailing zero, strip leading, trailing blanks */
-void copystrip(char *dest,char *source,int n)
+void copystrip(char *dest,const char *source,int n)
 {
     int i, start, last ; 
 

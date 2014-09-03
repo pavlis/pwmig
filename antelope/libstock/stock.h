@@ -48,16 +48,17 @@ extern "C" {
 //extern void free_hook ( Hook **hookp );
 
 //int make_pathdirs ( char *filename );
-int makedir ( char *dir );
+int makedir ( const char *dir );
 //int mkfile ( char *name, unsigned long nbytes, char *init, int initsize );
-char *datapath (char *envname,char *dirname,char *filename,char *suffix);
-char *datafile (char *envname,char *filename);
+char *datapath (const char *envname,const char *dirname,const char *filename,
+        const char *suffix);
+char *datafile (const char *envname,const char *filename);
 
 int blank ( char *s );
 int whitespace ( char *s );
-void sncopy(char *dest,char *source,int n);
-void szcopy(char *dest,char *source,int n);
-void copystrip(char *dest,char *source,int n);
+void sncopy(char *dest,const char *source,int n);
+void szcopy(char *dest,const char *source,int n);
+void copystrip(char *dest,const char *source,int n);
 void *memdup ( void *a, int n );
 //Tbl *split (char *s,char *c );
 

@@ -163,7 +163,7 @@ int abspath (char *relp,char *absp)
 }
 
 */
-int makedir (char *dir)
+int makedir (const char *dir)
 {
     struct stat     statbuf;
     char           *s;
