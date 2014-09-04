@@ -19,4 +19,48 @@ make
 This will create the directories required by the package and copy some
 basic setup files.  
 
-4.  In a terminal cd to the pwmig directory and run make
+4.  This package has a mixed dependency on the antelope software 
+package supported commercially by Boulder Real Time Technologies
+(www.brtt.com).  Many programs in the package will not work without
+it.   However, because the core programs in the package (pwstack
+pwmig, and gridstacker) faced issues in being portable to a wide
+range of computing platforms they have been modified to work
+without antelope libraries.  The rest of this document focuses on
+how to build libraries and the core pwmig programs.   Programs
+with antelope dependencies should be built as if they were part
+of the antelope contrib directory chain (see documentation at
+http://antelopeusersgroup.org).  
+
+Building the core pwmig programs:
+
+1)   You need to first download the current version of the
+antelope contrib library from http://www.antelopeusersgroup.org.
+Use either the git clone method described there or download
+the latest tarball.  Chose a convenient place to put the 
+contrib source code.  If you will be using antelope the
+standard place is $ANTELOPE/src.   Otherwise I would recommend
+something like ~/src.
+
+2) Set the environment variable ANTELOPE_CONTRIB to the 
+top of the contrib source code tree.  
+For example (csh):  setenv ANTELOPE_CONTRIB $ANTELOPE/src/contrib
+
+would use the standard for sites with antelope.
+
+3)  You will need to manually transfer selected files from 
+antelope contrib to your PWMIG work area.   Shells scripts are
+found in two directories to do this.  Assuming the current directory
+is the same as that where this file is found type this set of 
+commands to build the required antelope libraries:
+
+cd antelope/libgclgrid
+./copy_libgclgrid_files
+cd ../libseispp
+./copy_libseispp_files
+cd ../libperf
+./copy_libperf_files
+
+4) Type these commands:
+cd $PWMIG/antelope_src
+make Include
+make install
