@@ -1,3 +1,5 @@
+#ifndef _PWMIGTRAVELTIMECALCULATOR_H_
+#define _PWMIGTRAVELTIMECALCULATOR_H_
 #include "slowness.h"
 #include "gclgrid.h"
 namespace PWMIG
@@ -110,3 +112,5 @@ public:
     virtual dmatrix SlownessPhaseDerivatives(Geographic_point& source,
                 Geographic_point& receiver,const char* phase)=0;
 };
+} // END PWMIG Namespace Encapsulation
+#endif

@@ -1,6 +1,7 @@
 #include "slowness.h"
 #include "gclgrid.h"
 #include "TravelTimeCalculator.h"
+#include "TauPCalculator.h"
 #define TBL_DIR        "tables/taup_ttimes/"
 #define TBL_TBL         "iasp91"
 #define	SIZE_PHCD	16
@@ -11,11 +12,15 @@ namespace PWMIG
 using namespace std;
 using namespace SEISPP;
 using namespace PWMIG;
+/*Put this prototype here for now - fortran code in subs.f */
+int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
+        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
 
 /* This private method does all the real work for both constructors.   
 The default constructor just uses a default model */
-TauPCalculator::initialize_Taup(string mod)
+void TauPCalculator::initialize_Taup(string mod)
 {
+    maxphases=MAXPHASES;
     string base_error("TauPCalculator constructor:  ");
     this->model=mod;
     depth=0.0;   // initial depth for initialize
@@ -23,12 +28,11 @@ TauPCalculator::initialize_Taup(string mod)
     for(int k=0;k<3;++k) prnt[k]=0;
     // This must be initialized before calling tt_taup_set_phases
     tblpath[0]='\0';
-    int setupcode;
     // Set initial phase to all
-    setupcode=taup_setup (model, string("all"));
-    if(setupcode != 0) throw SeisppError(base_error
-			+ "taup_setup function failed");
-    tt_taup_set_event_depth(depth);
+    try {
+        taup_setup (model.c_str(), "all");
+        tt_taup_set_event_depth(depth);
+    }catch(...){throw;};
 }
 TauPCalculator::TauPCalculator()
 {
@@ -51,19 +55,21 @@ TauPCalculator::~TauPCalculator()
 
 double TauPCalculator::Ptime(double rdelta, double evdepth)
 {
-	/* taup wants delta in degrees we use radians */
+    const string base_error("TauPCalculator::Ptime:  ");
+    /* taup wants delta in degrees we use radians */
     double delta=deg(rdelta);
     double arrival ; 
     char **phases ; 
     double *times ; 
     int i, nphases ; 
     try {
-        if(!strcmp(old_phases,"P"))
+        if(last_phase_code_used != "P")
         {
             i=tt_taup_set_phases("P");
             if(i!=0)
                 throw SeisppError(base_error
                         + "tt_taup_set_phases failed defining P phase");
+            last_phase_code_used=string("P");
         }
 
 	if(evdepth!=depth)
@@ -93,13 +99,16 @@ double TauPCalculator::Ptime(double rdelta, double evdepth)
 }
 double TauPCalculator::Stime(double delta, double depth)
 {
+    try {
 	double arrival;
 	/* delta in here is radians because phasetime will convert to degrees*/
 	arrival=this->phasetime(delta,depth,"S");
 	return(arrival);
+    }catch(...){throw;};
 }
 double TauPCalculator::phasetime(double rdelta, double edepth, const char *phase)
 {
+    const string base_error("TauPCalculator::phasetime:  ");
     /* taup wants delta in degrees we use radians */
     double delta=deg(rdelta);
     double arrival ; 
@@ -117,6 +126,7 @@ double TauPCalculator::phasetime(double rdelta, double edepth, const char *phase
             tt_taup_set_event_depth(edepth);
         vector<TauPComputedTime> ttall;
         ttall=tt_taup(delta);
+        vector<TauPComputedTime>::iterator ttptr;
         int n=ttall.size();
         /* Intentionall do not trap a zero n.   Reason is that 
            tt_taup throws an error in this condition.   This is
@@ -160,12 +170,13 @@ double TauPCalculator::phasetime(Geographic_point& source,
 	double distance;
         /* Note conversion to degrees necessary here.   I use radians universall
            but ddistance assumes degrees */
-        distance=ddistance(deg(s.lat),deg(s.lon),deg(r.lat),deg(r.lon));
+        distance=ddistance(deg(source.lat),deg(source.lon),
+                deg(receiver.lat),deg(receiver.lon));
 	double depth;
-	depth=r0_ellipse(s.lat)-s.r;
+	depth=r0_ellipse(source.lat)-source.r;
 	return(this->phasetime(distance,depth,phase));	
 }
-double TauPCalculator::Ptime(Geographic_point& source,Geographic_point& receiver)
+double TauPCalculator::Ptime(Geographic_point& s,Geographic_point& r)
 {
 	double distance;
         /* Note conversion to degrees necessary here.   I use radians universall
@@ -173,17 +184,18 @@ double TauPCalculator::Ptime(Geographic_point& source,Geographic_point& receiver
         distance=ddistance(deg(s.lat),deg(s.lon),deg(r.lat),deg(r.lon));
 	double depth;
 	depth=r0_ellipse(s.lat)-s.r;
-	return(this->Ptime(distance,depth,phase));	
+	return(this->Ptime(distance,depth));	
 }
 double TauPCalculator::Stime(Geographic_point& source,Geographic_point& receiver)
 {
 	double distance;
         /* Note conversion to degrees necessary here.   I use radians universall
            but ddistance assumes degrees */
-        distance=ddistance(deg(s.lat),deg(s.lon),deg(r.lat),deg(r.lon));
+        distance=ddistance(deg(source.lat),deg(source.lon),
+                deg(receiver.lat),deg(receiver.lon));
 	double depth;
-	depth=r0_ellipse(s.lat)-s.r;
-	return(this->Stime(distance,depth,phase));	
+	depth=r0_ellipse(source.lat)-source.r;
+	return(this->Stime(distance,depth));	
 }
 
 SlownessVector TauPCalculator::phaseslow(Geographic_point& s,
@@ -196,12 +208,14 @@ SlownessVector TauPCalculator::phaseslow(Geographic_point& s,
     azimuth=baz+M_PI;
     if(azimuth>(2.0*M_PI)) azimuth -= (2.0*M_PI);
     try{
-    	return(this->phaseslow(distance,azimuth,s.z,phase));
+        double z=r0_ellipse(s.lat) - s.r;
+    	return(this->phaseslow(distance,azimuth,z,phase));
     } catch(...){throw;};
 }
-SlownessVector TauPCalculator::phaseslow(double delta,double azimuth,
+SlownessVector TauPCalculator::phaseslow(double distance,double azimuth,
 		double edepth, const char *phase)
 {
+    const string base_error("TauPCalculator::phaseslow:  ");
     double delta=deg(distance);
     int nphases ; 
     int i ; 
@@ -218,8 +232,9 @@ SlownessVector TauPCalculator::phaseslow(double delta,double azimuth,
         /* In phasetime this call is behind an interface function.   here
            I chose to do this all in one and have Pslow and Sslow just call
            this function */
-		trtm_ (&del, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
-			&(this->dtdh[0]), &(this->dddp[0]), &(this->dpcd[0]),
+        float fdel=(float)delta;
+	trtm_ (&fdel, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
+			&(this->dtdh[0]), &(this->dddp[0]), &(this->phcd[0][0]),
 			SIZE_PHCD);
         /* Hunt for the requested phase.  For now throw and error if an exact
            match is not found.  As noted elsewhere this will probably require some
@@ -247,7 +262,7 @@ SlownessVector TauPCalculator::phaseslow(double delta,double azimuth,
             sserr << base_error
                 << "taup calculator did not return a result for phase="
                 << phase<<endl
-                << "List of phase names and slowness values:"<<endl
+                << "List of phase names and slowness values:"<<endl;
             for(i=0;i<nphases;++i)
                 sserr <<phcd[i]<<" "<<dddp[i]*EQUATORIAL_EARTH_RADIUS<<endl;
             throw SeisppError(sserr.str());
@@ -313,16 +328,17 @@ void TauPCalculator::tt_taup_set_table(const char *table_path)
         if(table_path!=NULL)
         {
             if(strlen(table_path)>0)
-                tablebase = table_path;
+                tablebase = strdup(table_path);
         }
         else if(strlen(table_path)>0)
-            tablebase = table_path;
+            tablebase = strdup(table_path);
 	else if ( ( tablebase= getenv("TAUP_TABLE")) == NULL ) 
-	    tablebase = TBL_TBL ; 
+	    tablebase = strdup(TBL_TBL) ; 
 	if ( *tablebase != '/' ) 
 	    strcpy ( tablename, TBL_DIR ) ; 
 	strcat ( tablename, tablebase ) ; 
 	strcat ( tablename, ".hed" ) ; 
+        free(tablebase);
         char *pathtmp;
 	pathtmp = datafile ( "TAUP_PATH", tablename ) ;
         /* Note tblpath is part of the object so is saved here */
@@ -366,18 +382,23 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 	static char pcntl[MAXPHASES][SIZE_PHCD];
 	static char phass[512];
 	static char old_phases[512] ;
+        --note I change the name to last_phase_code_used for clarity--
        */
 
 	char *phase;
 	int k;
         int one(1);   // obnoxious FORTRAN requirement from pass by reference only
-        /* initialize old_phases = phases */
-        strcpy(old_phases,phases);
+        /* initialize last_phase_code_used = phases */
+        last_phase_code_used=string(phases);
 
         /* Input phases array is a comma separated list.  This section 
          breaks these tokens up and puts them in the pcntl array of char*/
-	strcpy (phass, phases);
-	strcat (phass, ",");
+        string phtmp(phases);
+        phtmp=phtmp+",";
+        /* This is needed because strtok alters the contents of 
+           its arg and string objects are immutable */
+        char *phass;
+        phass=strdup(phtmp.c_str());
 	nn = 0;
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
 		//if (!phase[0]) continue;
@@ -386,20 +407,26 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 		for (k=strlen(phase); k<SIZE_PHCD; k++) pcntl[nn][k] = ' ';
 		nn++;
 	}
+        free(phass);
         try {
-            nn=tt_taup_set_table(model);
+            tt_taup_set_table(model);
 	} catch(SeisppError& serr){throw serr;};
 	if(strlen(tblpath)<=0)
 		throw SeisppError(string("TauPCalculator::taup_setup:  ")
 			+ "travel time table path variable was not initialized");
 
 	tabin_ (&one, tblpath ) ; 
-	brnset_ (&nn, pcntl, prnt, SIZE_PHCD);
+        /* Unclear if this is the right syntax, but I think this will work 
+           in looking at the way f2c translated this.   Assumes pcntl is
+           a fortran style matrix with char values. This passes a pointer to
+           the first element of that array and the fortran routine will assume
+           it expands to SIZE_PHCD X MAXPHASES]  */
+	brnset_ (&nn, pcntl[0], prnt, SIZE_PHCD);
 	ttopen = 1;
 }
 
 
-int tt_taup_set_phases(string phases)
+int TauPCalculator::tt_taup_set_phases(string phases)
 {
         /*
 	static int ttopen=0;
@@ -412,13 +439,17 @@ int tt_taup_set_phases(string phases)
         */
 	char *phase;
 	int k;
+        int one(1);
         // Return immediately if the desired phase hasn't changed
-        k=strcmp(old_phases,phases);
-        if(k==0) 
-            return 1;
-	strcpy ( old_phases, phases) ; 
-	strcpy (phass, phases);
-	strcat (phass, ",");
+        if(last_phase_code_used==phases) return 1;
+        /* Input phases array is a comma separated list.  This section 
+         breaks these tokens up and puts them in the pcntl array of char*/
+        string phtmp(phases);
+        phtmp=phtmp+",";
+        /* This is needed because strtok alters the contents of 
+           its arg and string objects are immutable */
+        char *phass;
+        phass=strdup(phtmp.c_str());
 	nn = 0;
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
 		if (!phase[0]) continue;
@@ -426,6 +457,7 @@ int tt_taup_set_phases(string phases)
 		for (k=strlen(phase); k<SIZE_PHCD; k++) pcntl[nn][k] = ' ';
 		nn++;
 	}
+        free(phass);
         /* Indicate failure if the tblpath variable has not been set */
         if(strlen(tblpath)<=0)
         {
@@ -434,11 +466,10 @@ int tt_taup_set_phases(string phases)
         }
 
 	tabin_ (&one, tblpath) ;
-	brnset_ (&nn, pcntl, prnt, SIZE_PHCD);
+	brnset_ (&nn, pcntl[0], prnt, SIZE_PHCD);
 	ttopen = 1;
 	return (1);
 }
-*/
 
 
 void TauPCalculator::tt_taup_set_event_depth(double edepth)
@@ -450,7 +481,8 @@ void TauPCalculator::tt_taup_set_event_depth(double edepth)
 
 	depth = edepth;
 	if (depth < 0.001) depth = 0.001;
-	depset_ (&depth, usrc);
+        float fdepth=(float)(depth);
+	depset_ (&fdepth, usrc);
 }
 /* Warning this function assumes del is degrees to mate with Bulland's 
    code */
@@ -472,22 +504,25 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	trtm_ (&del, &maxphases, &nphase, &tt[(*nph)], &dtdd[(*nph)],
 			&dtdh[(*nph)], &dddp[(*nph)], &(phcd[(*nph)]), SIZE_PHCD);
 */
+        const string base_error("TauPCalculator::tt_taup:  ");
+	int i, k, l;
 	int nphases;   // static above, but does not seem necessary 
-	trtm_ (&del, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
-		&(this->dtdh[0]), &(this->dddp[0]), &(this->dpcd[0]),
+        float fdel=(float)del;
+	trtm_ (&fdel, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
+		&(this->dtdh[0]), &(this->dddp[0]), &(this->phcd[0][0]),
 		SIZE_PHCD);
 	/* Maintenance issue warning:  callers of this private method 
            can assume this error is trapped and must have a hander.
            For efficiency they do not repeat the test, but be careful if
            this safety is removed */
-	if(nphase <= 0) 
+	if(nphases <= 0) 
 	   throw SeisppError(base_error 
 		+ "taup trtm function returned no results from phase list "
 		+ phass);
 	vector<TauPComputedTime> result;
-	result.reserve(nphase);
+	result.reserve(nphases);
 	TauPComputedTime ttk;
-	for(k=0;i<nphase;++k)
+	for(k=0;i<nphases;++k)
 	{
 	    /* It seems phcd tokens are blank terminated so we have to scan
 	    for that instead of a null */
@@ -505,3 +540,4 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	return(result);
 }
 
+}  // END PWMIG Namespace encapsulation

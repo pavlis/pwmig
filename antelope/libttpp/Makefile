@@ -6,6 +6,7 @@ DLIB=$(LIB:.a=$(DSUFFIX))
 #DATADIR = tables
 
 ldlibs=-lstock -lcoords -lseispp
+cxxflags=-DNO_ANTELOPE
 
 include $(PWMIGMAKE)
 DIRS=

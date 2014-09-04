@@ -1,8 +1,11 @@
+#ifndef _PWMIG_TAUPCALCULATOR_H_
+#define _PWMIG_TAUPCALCULATOR_H_
 #include <vector>
+#include <string>
 #include "TravelTimeCalculator.h"
-#include "tttaup.h"
 #define MAXPHASES 60
 #define SIZE_PHCD 16
+#define MAXPATHLEN 512
 namespace PWMIG
 {
 using namespace std;
@@ -217,13 +220,14 @@ public:
     dmatrix SlownessPhaseDerivatives(Geographic_point& source,
                 Geographic_point& receiver,const char* phase);
 private:
-    /* The following three attributes are stored in the "Hook" in antelope*/
+    /* The following two attributes are stored in the "Hook" in antelope
+     as char * variables*/
     string model;
-    string phase_code;   
+    string last_phase_code_used;   
     /* Cached in object - depth change initates action */
     double depth; 
     /* These are work arrays used by taup routines */
-    int maxphases(MAXPHASES);
+    int maxphases;
     float tt[MAXPHASES], dtdd[MAXPHASES], dtdh[MAXPHASES], dddp[MAXPHASES];
     char phcd[MAXPHASES][SIZE_PHCD];
     char tblpath[MAXPATHLEN];
@@ -237,17 +241,23 @@ private:
     char old_phases[1024];
     /* a mystery static variable passed to depset fortran subroutine */
     float usrc[2];
-    
+    /* used in all constructors */
+    void initialize_Taup(string mod);
     /* methods converted from tt_taup.c */
-    void tt_taup_set_table(const char *table_path)
+    void tt_taup_set_table(const char *table_path);
     int tt_taup_set_phases(string phases);
     /* an ugly routine that returns modname */
     string taup_get_modname();
     void taup_setup(const char *model, const char *phases);
     void tt_taup_set_event_depth(double edepth);
-    vector<TauPComputedTime> tt_taup(double del)
+    vector<TauPComputedTime> tt_taup(double del);
 };
+extern "C" {
+void tabin_(int *,char *);
+void brnset_(int *,char *,int *,int);
+void depset_(float *,float *);
 }
 
 
 } // End PWMIG namespace encapsulation
+#endif
