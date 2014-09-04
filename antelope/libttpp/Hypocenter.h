@@ -1,12 +1,15 @@
 #ifndef _HYPOCENTER_H_
 #define _HYPOCENTER_H_
 #include <string>
-#include "tt.h"
 #include "Metadata.h"
 #include "SeisppError.h"
 #include "slowness.h"
+#include "TauPCalculator.h"
 namespace PWMIG
 {
+using namespace std;
+using namespace SEISPP;
+using namespace PWMIG;
 /*! \brief Defines a source position and a set of useful methods with which a source
 position can be associated.
 

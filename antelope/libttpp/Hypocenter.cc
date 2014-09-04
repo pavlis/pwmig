@@ -141,10 +141,11 @@ double Hypocenter::ptime(double lat0, double lon0, double elev)
 SlownessVector  Hypocenter::phaseslow(double lat0, double lon0, double elev, string phase)
 		throw(SeisppError)
 {
-    double delta;
-    delta = this->distance(lat0,lon0);
+    double epidist, az;
+    dist(lat0,lon0,lat,lon,&epidist, &az);
+    double baz=az+M_PI;
     try{
-        return(this->ttcalc.phaseslow(delta,z));
+        return(this->ttcalc.phaseslow(epidist,baz,z,phase.c_str()));
     } catch(...){throw;};
 }
 SlownessVector Hypocenter::pslow(double lat0, double lon0, double elev)
@@ -153,6 +154,7 @@ SlownessVector Hypocenter::pslow(double lat0, double lon0, double elev)
 	string phs="P";
 
 	try{
+                SlownessVector u;
 		u = this->phaseslow(lat0,lon0,elev,phs);
                 return(u);
 	} catch (...){throw;};
