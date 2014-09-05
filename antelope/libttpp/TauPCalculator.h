@@ -70,6 +70,8 @@ public:
       \throw - SeisppError if the constructor files */
 
     TauPCalculator(const char *model);
+    /*! Standard copy constructor. */
+    TauPCalculator(const TauPCalculator& parent);
     ~TauPCalculator();
     /*! \brief Compute travel time for a specified phase.
 
@@ -219,6 +221,8 @@ public:
       */
     dmatrix SlownessPhaseDerivatives(Geographic_point& source,
                 Geographic_point& receiver,const char* phase);
+    /*! Assignment operator */
+    TauPCalculator& operator=(const TauPCalculator& parent);
 private:
     /* The following two attributes are stored in the "Hook" in antelope
      as char * variables*/
@@ -233,12 +237,10 @@ private:
     char tblpath[MAXPATHLEN];
     /* More that were static variables in the taup_setup function.  
    Here much better to make them part of private area of the object */
-    int ttopen;
+    bool ttopen;
     int prnt[3];
+    /* This variable holds current number of phases */
     int nn;
-    char pcntl[MAXPHASES][SIZE_PHCD];
-    char phass[1024];
-    char old_phases[1024];
     /* a mystery static variable passed to depset fortran subroutine */
     float usrc[2];
     /* used in all constructors */

@@ -28,6 +28,7 @@ void TauPCalculator::initialize_Taup(string mod)
     for(int k=0;k<3;++k) prnt[k]=0;
     // This must be initialized before calling tt_taup_set_phases
     tblpath[0]='\0';
+    ttopen=false;
     // Set initial phase to all
     try {
         taup_setup (model.c_str(), "all");
@@ -43,6 +44,64 @@ TauPCalculator::TauPCalculator()
 TauPCalculator::TauPCalculator(const char *mod)
 {
     this->initialize_Taup(mod);
+}
+TauPCalculator::TauPCalculator(const TauPCalculator& parent)
+{
+    model=parent.model;
+    last_phase_code_used=parent.last_phase_code_used;
+    depth=parent.depth;
+    maxphases=parent.maxphases;
+    ttopen=parent.ttopen;
+    nn=parent.nn;
+    usrc[0]=parent.usrc[0];
+    usrc[1]=parent.usrc[1];
+    int i,j;
+    for(i=0;i<parent.nn;++i)
+    {
+        /* These probably do not really need to be copied */
+        tt[i]=parent.tt[i];
+        dtdd[i]=parent.dtdd[i];
+        dtdh[i]=parent.dtdh[i];
+        dddp[i]=parent.dddp[i];
+        /* not sure these are null terminated so copy the entire
+           block */
+        for(j=0;j<SIZE_PHCD;++j)
+        {
+            phcd[i][j]=parent.phcd[i][j];
+        }
+    }
+    strncpy(tblpath,parent.tblpath,MAXPATHLEN);
+}
+TauPCalculator& TauPCalculator::operator=(const TauPCalculator& parent)
+{
+    if(this!=&parent)
+    {
+        model=parent.model;
+        last_phase_code_used=parent.last_phase_code_used;
+        depth=parent.depth;
+        maxphases=parent.maxphases;
+        ttopen=parent.ttopen;
+        nn=parent.nn;
+        usrc[0]=parent.usrc[0];
+        usrc[1]=parent.usrc[1];
+        int i,j;
+        for(i=0;i<parent.nn;++i)
+        {
+            /* These probably do not really need to be copied */
+            tt[i]=parent.tt[i];
+            dtdd[i]=parent.dtdd[i];
+            dtdh[i]=parent.dtdh[i];
+            dddp[i]=parent.dddp[i];
+            /* not sure these are null terminated so copy the entire
+               block */
+            for(j=0;j<SIZE_PHCD;++j)
+            {
+                phcd[i][j]=parent.phcd[i][j];
+            }
+        }
+        strncpy(tblpath,parent.tblpath,MAXPATHLEN);
+    }
+    return(*this);
 }
 TauPCalculator::~TauPCalculator()
 {
@@ -117,7 +176,7 @@ double TauPCalculator::phasetime(double rdelta, double edepth, const char *phase
     int nphases ; 
     int i ; 
     try {
-        if(strcmp(phase,phass))
+        if(last_phase_code_used != phase)
         {
             tt_taup_set_phases(phase);
             tt_taup_set_event_depth(edepth);
@@ -220,7 +279,7 @@ SlownessVector TauPCalculator::phaseslow(double distance,double azimuth,
     int nphases ; 
     int i ; 
     try {
-        if(strcmp(phase,phass))
+        if(last_phase_code_used != phase)
         {
             tt_taup_set_phases(phase);
             tt_taup_set_event_depth(edepth);
@@ -392,7 +451,7 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
         last_phase_code_used=string(phases);
 
         /* Input phases array is a comma separated list.  This section 
-         breaks these tokens up and puts them in the pcntl array of char*/
+         breaks these tokens up and puts them in the phcd array of char*/
         string phtmp(phases);
         phtmp=phtmp+",";
         /* This is needed because strtok alters the contents of 
@@ -403,8 +462,8 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
 		//if (!phase[0]) continue;
 		if (phase[0]!='\0') continue;
-		strcpy (&pcntl[nn][0], phase);
-		for (k=strlen(phase); k<SIZE_PHCD; k++) pcntl[nn][k] = ' ';
+		strcpy (&phcd[nn][0], phase);
+		for (k=strlen(phase); k<SIZE_PHCD; k++) phcd[nn][k] = ' ';
 		nn++;
 	}
         free(phass);
@@ -417,12 +476,12 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 
 	tabin_ (&one, tblpath ) ; 
         /* Unclear if this is the right syntax, but I think this will work 
-           in looking at the way f2c translated this.   Assumes pcntl is
+           in looking at the way f2c translated this.   Assumes phcd is
            a fortran style matrix with char values. This passes a pointer to
            the first element of that array and the fortran routine will assume
            it expands to SIZE_PHCD X MAXPHASES]  */
-	brnset_ (&nn, pcntl[0], prnt, SIZE_PHCD);
-	ttopen = 1;
+	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
+	ttopen = true;
 }
 
 
@@ -443,7 +502,7 @@ int TauPCalculator::tt_taup_set_phases(string phases)
         // Return immediately if the desired phase hasn't changed
         if(last_phase_code_used==phases) return 1;
         /* Input phases array is a comma separated list.  This section 
-         breaks these tokens up and puts them in the pcntl array of char*/
+         breaks these tokens up and puts them in the phcd array of char*/
         string phtmp(phases);
         phtmp=phtmp+",";
         /* This is needed because strtok alters the contents of 
@@ -453,8 +512,8 @@ int TauPCalculator::tt_taup_set_phases(string phases)
 	nn = 0;
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
 		if (!phase[0]) continue;
-		strcpy (&pcntl[nn][0], phase);
-		for (k=strlen(phase); k<SIZE_PHCD; k++) pcntl[nn][k] = ' ';
+		strcpy (&phcd[nn][0], phase);
+		for (k=strlen(phase); k<SIZE_PHCD; k++) phcd[nn][k] = ' ';
 		nn++;
 	}
         free(phass);
@@ -466,8 +525,8 @@ int TauPCalculator::tt_taup_set_phases(string phases)
         }
 
 	tabin_ (&one, tblpath) ;
-	brnset_ (&nn, pcntl[0], prnt, SIZE_PHCD);
-	ttopen = 1;
+	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
+	ttopen = true;
 	return (1);
 }
 
@@ -478,6 +537,9 @@ void TauPCalculator::tt_taup_set_event_depth(double edepth)
 	static float depth;
 	static float usrc[2];
 	*/
+        if(!ttopen) 
+            throw SeisppError(string("TauPCalculator::tt_taup_set_event_depth:  ")
+                + "usage error.   Calling set depth before initialization not allowed");
 
 	depth = edepth;
 	if (depth < 0.001) depth = 0.001;
@@ -505,6 +567,9 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 			&dtdh[(*nph)], &dddp[(*nph)], &(phcd[(*nph)]), SIZE_PHCD);
 */
         const string base_error("TauPCalculator::tt_taup:  ");
+        if(!ttopen)
+            throw SeisppError(base_error
+                    + "Object has not been initialized - check source code");
 	int i, k, l;
 	int nphases;   // static above, but does not seem necessary 
         float fdel=(float)del;
@@ -518,7 +583,7 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	if(nphases <= 0) 
 	   throw SeisppError(base_error 
 		+ "taup trtm function returned no results from phase list "
-		+ phass);
+		+ last_phase_code_used);
 	vector<TauPComputedTime> result;
 	result.reserve(nphases);
 	TauPComputedTime ttk;
