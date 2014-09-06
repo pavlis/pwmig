@@ -59,7 +59,7 @@ Hypocenter::Hypocenter(Metadata& md)
 	//method=string("tttaup");
 	model = string("iasp91");
 	try {
-		ttcalc=TauPCalculator(model);
+		ttcalc=TauPCalculator(model.c_str());
 	} catch (...){throw;};
 }
 Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
@@ -78,7 +78,7 @@ Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
 		<< "implemented in the TauPCalculator C++ object"<<endl;
 	model=mod0;
 	try {
-	    ttcalc=TauPCalculator(mod0);
+	    ttcalc=TauPCalculator(mod0.c_str());
 	} catch(...){throw;};
 }
 		
@@ -111,7 +111,7 @@ void Hypocenter::tt_setup(string meth, string mod)
 {
    /* In this case silently ignore meth */
   try {
-	ttcalc=TauPCalculator(mod);
+	ttcalc=TauPCalculator(mod.c_str());
 	// I think this may be redundant
 	model=mod;
   } catch(...){throw;};
