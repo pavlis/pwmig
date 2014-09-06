@@ -14,7 +14,7 @@
 #define FALSE_ (0)
 #define VOID void
 
-#include "elog.h"
+//#include "elog.h"
 
 #define jsrc	150
 #define jseg	30

@@ -1,6 +1,6 @@
 INCLUDE=Hypocenter.h TauPCalculator.h TravelTimeCalculator.h tttaup.i
 LIB = libttpp.a
-DLIB=$(LIB:.a=$(DSUFFIX))
+#DLIB=$(LIB:.a=$(DSUFFIX))
 
 #REQUIRE_DATA = taup_ttimes
 #DATADIR = tables
@@ -14,7 +14,7 @@ DIRS=
 OBJS=TauPCalculator.o \
   Hypocenter.o \
   delta.o \
-  subs.o 
+  f2ctaup.o 
 $(LIB) : $(OBJS)
 	$(RM) $@
 	$(AR) $(ARFLAGS) $@ $(LORDER) $(OBJS) $(TSORT)
