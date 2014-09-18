@@ -12,10 +12,7 @@
 #define MAX_SIGNED_INT   (0x7fffffff)
 #define MAX_UNSIGNED_INT (0xffffffffU)
 
-/* 
-#include "arrays.h"
 #include "elog.h"
-*/
 #define BITS_PER_ELEMENT (8*sizeof(char *))
 #define bitnew() inittbl(0L,1L,0,0L,(int)BITS_PER_ELEMENT/8)
 
@@ -62,6 +59,62 @@ void copystrip(char *dest,const char *source,int n);
 void *memdup ( void *a, int n );
 //Tbl *split (char *s,char *c );
 
+/* These are time functions converted from dsap */
+struct date_time{  /* date/time structure from old time conversion routines */
+        double epoch;
+        long date;
+        int year;
+        int month;
+        char mname[4];
+        int day;
+        int doy;
+        int hour;
+        int minute;
+        float second;
+};
+
+#define MDTIME                  1
+#define YDTIME                  2
+#define MD                      3
+#define YD                      4
+#define STRTIME                 5
+#define STRDATE                 6
+#define STRYDTIME               7
+double now();
+double epoch(int yd);
+int yearday ( double e );
+char *strydtime ( double e );
+char *strtime(double e);
+char *strdate(double e);
+static int e2hz ( double epoch, char *timezone, int *year, int *doy, int *month, int *mday, int *hour, int *minute, double *second, char **zonename );
+static char* ztime2str ( char *f, double e, int year, int doy, int month, int mday, int hour, int minute, double second, char *zonename );
+char *epoch2str ( double epoch, char *f );
+char *zepoch2str ( double epoch, char *f, char *timezone );
+int fmttime ( double epoch, char *result, int fmt, char *timezone );
+char *strdelta(double e);
+int htoe(struct date_time *dt);
+int timeprint(struct date_time *dt);
+int zh_today(struct date_time *dt);
+int mdtodate(struct date_time *dt);
+int time_string2epoch(char *s, double *t);
+static double year2days(double year);
+double dtoepoch(long date);
+int isleap(int year);
+double timecon(char *timestr);
+long todaysdate();
+int month_day(struct date_time *dt);
+int etoh(struct date_time *dt);
+char *dbstrf2c(char *s,int len);
+int get_nice_times(double tstart, double tend, int maxincs, 
+        double *nstart, double *ninc);
+void doy2mday(int doy,int year, int *month, int *day);
+int mday2doy(int yr,int mon, int day);
+double h2e(int yr, int day, int hr, int min, double sec);
+void e2h(double e, int *yr, int *day, int *hr, int *min, double *sec);
+static int check_tz();
+int zstr2epoch(char *, double *e);
+double str2epoch(char *);
+static int my_yyinput(char *buf,int ms);
 #ifdef	__cplusplus
 }
 #endif
@@ -184,6 +237,7 @@ extern int ReTuRn(int) ;
  * INSISTFAIL specifies what happens when an insist fails -- it may be
  * overridden with a special macro within a file */
 
+/*
 #ifndef INSISTFAIL
 #define INSISTFAIL die
 #endif
@@ -193,6 +247,7 @@ extern int ReTuRn(int) ;
 
 #define insistmsg(ex,msg)	STMT( if (!(ex)){ INSISTFAIL(1, "%s: %s in file %s, line %d\n", msg, __func__, __FILE__, __LINE__ ) ;} )
 #define btwarnmsg(ex,msg)	STMT( if (!(ex)){ elog_debug(1, "%s: file %s, %s in line %d\n", msg, __func__, __FILE__, __LINE__ ) ;} )
+*/
 
 /* The meaning of the following macros is fairly obvious; however, they
  * are all dangerous in the sense that their arguments will be evaluated

@@ -1,8 +1,16 @@
 LIB=libstock.a
-INCLUDE=stock.h
+INCLUDE=stock.h \
+        elog.h
 OBJS=datafile.o \
-  strings.o \
-  wd.o
+     elog.o \
+     epoch.o \
+     h2e.o \
+     now.o \
+     str2epoch.o \
+    strings.o \
+    time.o \
+    wd.o
+cxxflags = -g
 include $(PWMIGMAKE)
 $(LIB) : $(OBJS)
 	ar rv $@ $(OBJS)
