@@ -20,3 +20,8 @@ remapgrid.cc
 tapergrid.cc
 ustrans.cc
 zero.cc
+dmatrix.3
+extract_gridline.3
+gclgrid.3
+pathintegral.3
+ustrans.3

@@ -4,13 +4,11 @@ ldlibs=-lgclgrid
 cxxflags=-g -DNO_ANTELOPE
 INCLUDE= \
   BasicTimeSeries.h\
-  Hypocenter.h\
   Metadata.h\
   PfStyleMetadata.h \
   SeisppError.h\
   SeisppKeywords.h \
   SphericalCoordinate.h\
-  ThreeComponentChannelMap.h\
   ThreeComponentSeismogram.h\
   TimeSeries.h\
   TimeWindow.h\
@@ -26,10 +24,8 @@ INCLUDE= \
 include $(PWMIGMAKE)  	
 
 OBJS=BasicTimeSeries.o \
-  Hypocenter.o \
   Metadata.o \
   PfStyleMetadata.o \
-  ThreeComponentChannelMap.o \
   ThreeComponentSeismogram.o \
   TimeSeries.o \
   VelocityModel_1d.o \

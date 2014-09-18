@@ -1,7 +1,5 @@
 BasicTimeSeries.cc
 BasicTimeSeries.h
-Hypocenter.cc
-Hypocenter.h
 Metadata.cc
 Metadata.h
 PfStyleMetadata.cc
@@ -9,8 +7,6 @@ PfStyleMetadata.h
 SeisppError.h
 SeisppKeywords.h
 SphericalCoordinate.h
-ThreeComponentChannelMap.h
-ThreeComponentChannelMap.cc
 ThreeComponentSeismogram.cc
 ThreeComponentSeismogram.h
 TimeSeries.cc
