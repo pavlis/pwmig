@@ -16,6 +16,10 @@ buildenv : pwmigmake subdirs
 	if [ ! -d $(PWMIG)/lib ] ; then \
 		mkdir $(PWMIG)/lib ; \
 	fi ;
+	if [ ! -d $(PWMIG)/man ] ; then \
+		mkdir $(PWMIG)/man ; \
+		mkdir $(PWMIG)/man/man3 ; \
+	fi ;
 	if [ ! -d $(PWMIG)/antelope_src ] ; then \
 		mkdir $(PWMIG)/antelope_src ; \
 		mkdir $(PWMIG)/antelope_src/libgclgrid ; \

@@ -6,7 +6,7 @@ LIB = libttpp.a
 #DATADIR = tables
 
 ldlibs=-lstock -lcoords -lseispp
-cxxflags=-DNO_ANTELOPE
+cxxflags=-DNO_ANTELOPE -g
 
 include $(PWMIGMAKE)
 DIRS=
