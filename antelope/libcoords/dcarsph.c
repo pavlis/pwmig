@@ -1,6 +1,8 @@
 #include <math.h>
 //#include "stock.h"
 #include "coords.h"
+#define SIGN(d)         (((d)>0)? 1.0 : ((d)<0) ? -1.0 : 0.0)
+
 
 void   dcarsph(x, xlong, xlat)
 double x[3];
