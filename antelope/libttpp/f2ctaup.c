@@ -1,4 +1,5 @@
 #include "_taup.h"
+#include <stdio.h>
 static struct Brkc brkc_;
 static struct Pcdc pcdc_;
 /* This generated warnings.  These are set in a define in _taup.h replace by numbers
@@ -327,7 +328,7 @@ static int
 bkin_ (int *lu, int *nrec, int *len, double *buf)
 {
     if (*nrec < 0 || *nrec >= tbl_maxrec) {
-	die (0, "bkin called with record #=%d, MAX record =%d\n", *nrec, tbl_maxrec);
+	elog_die (0, "bkin called with record #=%d, MAX record =%d\n", *nrec, tbl_maxrec);
     }
     if (*nrec == 0)
 	memset (buf, 0, *len * sizeof (double));
@@ -366,7 +367,7 @@ tabin_ (int *in, char *modelname)
     strcpy (filename, modelname);
     strcat (filename, ".hed");
     if ((fin = fopen (filename, "r")) == NULL)
-	die (1, "Can't open '%s'\n", filename);
+	elog_die (1, "Can't open '%s'\n", filename);
     for (i = 0; i < jtsm; i++)
 	brkc_.tauc[i] = 0.0;
     for (i = 0; i < jxsm; i++)
@@ -389,7 +390,7 @@ tabin_ (int *in, char *modelname)
     READ (brkc_.kndx);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     READ (reclen1);
     READ (umdc_.pm);
@@ -397,14 +398,14 @@ tabin_ (int *in, char *modelname)
     READ (umdc_.ndex);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     READ (reclen1);
     READ (brkc_.pu);
     READ (brkc_.pux);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     READ (reclen1);
     READ (pcdc_.phcd);
@@ -413,23 +414,23 @@ tabin_ (int *in, char *modelname)
     READ (tabc_.jndx);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     READ (reclen1);
     READ (tabc_.pt);
     READ (brkc_.taut);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     READ (reclen1);
     READ (brkc_.coef);
     READ (reclen2);
     if (reclen1 != reclen2)
-	die (0, "record lengths don't match -- can't read '%s'\n",
+	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
     if (error != 0)
-	die (1, "failure reading header file '%s'\n", filename);
+	elog_die (1, "failure reading header file '%s'\n", filename);
 	fclose(fin) ; 
     strcpy (filename + strlen (filename) - 3, "tbl");
     if (tbl_data != 0) {
@@ -437,7 +438,7 @@ tabin_ (int *in, char *modelname)
 	tbl_data = 0;
     }
     if ((fd = mapafile (filename, &tbl_data, &tbl_data_size, 0)) < 0)
-	die (1, "Couldn't open table file '%s'\n", filename);
+	elog_die (1, "Couldn't open table file '%s'\n", filename);
     close (fd);
     tbl_maxrec = tbl_data_size / tbl_record_len;
     for (nph = 1; nph <= 2; ++nph) {
@@ -624,7 +625,7 @@ L8:
 	    ;
 	}
 	if (!fnd) {
-	    fprint (stderr, "Brnset:  phase %s not found", phlst + (i__ - 1 << 3));
+	    fprintf (stderr, "Brnset:  phase %s not found", phlst + (i__ - 1 << 3));
 	}
 	goto L10;
 L12:

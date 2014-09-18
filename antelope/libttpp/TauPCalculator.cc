@@ -6,15 +6,18 @@
 #define TBL_TBL         "iasp91"
 #define	SIZE_PHCD	16
 #define	MAXPHASES		60
+extern "C"
+{
+/*Put this prototype here for now - fortran code in subs.f */
+int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
+        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
+}
 
 namespace PWMIG
 {
 using namespace std;
 using namespace SEISPP;
 using namespace PWMIG;
-/*Put this prototype here for now - fortran code in subs.f */
-int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
-        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
 
 /* This private method does all the real work for both constructors.   
 The default constructor just uses a default model */

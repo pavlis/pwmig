@@ -67,6 +67,8 @@ public:
 	**/
 	Hypocenter(double lat0, double lon0, double z0, double t0,
                 string meth0, string mod0);
+        /*! Standard Destructor */
+        ~Hypocenter(){};
 	//* Standard copy constructor */
 	Hypocenter(const Hypocenter&);
 	//* Standard assignment operator.*/
