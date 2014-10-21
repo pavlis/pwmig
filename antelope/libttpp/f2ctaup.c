@@ -1,20 +1,13 @@
+#include <unistd.h>
 #include "_taup.h"
-#include <stdio.h>
+#include "swapbytes.h"
 static struct Brkc brkc_;
 static struct Pcdc pcdc_;
-/* This generated warnings.  These are set in a define in _taup.h replace by numbers
 static struct Prtflc prtflc_ =
-{TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_,
+{ {TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_,
     TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_,
     TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_, TRUE_,
-TRUE_, TRUE_, TRUE_, TRUE_, FALSE_, FALSE_};
-*/
-static struct Prtflc prtflc_ = 
-{ {1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,
-    1,1,1,1},
-{0,0}};
+TRUE_, TRUE_, TRUE_, TRUE_}, {FALSE_, FALSE_}};
 static struct Umdc umdc_;
 static struct Tabc tabc_;
 static struct Pdec pdec_;
@@ -284,7 +277,7 @@ s_copy (register char *a, register char *b, int la, int lb)
     }
 }
 static int
-mapafile (char *filename, char **buffer, int *bufsize, int flag)
+taupmapafile (char *filename, char **buffer, int *bufsize, int flag)
 {
     int             fd;
     struct stat     statbuf;
@@ -300,8 +293,7 @@ mapafile (char *filename, char **buffer, int *bufsize, int flag)
 	return -1;
     }
     if (fstat (fd, &statbuf)) {
-	//elog_log (1, "fstat failed for '%s'\n", filename);
-	fprintf (stderr, "fstat failed for '%s'\n", filename);
+	elog_log (1, "fstat failed for '%s'\n", filename);
 	return -1;
     }
     if (flag & 1)
@@ -312,13 +304,13 @@ mapafile (char *filename, char **buffer, int *bufsize, int flag)
     mmap_data = mmap (NULL, statbuf.st_size,
 		      prot, MAP_SHARED, fd, 0);
     if (mmap_data == (char *) -1) {
-	fprintf(stderr, "Can't memory map '%s'\n", filename);
+	elog_log (1, "Can't memory map '%s'\n", filename);
 	return -1;
     }
     *buffer = mmap_data;
     if (flag & 2) {
 	if (lockf (fd, F_TLOCK, statbuf.st_size)) {
-	    fprintf(stderr, "Can't lock '%s' for exclusive use\n", filename);
+	    elog_log (1, "Can't lock '%s' for exclusive use\n", filename);
 	    return -1;
 	}
     }
@@ -328,15 +320,24 @@ static int
 bkin_ (int *lu, int *nrec, int *len, double *buf)
 {
     if (*nrec < 0 || *nrec >= tbl_maxrec) {
-	elog_die (0, "bkin called with record #=%d, MAX record =%d\n", *nrec, tbl_maxrec);
+	die (0, "bkin called with record #=%d, MAX record =%d\n", *nrec, tbl_maxrec);
     }
     if (*nrec == 0)
 	memset (buf, 0, *len * sizeof (double));
-    else
-	memcpy (buf, tbl_data + (*nrec - 1) * tbl_record_len, *len * sizeof (double));
+    else {
+	unsigned char *p8 ;
+	p8 = (unsigned char *) (tbl_data + (*nrec - 1) * tbl_record_len); 
+	md2hd(&p8, buf, *len) ;
+    }
     return 0;
 }
 #define READ(A) if(fread(&(A),sizeof(A),1,fin)!=1)error=1;
+#ifdef WORDS_BIGENDIAN
+#define SWAP4(X)
+#else
+#define SWAP4(X)  swap4(&X,&X,1)
+#endif
+
 int 
 tabin_ (int *in, char *modelname)
 {
@@ -358,6 +359,8 @@ tabin_ (int *in, char *modelname)
     char            filename[1024];
     FILE           *fin;
     int             fd;
+    unsigned char  *p8 ; 
+
     strcpy (phdif, "P       "
 	    "S       "
 	    "pP      "
@@ -366,69 +369,141 @@ tabin_ (int *in, char *modelname)
 	    "sS      ");
     strcpy (filename, modelname);
     strcat (filename, ".hed");
-    if ((fin = fopen (filename, "r")) == NULL)
-	elog_die (1, "Can't open '%s'\n", filename);
-    for (i = 0; i < jtsm; i++)
+    if ((fin = fopen (filename, "r")) == 0)
+	die (1, "Can't open '%s'\n", filename);
+    for (i = 0; i < JTSM; i++)
 	brkc_.tauc[i] = 0.0;
-    for (i = 0; i < jxsm; i++)
+    for (i = 0; i < JXSM; i++)
 	brkc_.xc[i] = 0.0;
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (tbl_record_len);
+    SWAP4(tbl_record_len) ;
     READ (nl);
+    SWAP4(nl) ;
     READ (len2);
+    SWAP4(len2) ;
     READ (tabc_.xn);
+    SWAP4(tabc_.xn) ;
     READ (tabc_.pn);
+    SWAP4(tabc_.pn) ;
     READ (tabc_.tn);
+    SWAP4(tabc_.tn) ;
     READ (umdc_.mt);
+#ifndef WORDS_BIGENDIAN
+    swap4(umdc_.mt, umdc_.mt,2) ;
+#endif
     READ (brkc_.nseg);
+    SWAP4(brkc_.nseg) ;
     READ (brkc_.nbrn);
+    SWAP4(brkc_.nbrn) ;
     READ (brkc_.ku);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.ku, brkc_.ku, 2) ;
+#endif
     READ (brkc_.km);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.km, brkc_.km, 2) ;
+#endif
     READ (brkc_.fcs);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.fcs, brkc_.fcs, 90) ;
+#endif
     READ (brkc_.nafl);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.nafl, brkc_.nafl, 90) ;
+#endif
     READ (brkc_.indx);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.indx, brkc_.indx, 60) ;
+#endif
     READ (brkc_.kndx);
+#ifndef WORDS_BIGENDIAN
+    swap4(brkc_.kndx, brkc_.kndx, 60) ;
+#endif
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (umdc_.pm);
+    p8 = (unsigned char *) umdc_.pm ; 
+    md2hd(&p8, (double *) p8, 300) ;
     READ (umdc_.zm);
+    p8 = (unsigned char *) umdc_.zm ; 
+    md2hd(&p8, (double *) p8, 300) ;
     READ (umdc_.ndex);
+#ifndef WORDS_BIGENDIAN
+    swap4(umdc_.ndex, umdc_.ndex, 300) ;
+#endif
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (brkc_.pu);
+    p8 = (unsigned char *) brkc_.pu ; 
+    md2hd(&p8, (double *) p8, 702) ;
     READ (brkc_.pux);
+    p8 = (unsigned char *) brkc_.pux ; 
+    md2hd(&p8, (double *) p8, 200) ;
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (pcdc_.phcd);
     READ (brkc_.px);
+    p8 = (unsigned char *) brkc_.px ; 
+    md2hd(&p8, (double *) p8, 200) ;
     READ (brkc_.xt);
+    p8 = (unsigned char *) brkc_.xt ; 
+    md2hd(&p8, (double *) p8, 200) ;
     READ (tabc_.jndx);
+#ifndef WORDS_BIGENDIAN
+    swap4(tabc_.jndx, tabc_.jndx, 200) ;
+#endif
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
 	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (tabc_.pt);
+    p8 = (unsigned char *) tabc_.pt ; 
+    md2hd(&p8, (double *) p8, 2250) ;
     READ (brkc_.taut);
+    p8 = (unsigned char *) brkc_.taut ; 
+    md2hd(&p8, (double *) p8, 2250) ;
+
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     READ (reclen1);
+    SWAP4(reclen1) ;
     READ (brkc_.coef);
+    p8 = (unsigned char *) brkc_.coef ; 
+    md2hd(&p8, (double *) p8, 11250) ;
     READ (reclen2);
+    SWAP4(reclen2) ;
     if (reclen1 != reclen2)
 	elog_die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
+
     if (error != 0)
 	elog_die (1, "failure reading header file '%s'\n", filename);
 	fclose(fin) ; 
@@ -437,8 +512,8 @@ tabin_ (int *in, char *modelname)
 	munmap (tbl_data, tbl_data_size);
 	tbl_data = 0;
     }
-    if ((fd = mapafile (filename, &tbl_data, &tbl_data_size, 0)) < 0)
-	elog_die (1, "Couldn't open table file '%s'\n", filename);
+    if ((fd = taupmapafile (filename, &tbl_data, &tbl_data_size, 0)) < 0)
+	die (1, "Couldn't open table file '%s'\n", filename);
     close (fd);
     tbl_maxrec = tbl_data_size / tbl_record_len;
     for (nph = 1; nph <= 2; ++nph) {
@@ -743,11 +818,7 @@ double         *zs;
 int            *isrc,
                *nph;
 {
-    double d0;
-    int i0;
-    d0=0.0;
-    i0=0;
-    return umod_0_ (0, zs, isrc, nph, &d0,&i0);
+    return umod_0_ (0, zs, isrc, nph, (double *) 0, (int *) 0);
 }
 static double 
 zmod_ (uend, js, nph)
@@ -755,11 +826,7 @@ double         *uend;
 int            *js,
                *nph;
 {
-    double d0;
-    int i0;
-    d0=0.0;
-    i0=0;
-    return umod_0_ (1, &d0, &i0, nph, uend, js);
+    return umod_0_ (1, (double *) 0, (int *) 0, nph, uend, js);
 }
 static int 
 tauint_ (ptk, ptj, pti, zj, zi, tau, x)
@@ -956,8 +1023,6 @@ int            *nph;
     static int      iph,
                     kph;
     static double   sgn;
-    /* added by glp for 64bit conversion */
-    int itmp;
 #define tup brkc_.tauc
     pdec_.deplim = 1.1;
     pdec_.ka = 1.1;
@@ -1199,8 +1264,7 @@ L41:
     xus2[iph - 1] = 0.;
     tauus1[iph - 1] = 0.;
     tauus2[iph - 1] = 0.;
-    itmp=(*nph);
-    switch (itmp) {
+    switch ((int) *nph) {
     case 1:
 	goto L59;
     case 2:
@@ -1212,9 +1276,9 @@ L61:
     }
     i__1 = brkc_.nbrn;
     for (j = 1; j <= i__1; ++j) {
-	if (((s_cmp (pcdc_.phcd + (j - 1 << 3), "sP", 2L, 2L) != 0) && (s_cmp (
-		 pcdc_.phcd + (j - 1 << 3), "SP", 2L, 2L) != 0)) || (brkc_.px[j
-							      + 99] <= 0.)) {
+	if (s_cmp (pcdc_.phcd + (j - 1 << 3), "sP", 2L, 2L) != 0 && s_cmp (
+		 pcdc_.phcd + (j - 1 << 3), "SP", 2L, 2L) != 0 || brkc_.px[j
+							      + 99] <= 0.) {
 	    goto L44;
 	}
 	if (umin >= brkc_.px[j - 1] && umin < brkc_.px[j + 99]) {
@@ -1227,9 +1291,9 @@ L44:
 L59:
     i__1 = brkc_.nbrn;
     for (j = 1; j <= i__1; ++j) {
-	if (((s_cmp (pcdc_.phcd + (j - 1 << 3), "pS", 2L, 2L) != 0) 
-		 && (s_cmp(pcdc_.phcd + (j - 1 << 3), "PS", 2L, 2L) != 0) )
-				      || (brkc_.px[j + 99] <= 0.)) {
+	if (s_cmp (pcdc_.phcd + (j - 1 << 3), "pS", 2L, 2L) != 0 && s_cmp (
+		 pcdc_.phcd + (j - 1 << 3), "PS", 2L, 2L) != 0 || brkc_.px[j
+							      + 99] <= 0.) {
 	    goto L60;
 	}
 	if (umin >= brkc_.px[j - 1] && umin < brkc_.px[j + 99]) {
@@ -1326,9 +1390,9 @@ L43:
 	if (!prtflc_.segmsk[i__ - 1]) {
 	    goto L20;
 	}
-	if ((brkc_.iidx[i__ - 1] > 0) || (i__2 = brkc_.nafl[i__ - 1], ABS (
-		  i__2)) != *nph || (brkc_.msrc[*nph - 1] <= 0 && brkc_.nafl[
-							     i__ - 1] > 0)) {
+	if (brkc_.iidx[i__ - 1] > 0 || (i__2 = brkc_.nafl[i__ - 1], ABS (
+		  i__2)) != *nph || brkc_.msrc[*nph - 1] <= 0 && brkc_.nafl[
+							     i__ - 1] > 0) {
 	    goto L20;
 	}
 	iph = brkc_.nafl[i__ + 29];
@@ -2219,8 +2283,8 @@ L14:
 	    goto L9;
 	}
 	nph = (i__2 = brkc_.nafl[i__ - 1], ABS (i__2));
-	if ((brkc_.iidx[i__ - 1] > 0) || ((brkc_.msrc[nph - 1] <= 0) &&
-		(brkc_.nafl[i__ - 1] > 0))) {
+	if (brkc_.iidx[i__ - 1] > 0 || brkc_.msrc[nph - 1] <= 0 &&
+		brkc_.nafl[i__ - 1] > 0) {
 	    goto L9;
 	}
 	brkc_.iidx[i__ - 1] = 1;
