@@ -372,7 +372,6 @@ dmatrix TauPCalculator::SlownessPhaseDerivatives(Geographic_point& source,
 }
 
 
-
 /* Note "table" in this context is actually a model specification.
    e.g. iasp91 is the default */
 void TauPCalculator::tt_taup_set_table(const char *table_path)

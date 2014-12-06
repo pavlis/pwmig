@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "_taup.h"
-#include "swapbytes.h"
+#include "swapbytes_pwmig.h"
 static struct Brkc brkc_;
 static struct Pcdc pcdc_;
 static struct Prtflc prtflc_ =
@@ -288,8 +288,7 @@ taupmapafile (char *filename, char **buffer, int *bufsize, int flag)
     else
 	fd = open (filename, O_RDONLY);
     if (fd < 0) {
-	//elog_log (1, "Couldn't open %s\n", filename);
-	fprintf (stderr, "Couldn't open %s\n", filename);
+	elog_log (1, "Couldn't open %s\n", filename);
 	return -1;
     }
     if (fstat (fd, &statbuf)) {
@@ -335,7 +334,10 @@ bkin_ (int *lu, int *nrec, int *len, double *buf)
 #ifdef WORDS_BIGENDIAN
 #define SWAP4(X)
 #else
+/* Original for old c implementation
 #define SWAP4(X)  swap4(&X,&X,1)
+Simplified version for C++ */
+#define SWAP4(X) swap4(&X)
 #endif
 
 int 
@@ -475,7 +477,7 @@ tabin_ (int *in, char *modelname)
     READ (reclen2);
     SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
 
     READ (reclen1);
@@ -501,11 +503,11 @@ tabin_ (int *in, char *modelname)
     READ (reclen2);
     SWAP4(reclen2) ;
     if (reclen1 != reclen2)
-	elog_die (0, "record lengths don't match -- can't read '%s'\n",
+	die (0, "record lengths don't match -- can't read '%s'\n",
 	     filename);
 
     if (error != 0)
-	elog_die (1, "failure reading header file '%s'\n", filename);
+	die (1, "failure reading header file '%s'\n", filename);
 	fclose(fin) ; 
     strcpy (filename + strlen (filename) - 3, "tbl");
     if (tbl_data != 0) {
@@ -700,7 +702,7 @@ L8:
 	    ;
 	}
 	if (!fnd) {
-	    fprintf (stderr, "Brnset:  phase %s not found", phlst + (i__ - 1 << 3));
+	    elog_log (0, "Brnset:  phase %s not found", phlst + (i__ - 1 << 3));
 	}
 	goto L10;
 L12:
@@ -726,7 +728,8 @@ L10:
 L24:
     return 0;
 }
-/*  GLP conversion Jan 2013 - flagged as unused to commented out
+
+#if 0
 static int 
 cortt_ (dtdd, h__, v, ttcor)
 float          *dtdd,
@@ -751,7 +754,8 @@ float          *dtdd,
     *ttcor = s / *v - dtddr * dd;
     return 0;
 }
-*/
+#endif
+
 static double 
 umod_0_ (n__, zs, isrc, nph, uend, js)
 int             n__;
@@ -785,7 +789,7 @@ int            *js;
 	}
     }
     dep = (1. - exp (*zs)) / tabc_.xn;
-    fprintf (stderr, "Source depth %6.1f too deep", dep);
+    elog_die (0, "Source depth %6.1f too deep", dep);
 L2:
     if ((d__1 = *zs - umdc_.zm[i__ + *nph * 150 - 151], ABS (d__1)) <= dtol &&
 	    (d__2 = umdc_.zm[i__ + *nph * 150 - 151] - umdc_.zm[i__ + 1 + *
@@ -962,13 +966,13 @@ L4:
     if (*x >= -1e-10) {
 	goto L15;
     }
-    fprintf (stderr, "Bad range: %12.4f %12.4f %12.4f %12.4f %12.4f", *ptk, *ptj,
+    elog_log (0, "Bad range: %12.4f %12.4f %12.4f %12.4f %12.4f", *ptk, *ptj,
 	      *pti, *tau, *x);
 L15:
     if (*tau >= -1e-10) {
 	goto L16;
     }
-    fprintf (stderr, "Bad tau: %12.4f %12.4f %12.4f %12.4f %12.4f", *ptk, *ptj, *pti,
+    elog_log (0, "Bad tau: %12.4f %12.4f %12.4f %12.4f %12.4f", *ptk, *ptj, *pti,
 	      *tau, *x);
 L16:
     return 0;
@@ -1053,9 +1057,7 @@ L2:
     if (brkc_.pu[n1 + *nph * 351 - 352] == umin) {
 	goto L50;
     }
-    //elog_die (0, "Source slowness too large.");
-    fprintf (stderr, "Source slowness too large.");
-    exit(-1);
+    elog_die (0, "Source slowness too large.");
 L4:
     k2 = i__;
 L50:
@@ -2149,8 +2151,7 @@ L15:
 	char            s[9];
 	strncpy (s, pcdc_.phcd + (*jb - 1 << 3), 8);
 	s[8] = 0;
-	//elog_log (0, "Bad interpolation on %s\n", s);
-	fprintf (stderr, "Bad interpolation on %s\n", s);
+	elog_log (0, "Bad interpolation on %s\n", s);
     }
     return 0;
 }
@@ -2526,8 +2527,7 @@ L10:
     }
     return 0;
 L13:
-    //elog_log (0, "More than %d arrivals found.", i3);
-    fprintf (stderr, "More than %d arrivals found.", i3);
+    elog_log (0, "More than %d arrivals found.", i3);
     return 0;
 }
 static int 
