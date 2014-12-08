@@ -1,0 +1,420 @@
+#
+# This master makefile was derived by editing antelopemake from version 5.4
+# of antelope.  This used the version for macos.   
+#  August 2014
+#
+VERSION=3
+# for Macos
+DSUFFIX=.dylib
+# for Linux
+#DSUFFIX=.so.3
+
+FC=gfortran 
+F77LIBS= -lc 
+
+# for Macos
+CXX=clang++
+# for Linux
+#CXX=g++
+CXXAR=$(AR)
+CXXDLD=$(CXX)
+
+CXXARFLAGS=$(ARFLAGS)
+CXXDLDFLAGS=$(DLDFLAGS)
+
+DLOAD=.bundle
+
+LD=$(CC) # gcc
+DLD=$(CC) # gcc 
+
+# for Macos
+LDRUN=
+DLDFLAGS= $(ARCHES) $(ldflags) -flat_namespace -dynamiclib -undefined suppress -install_name $(PWMIG)/lib/$(DLIB) $(LDEXTRA) $(LDPATH)
+# for Linux
+#LDRUN=-Wl,-rpath,$(ANTELOPE)/local/lib -Wl,-rpath,$(ANTELOPE)/lib # -R$(ANTELOPE)/lib
+#DLDFLAGS= $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) -shared -Wl,-soname,$@
+#DLDLIBS=$(ldlibs)
+# -current_version $(VERSION).0 -compatibility_version $(VERSION).0.0 
+# -shared -Wl,-soname,$@ -nostartfiles
+DLDLIBS=$(ldlibs)
+BLDLIBS=$(ldlibs) 
+
+
+# For Macos
+X11=/usr/X11
+XLIB=$(X11)/lib
+XINCLUDE=$(X11)/include
+X11LIBS=-L$(XLIB) -lX11 
+# For linux
+#X11=/usr/X11R6
+#X11LIBS=-L$(XLIB) -Wl,-rpath,$(XLIB) -lX11
+#XLIB=$(X11)/lib64
+#XINCLUDE=$(X11)/include
+
+# for Macos
+LEXLIB= -ll
+# for linux
+#LEXLIB= -lfl
+
+
+#For Macos
+THREAD=
+CRYPT=
+STOCKNEEDS=-framework IOKit -framework CoreFoundation # -lz # -lm # -lpthread 
+ASFLAGS = 
+RANLIB=ranlib -s
+MAKE=make -ke 
+#For Linux
+#THREAD=-pthread
+#NSLLIBS =
+#CRYPT=-lcrypt
+#STOCKNEEDS=-ldl -lnsl -lm -lrt # -lz
+#ASFLAGS =
+#RANLIB=ranlib
+#
+#MAKE=make -ke  --no-print-directory
+
+
+-include .depends
+
+all ::
+
+# This would be later antelope version method to set this
+#DIRS=`$(PWMIG)/include/subdirs ${FIRSTDIRS}`
+# This is old method from dsapmake
+#DIRS=`find * -type d \( ! -name SCCS ! -name CVS ! -name \*- ! -name TC.Cache ! -name .git -print \) -prune`
+#
+# alternative using subdirs
+#
+DIRS=`$(PWMIG)/bin/subdirs`
+PWMIG_BASE=$(PWMIG)
+DEST=$(PWMIG)
+
+DBG=-g
+
+LEX=flex -v
+
+#CC=$(CC)
+
+STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS) 
+
+YFLAGS = -v -d -l 
+
+CXXFLAGS = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -D_REENTRANT  $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CCFLAGS = $(CXXFLAGS)
+FFLAGS   = -m64              -mmacosx-version-min=10.8 -gdwarf-2   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CFLAGS   = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -mfix-and-continue -pipe -fpascal-strings -Wall -D_REENTRANT     $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
+
+LDPATH=-L$(PWMIG)/local/lib -L$(PWMIG)/local/static -L$(PWMIG)/lib -L$(PWMIG)/static 
+LDFLAGS= -m64 -mmacosx-version-min=10.8  $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) 
+LDLIBS= $(ldlibs) 
+# For Linux
+#    CXXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
+#    CCFLAGS = $(CXXFLAGS)
+#    FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
+#    CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
+#
+#    LDPATH=-L$(ANTELOPE)/local/lib -L$(ANTELOPE)/local/static -L$(ANTELOPE)/lib -L$(ANTELOPE)/static
+#    LDFLAGS= -m64 $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN)
+#    LDLIBS= $(ldlibs)
+#
+
+# This is for Macos and seems to be correct for linux as well
+INSTALL=/usr/bin/install
+
+# Trying to hack these to avoid teh mdirmake script in antelope.   Aug 2014
+#all install :: FORCED
+#	make  $(makeflags) $@ $(DIRS)
+#
+#clean Include :: FORCED
+#	make $(makeflags) $@ $(DIRS)
+# This is from dsapmake
+
+all clean purge Include install tags :: FORCED
+	@-DIRS="$(DIRS)" ;\
+	for i in $$DIRS ; do \
+                ( cd $$i && $(MAKE) $@ ; ) \
+        done
+
+OBJDIR=.
+static ::
+	$(RM) $(BIN) 
+	$(MAKE) "LDFLAGS=$(ldflags) $(LDEXTRA) -L$(PWMIG)/static -L$(PWMIG)/local/static $(LDRUN) -ldl" $(BIN)
+	@-for p in $(BIN) ; do \
+	    echo $(INSTALL) $$p $(DEST)/bin ; \
+	    $(INSTALL) $$p $(DEST)/bin ; \
+        done
+
+# Occasionally, when a filesystem fills, .make.state is corrupted
+# and then make refuses to work because of the corrupt .make.state files.
+# "make purge" fixes the problem, for directories below the current directory.
+
+# ** must also be changed in toplevel Makefile ** 
+purge :: FORCED
+	-find . -type f \( \
+	    -name .make.state \
+	    -o -name .#\* \
+	    -o -name .depends \
+	    -o -name .depends.bak \
+	    -o -name .optimize.dir \
+	    -o -name .optimize.pag \
+	    -o -name .optimize.db \
+	    -o -name .%certify.\* \
+	    -o -name .test.\*.er \
+	    -o -name .pure.\* \
+	    -o -name .man\* \
+	    -o -name .dwarf\* \
+	    -o -name \*.o \
+	    -o -name \*- \
+	    -o -name .make\* \
+	    \) -print | xargs rm -f 
+	-find . -type d -name SunWS_cache -print | xargs rm -f 
+	-find . -type d -name \*.dSYM -print | xargs rm -rf 
+	-$(RM) $(PURGE)
+
+# purge removes a few other extra files also
+#  .#* are cvs, 
+#  .man* are fixman
+# Be careful not to remove .no_optimizing
+
+all:: ALL
+	
+clean ::
+	@-$(RM) *.o *.a *.BAK *.dwarf
+	@-$(RM) *.pyc
+	@-$(RM) -rf *.dSYM
+	@-$(RM) $(BIN) $(LIB) $(DLIB) $(CLEAN) .make.state tags 
+
+Include::INCLUDE
+
+install :: INCLUDE LIB BIN MAN 
+
+MAN :: # dummy
+
+relink ::
+	@$(RM) $(BIN) $(LIB) $(DLIB) $(BUNDLE) ; $(MAKE) install
+
+tags :: FORCED
+	-ctags *.l *.y *.c *.pm *.pl *.sh *.f *.h 
+
+ALL :  $(INCLUDE) $(LIB) $(DLIB) $(BIN) \
+	$(MAN1) $(MAN2) $(MAN3) \
+	$(MAN3F) $(MAN3H) $(MAN3O) $(MAN3P) $(MAN3T) $(MAN3Y) \
+	$(MAN4) $(MAN5) $(MAN6) \
+	$(MAN7) $(MAN8) $(MAN9) \
+	$(MANL) 
+
+BIN     :: $(BIN)      $(BIN:%=$(DEST)/bin/%) 
+LIB     :: $(LIB)      $(DLIB) DLIB SLIB 
+SLIB    :: $(LIB)      $(LIB:%=$(DEST)/static/%) 
+DLIB    :: $(DLIB)     $(DLIB:%=$(DEST)/lib/%) 
+BUNDLE  :: $(BUNDLE)   $(BUNDLE:%=$(DEST)/lib/%) 
+INCLUDE :: $(INCLUDE)  $(INCLUDE:%=$(DEST)/include/%) 
+
+ 
+$(DEST)/lib/%$(DSUFFIX) : %$(DSUFFIX)
+	$(INSTALL) $< $(DEST)/lib
+ 
+$(DEST)/lib/%.bundle : %.bundle
+	$(INSTALL) $< $(DEST)/lib
+
+$(DEST)/static/%.a : %.a
+	$(INSTALL) $< $(DEST)/static
+	$(RANLIB) $(DEST)/static/$<
+
+$(DEST)/bin/% : %
+	$(INSTALL) $< $(DEST)/bin
+
+$(DEST)/include/% : %
+	$(INSTALL) $< $(DEST)/include
+
+$(DEST)/doc/$(DOCDIR)/% : % 
+	$(INSTALL) $< $(DEST)/doc/$(DOCDIR)
+
+$(DEST)/html/$(HTMLDIR)/% : % 
+	$(INSTALL) $< $(DEST)/html/$(HTMLDIR)
+
+
+FORCED :
+
+dirs:
+	@-echo directories: $(DIRS) | tr ' ' '\n'
+
+#	Java rule
+
+%.class: %.java
+	javac $<
+
+installMAN :: MAN
+
+MAN :: $(MAN1:%=$(DEST)/man/man1/%) \
+	$(MAN3:%=$(DEST)/man/man3/%) \
+	$(MAN3F:%.3f=$(DEST)/man/man3/%.3f) \
+	$(MAN3H:%.3h=$(DEST)/man/man3/%.3h) \
+	$(MAN3O:%.3o=$(DEST)/man/man3/%.3o) \
+	$(MAN3P:%.3p=$(DEST)/man/man3/%.3p) \
+	$(MAN3T:%.3t=$(DEST)/man/man3/%.3t) \
+	$(MAN3Y:%.3y=$(DEST)/man/man3/%.3y) \
+	$(MAN5:%=$(DEST)/man/man5/%) \
+	$(MAN6:%=$(DEST)/man/man6/%) \
+	$(MAN7:%=$(DEST)/man/man7/%) \
+	$(MAN8:%=$(DEST)/man/man8/%) \
+	$(LMAN1:%=$(DEST)/local/man/man1/%) \
+	$(LMAN3:%=$(DEST)/local/man/man3/%) \
+	$(LMAN3F:%.3f=$(DEST)/local/man/man3/%.3f) \
+	$(LMAN3H:%.3h=$(DEST)/local/man/man3/%.3h) \
+	$(LMAN3O:%.3o=$(DEST)/local/man/man3/%.3o) \
+	$(LMAN3P:%.3p=$(DEST)/local/man/man3/%.3p) \
+	$(LMAN3T:%.3t=$(DEST)/local/man/man3/%.3t) \
+	$(LMAN3Y:%.3y=$(DEST)/local/man/man3/%.3y) \
+	$(LMAN5:%=$(DEST)/local/man/man5/%) 
+
+ 
+uninstall :: 
+	@echo uninstalling $(BIN) $(PF) $(DATA) $(MAN1) $(INCLUDE) $(LIB) $(DLIB) $(MAN3) $(MAN3F) $(MAN3H) $(MAN3O) $(MAN3P) $(MAN3T) $(MAN3Y) $(MAN5) $(MAN6) $(MAN8) $(LMAN1) $(LMAN3) $(LMAN3F) $(LMAN3H) $(LMAN3O) $(LMAN3P) $(LMAN3T) $(LMAN3Y) $(LMAN5) $(UNINSTALL) $(DEMO) $(DOC) $(EXAMPLE) $(OPENSRC) $(WEB) $(GRAPHIC)
+	@-$(RM) $(UNINSTALL)
+	@-if [ -d $(DEST)/include ] ; then \
+	    (cd $(DEST)/include ; $(RM) $(INCLUDE)) \
+	fi
+	@-if [ -d $(DEST)/man/man1 ] ; then \
+	    installman -u $(DEST)/man/man1 $(MAN1) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3F) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3H) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3O) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3P) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3T) ; \
+	fi
+	@-if [ -d $(DEST)/man/man3 ] ; then \
+	    installman -u $(DEST)/man/man3 $(MAN3Y) ; \
+	fi
+	@-if [ -d $(DEST)/man/man5 ] ; then \
+	    installman -u $(DEST)/man/man5 $(MAN5) ; \
+	fi
+	@-if [ -d $(DEST)/man/man6 ] ; then \
+	    installman -u $(DEST)/man/man6 $(MAN6) ; \
+	fi
+	@-if [ -d $(DEST)/man/man8 ] ; then \
+	    installman -u $(DEST)/man/man8 $(MAN8) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man1 ] ; then \
+	    installman -u $(DEST)/local/man/man1 $(LMAN1) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(LMAN3) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3F) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3H) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3O) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3P) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3T) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man3 ] ; then \
+	    installman -u $(DEST)/local/man/man3 $(MAN3Y) ; \
+	fi
+	@-if [ -d $(DEST)/local/man/man5 ] ; then \
+	    installman -u $(DEST)/local/man/man5 $(LMAN5) ; \
+	fi
+	@-if [ -d $(DEST)/demo/$(DEMODIR) ] ; then \
+	    (cd $(DEST)/demo/$(DEMODIR) ; $(RM) -r $(DEMO)) \
+	fi
+	@-if [ -d $(DEST)/doc/$(DOCDIR) ] ; then \
+	    (cd $(DEST)/doc/$(DOCDIR) ; $(RM) -r $(DOC)) \
+	fi
+	@-if [ -d $(DEST)/example/$(EXAMPLEDIR) ] ; then \
+	    (cd $(DEST)/example/$(EXAMPLEDIR) ; $(RM) -r $(EXAMPLE)) \
+	fi
+	@-if [ -d $(DEST)/opensrc/$(OPENSRCDIR) ] ; then \
+	    (cd $(DEST)/opensrc/$(OPENSRCDIR) ; $(RM) -r $(OPENSRC)) \
+	fi
+	@-if [ -d $(DEST)/web/$(WEBDIR) ] ; then \
+	    (cd $(DEST)/web/$(WEBDIR) ; $(RM) -r $(WEB)) \
+	fi
+	@-if [ -d $(DEST)/data/$(DATADIR) ] ; then \
+	    (cd $(DEST)/data/$(DATADIR) ; $(RM) -r $(DATA)) \
+	fi
+	@-if [ -d $(DEST)/data/pf ] ; then \
+	    (cd $(DEST)/data/pf ; $(RM) $(PF)) \
+	fi
+	@-if [ -d $(DEST)/bin ] ; then \
+	    (cd $(DEST)/bin ; $(RM) $(BIN)) ; \
+	fi 
+	@-if [ -d $(DEST)/lib ] ; then \
+	    (cd $(DEST)/lib ; $(RM) $(DLIB)) \
+	fi
+	@-if [ -d $(DEST)/lib ] ; then \
+	    (cd $(DEST)/lib ; $(RM) $(BUNDLE)) \
+	fi
+	@-if [ -d $(DEST)/static ] ; then \
+	    (cd $(DEST)/static ; $(RM) $(LIB)) \
+	fi
+	@-if [ -d $(DEST)/html/graphic ] ; then \
+	    (cd $(DEST)/html/graphic ; $(RM) $(GRAPHIC)) \
+	fi
+
+$(DEST)/man/man1/% : % 
+	$(INSTALL) $< $(DEST)/man/man1
+
+$(DEST)/man/man3/% : % 
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3f : %.3f 
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3h : %.3h 
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3o : %.3o 
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3p : %.3p 
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3t : %.3t
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man3/%.3y : %.3y
+	$(INSTALL) $< $(DEST)/man/man3
+
+$(DEST)/man/man5/% : % 
+	$(INSTALL) $< $(DEST)/man/man5
+
+$(DEST)/man/man6/% : % 
+	$(INSTALL) $< $(DEST)/man/man6
+
+$(DEST)/man/man7/% : %
+	$(INSTALL) $< $(DEST)/man/man7
+
+$(DEST)/man/man8/% : % 
+	$(INSTALL) $< $(DEST)/man/man8
+
+
+$(DEST)/local/man/man1/% : % 
+	$(INSTALL) $< $(DEST)/local/man/man1
+
+$(DEST)/local/man/man3/% : % 
+	$(INSTALL) $< $(DEST)/local/man/man3
+
+$(DEST)/local/man/man5/% : % 
+	$(INSTALL) $< $(DEST)/local/man/man5
