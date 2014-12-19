@@ -11,7 +11,7 @@ F77LIBS= -lc
 LD=$(CC)
 DLD=$(CC) 
 
-LDRUN=-Wl,-rpath,$(ANTELOPE)/local/lib -Wl,-rpath,$(ANTELOPE)/lib # -R$(ANTELOPE)/lib 
+LDRUN=-Wl,-rpath,$(PWMIG)/local/lib -Wl,-rpath,$(PWMIG)/lib # -R$(PWMIG)/lib 
 DLDFLAGS= $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) -shared -Wl,-soname,$@ 
 DLDLIBS=$(ldlibs) 
 
@@ -85,12 +85,12 @@ STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS)
 
 YFLAGS = -v -d -l 
 
-XXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
+XXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
 CCFLAGS = $(CXXFLAGS)
-FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
-CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE) 
+FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
 
-LDPATH=-L$(ANTELOPE)/local/lib -L$(ANTELOPE)/local/static -L$(ANTELOPE)/lib -L$(ANTELOPE)/static 
+LDPATH=-L$(PWMIG)/local/lib -L$(PWMIG)/local/static -L$(PWMIG)/lib -L$(PWMIG)/static 
 LDFLAGS= -m64 $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) 
 LDLIBS= $(ldlibs) 
 

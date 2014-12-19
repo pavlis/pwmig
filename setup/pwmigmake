@@ -1,78 +1,63 @@
 #
 # This master makefile was derived by editing antelopemake from version 5.4
-# of antelope.  This used the version for macos.   
-#  August 2014
+# of antelope.  This file was derived from the linux version.   
+#  December 2014
 #
-VERSION=3
-# for Macos
-DSUFFIX=.dylib
-# for Linux
-#DSUFFIX=.so.3
+DSUFFIX=.so.3
 
-FC=gfortran 
+FC=gfortran
 F77LIBS= -lc 
 
-# for Macos
-CXX=clang++
-# for Linux
-#CXX=g++
+LD=$(CC)
+DLD=$(CC) 
+
+LDRUN=-Wl,-rpath,$(PWMIG)/local/lib -Wl,-rpath,$(PWMIG)/lib # -R$(PWMIG)/lib 
+DLDFLAGS= $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) -shared -Wl,-soname,$@ 
+DLDLIBS=$(ldlibs) 
+
+CXX=$(CCC)	# c++ on linux, some may need g++
 CXXAR=$(AR)
 CXXDLD=$(CXX)
 
 CXXARFLAGS=$(ARFLAGS)
 CXXDLDFLAGS=$(DLDFLAGS)
 
-DLOAD=.bundle
+LORDER=
+TSORT=
 
-LD=$(CC) # gcc
-DLD=$(CC) # gcc 
-
-# for Macos
-LDRUN=
-DLDFLAGS= $(ARCHES) $(ldflags) -flat_namespace -dynamiclib -undefined suppress -install_name $(PWMIG)/lib/$(DLIB) $(LDEXTRA) $(LDPATH)
-# for Linux
-#LDRUN=-Wl,-rpath,$(ANTELOPE)/local/lib -Wl,-rpath,$(ANTELOPE)/lib # -R$(ANTELOPE)/lib
-#DLDFLAGS= $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) -shared -Wl,-soname,$@
-#DLDLIBS=$(ldlibs)
-# -current_version $(VERSION).0 -compatibility_version $(VERSION).0.0 
-# -shared -Wl,-soname,$@ -nostartfiles
-DLDLIBS=$(ldlibs)
-BLDLIBS=$(ldlibs) 
-
-
-# For Macos
-X11=/usr/X11
-XLIB=$(X11)/lib
+X11=/usr/X11R6
+X11LIBS=-L$(XLIB) -Wl,-rpath,$(XLIB) -lX11
+XLIB=$(X11)/lib64 
 XINCLUDE=$(X11)/include
-X11LIBS=-L$(XLIB) -lX11 
-# For linux
-#X11=/usr/X11R6
-#X11LIBS=-L$(XLIB) -Wl,-rpath,$(XLIB) -lX11
-#XLIB=$(X11)/lib64
-#XINCLUDE=$(X11)/include
 
-# for Macos
-LEXLIB= -ll
-# for linux
-#LEXLIB= -lfl
+X11_TK=$(X11)
+X11LIBS_TK=$(X11LIBS)
+XINCLUDE_TK=$(XINCLUDE)
 
 
-#For Macos
-THREAD=
-CRYPT=
-STOCKNEEDS=-framework IOKit -framework CoreFoundation # -lz # -lm # -lpthread 
+
+LEXLIB= -lfl
+
+
+TCLLDFLAGS = -L$(TCLLIB) -Wl,-rpath,$(TCLLIB) 
+PYTHONLDFLAGS = -L$(PYTHONLIB) -Wl,-rpath,$(PYTHONLIB) 
+
+OTCLLDFLAGS = -L$(OTCLLIB) -Wl,-rpath,$(OTCLLIB) 
+OPYTHONLDFLAGS = -L$(OPYTHONLIB) -Wl,-rpath,$(OPYTHONLIB) 
+
+AQTCLLDFLAGS = -L$(AQTCLLIB) -Wl,-rpath,$(AQTCLLIB) 
+AQPYTHONLDFLAGS = -L$(AQPYTHONLIB) -Wl,-rpath,$(AQPYTHONLIB) 
+
+THREAD=-pthread 
+NSLLIBS = 
+RYPT=-lcrypt
+STOCKNEEDS=-ldl -lnsl -lm -lrt # -lz
+
 ASFLAGS = 
-RANLIB=ranlib -s
-MAKE=make -ke 
-#For Linux
-#THREAD=-pthread
-#NSLLIBS =
-#CRYPT=-lcrypt
-#STOCKNEEDS=-ldl -lnsl -lm -lrt # -lz
-#ASFLAGS =
-#RANLIB=ranlib
-#
-#MAKE=make -ke  --no-print-directory
+
+RANLIB=ranlib
+
+MAKE=make -ke --no-print-directory 
 
 
 -include .depends
@@ -100,24 +85,15 @@ STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS)
 
 YFLAGS = -v -d -l 
 
-CXXFLAGS = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -D_REENTRANT  $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+XXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
 CCFLAGS = $(CXXFLAGS)
-FFLAGS   = -m64              -mmacosx-version-min=10.8 -gdwarf-2   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
-CFLAGS   = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -mfix-and-continue -pipe -fpascal-strings -Wall -D_REENTRANT     $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
+FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
 
 LDPATH=-L$(PWMIG)/local/lib -L$(PWMIG)/local/static -L$(PWMIG)/lib -L$(PWMIG)/static 
-LDFLAGS= -m64 -mmacosx-version-min=10.8  $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) 
+LDFLAGS= -m64 $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) 
 LDLIBS= $(ldlibs) 
-# For Linux
-#    CXXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
-#    CCFLAGS = $(CXXFLAGS)
-#    FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
-#    CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(ANTELOPE)/local/include -I$(ANTELOPE)/include -I$(XINCLUDE)
-#
-#    LDPATH=-L$(ANTELOPE)/local/lib -L$(ANTELOPE)/local/static -L$(ANTELOPE)/lib -L$(ANTELOPE)/static
-#    LDFLAGS= -m64 $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN)
-#    LDLIBS= $(ldlibs)
-#
+
 
 # This is for Macos and seems to be correct for linux as well
 INSTALL=/usr/bin/install
@@ -249,26 +225,26 @@ installMAN :: MAN
 
 MAN :: $(MAN1:%=$(DEST)/man/man1/%) \
 	$(MAN3:%=$(DEST)/man/man3/%) \
-	$(MAN3F:%.3f=$(DEST)/man/man3/%.3f) \
-	$(MAN3H:%.3h=$(DEST)/man/man3/%.3h) \
-	$(MAN3O:%.3o=$(DEST)/man/man3/%.3o) \
-	$(MAN3P:%.3p=$(DEST)/man/man3/%.3p) \
-	$(MAN3T:%.3t=$(DEST)/man/man3/%.3t) \
-	$(MAN3Y:%.3y=$(DEST)/man/man3/%.3y) \
+	$(MAN3F:%.3f=$(DEST)/man/man3f/%.3f) \
+	$(MAN3H:%.3h=$(DEST)/man/man3h/%.3h) \
+	$(MAN3O:%.3o=$(DEST)/man/man3o/%.3o) \
+	$(MAN3P:%.3p=$(DEST)/man/man3p/%.3p) \
+	$(MAN3T:%.3t=$(DEST)/man/man3t/%.3t) \
+	$(MAN3Y:%.3y=$(DEST)/man/man3y/%.3y) \
 	$(MAN5:%=$(DEST)/man/man5/%) \
 	$(MAN6:%=$(DEST)/man/man6/%) \
 	$(MAN7:%=$(DEST)/man/man7/%) \
 	$(MAN8:%=$(DEST)/man/man8/%) \
 	$(LMAN1:%=$(DEST)/local/man/man1/%) \
 	$(LMAN3:%=$(DEST)/local/man/man3/%) \
-	$(LMAN3F:%.3f=$(DEST)/local/man/man3/%.3f) \
-	$(LMAN3H:%.3h=$(DEST)/local/man/man3/%.3h) \
-	$(LMAN3O:%.3o=$(DEST)/local/man/man3/%.3o) \
-	$(LMAN3P:%.3p=$(DEST)/local/man/man3/%.3p) \
-	$(LMAN3T:%.3t=$(DEST)/local/man/man3/%.3t) \
-	$(LMAN3Y:%.3y=$(DEST)/local/man/man3/%.3y) \
+	$(LMAN3F:%.3f=$(DEST)/local/man/man3f/%.3f) \
+	$(LMAN3H:%.3h=$(DEST)/local/man/man3h/%.3h) \
+	$(LMAN3O:%.3o=$(DEST)/local/man/man3o/%.3o) \
+	$(LMAN3P:%.3p=$(DEST)/local/man/man3p/%.3p) \
+	$(LMAN3T:%.3t=$(DEST)/local/man/man3t/%.3t) \
+	$(LMAN3Y:%.3y=$(DEST)/local/man/man3y/%.3y) \
 	$(LMAN5:%=$(DEST)/local/man/man5/%) 
-
+ 
  
 uninstall :: 
 	@echo uninstalling $(BIN) $(PF) $(DATA) $(MAN1) $(INCLUDE) $(LIB) $(DLIB) $(MAN3) $(MAN3F) $(MAN3H) $(MAN3O) $(MAN3P) $(MAN3T) $(MAN3Y) $(MAN5) $(MAN6) $(MAN8) $(LMAN1) $(LMAN3) $(LMAN3F) $(LMAN3H) $(LMAN3O) $(LMAN3P) $(LMAN3T) $(LMAN3Y) $(LMAN5) $(UNINSTALL) $(DEMO) $(DOC) $(EXAMPLE) $(OPENSRC) $(WEB) $(GRAPHIC)
@@ -282,23 +258,23 @@ uninstall ::
 	@-if [ -d $(DEST)/man/man3 ] ; then \
 	    installman -u $(DEST)/man/man3 $(MAN3) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3F) ; \
+	@-if [ -d $(DEST)/man/man3f  ] ; then \
+	    installman -u $(DEST)/man/man3f  $(MAN3F) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3H) ; \
+	@-if [ -d $(DEST)/man/man3h  ] ; then \
+	    installman -u $(DEST)/man/man3h  $(MAN3H) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3O) ; \
+	@-if [ -d $(DEST)/man/man3o  ] ; then \
+	    installman -u $(DEST)/man/man3o  $(MAN3O) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3P) ; \
+	@-if [ -d $(DEST)/man/man3p  ] ; then \
+	    installman -u $(DEST)/man/man3p  $(MAN3P) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3T) ; \
+	@-if [ -d $(DEST)/man/man3t  ] ; then \
+	    installman -u $(DEST)/man/man3t  $(MAN3T) ; \
 	fi
-	@-if [ -d $(DEST)/man/man3 ] ; then \
-	    installman -u $(DEST)/man/man3 $(MAN3Y) ; \
+	@-if [ -d $(DEST)/man/man3y  ] ; then \
+	    installman -u $(DEST)/man/man3y  $(MAN3Y) ; \
 	fi
 	@-if [ -d $(DEST)/man/man5 ] ; then \
 	    installman -u $(DEST)/man/man5 $(MAN5) ; \
@@ -315,23 +291,23 @@ uninstall ::
 	@-if [ -d $(DEST)/local/man/man3 ] ; then \
 	    installman -u $(DEST)/local/man/man3 $(LMAN3) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3F) ; \
+	@-if [ -d $(DEST)/local/man/man3f  ] ; then \
+	    installman -u $(DEST)/local/man/man3f  $(MAN3F) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3H) ; \
+	@-if [ -d $(DEST)/local/man/man3h  ] ; then \
+	    installman -u $(DEST)/local/man/man3h  $(MAN3H) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3O) ; \
+	@-if [ -d $(DEST)/local/man/man3o  ] ; then \
+	    installman -u $(DEST)/local/man/man3o  $(MAN3O) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3P) ; \
+	@-if [ -d $(DEST)/local/man/man3p  ] ; then \
+	    installman -u $(DEST)/local/man/man3p  $(MAN3P) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3T) ; \
+	@-if [ -d $(DEST)/local/man/man3t  ] ; then \
+	    installman -u $(DEST)/local/man/man3t  $(MAN3T) ; \
 	fi
-	@-if [ -d $(DEST)/local/man/man3 ] ; then \
-	    installman -u $(DEST)/local/man/man3 $(MAN3Y) ; \
+	@-if [ -d $(DEST)/local/man/man3y  ] ; then \
+	    installman -u $(DEST)/local/man/man3y  $(MAN3Y) ; \
 	fi
 	@-if [ -d $(DEST)/local/man/man5 ] ; then \
 	    installman -u $(DEST)/local/man/man5 $(LMAN5) ; \
@@ -379,23 +355,23 @@ $(DEST)/man/man1/% : %
 $(DEST)/man/man3/% : % 
 	$(INSTALL) $< $(DEST)/man/man3
 
-$(DEST)/man/man3/%.3f : %.3f 
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3f/%.3f : %.3f 
+	$(INSTALL) $< $(DEST)/man/man3f
 
-$(DEST)/man/man3/%.3h : %.3h 
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3h/%.3h : %.3h 
+	$(INSTALL) $< $(DEST)/man/man3h
 
-$(DEST)/man/man3/%.3o : %.3o 
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3o/%.3o : %.3o 
+	$(INSTALL) $< $(DEST)/man/man3o
 
-$(DEST)/man/man3/%.3p : %.3p 
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3p/%.3p : %.3p 
+	$(INSTALL) $< $(DEST)/man/man3p
 
-$(DEST)/man/man3/%.3t : %.3t
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3t/%.3t : %.3t
+	$(INSTALL) $< $(DEST)/man/man3t
 
-$(DEST)/man/man3/%.3y : %.3y
-	$(INSTALL) $< $(DEST)/man/man3
+$(DEST)/man/man3y/%.3y : %.3y
+	$(INSTALL) $< $(DEST)/man/man3y
 
 $(DEST)/man/man5/% : % 
 	$(INSTALL) $< $(DEST)/man/man5
