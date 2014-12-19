@@ -15,7 +15,12 @@ LDRUN=-Wl,-rpath,$(PWMIG)/local/lib -Wl,-rpath,$(PWMIG)/lib # -R$(PWMIG)/lib
 DLDFLAGS= $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) -shared -Wl,-soname,$@ 
 DLDLIBS=$(ldlibs) 
 
-CXX=$(CCC)	# c++ on linux, some may need g++
+# CC and CXX are global symbols not defined in the environment
+# The following is the form that was in antelopemake but seems to cause 
+# problems
+#CXX=$(CCC)
+# This sets gcc 
+CXX=g++   
 CXXAR=$(AR)
 CXXDLD=$(CXX)
 
@@ -85,7 +90,7 @@ STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS)
 
 YFLAGS = -v -d -l 
 
-XXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CXXFLAGS = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -D_REENTRANT $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
 CCFLAGS = $(CXXFLAGS)
 FFLAGS   = -m64   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
 CFLAGS   = -m64 -fPIC -fno-strict-aliasing -rdynamic -pipe -Wall -std=gnu99 -D_REENTRANT -fstack-protector-all   $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
