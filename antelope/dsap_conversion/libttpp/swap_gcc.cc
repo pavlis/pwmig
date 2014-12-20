@@ -27,15 +27,16 @@ void md2hd(double *in, double *out,int n)
         out[i]=static_cast<double>(so);
     }
 }
-/*Added this one for efficiency.  The taup f2c junk uses a define to
-for a SWAP4 function with a single argument to swap one 32 bit integer.
-With C++ we can use overloading to avoid the define.
-*/
 void swap4(int *d)
 {
     int32_t so;
     so=__builtin_bswap32(static_cast<int32_t>(*d));
     *d=static_cast<int>(so);
 }
-
+void swap4_float(float *d)
+{
+    int32_t so;
+    so=__builtin_bswap32(static_cast<int32_t>(*d));
+    *d=static_cast<int>(so);
+}
 

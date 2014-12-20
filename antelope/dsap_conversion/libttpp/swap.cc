@@ -1,26 +1,29 @@
 #define _BSD_SOURCE
+#include <typeinfo>
 #include <sys/types.h>
 //#include <endian.h>
 #include "swapbytes_pwmig.h"
+using namespace std;
+
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
    length n*/
-void swap4(int *in,int *out,int n)
+void vector_swap4(int *in,int *out,int n)
 {
-    uit32_t so;  //so is short for swapped output
+    u_int32_t so;  //so is short for swapped output
     int i;
     for(i=0;i<n;++i)
     {
-        so=be32toh(static_cast<uint32_t>(in[i]));
+        so=be32toh(static_cast<u_int32_t>(in[i]));
         out[i]=static_cast<int>(so);
     }
 }
-void mdtohd(double *in, double *out,int n)
+void md2hd(double *in, double *out,int n)
 {
-    uint64_t so;
+    u_int64_t so;
     int i;
     for(i=0;i<n;++i)
     {
-        so=be64toh(static_cast<uint64_t>(in[i]));
+        so=be64toh(static_cast<u_int64_t>(in[i]));
         out[i]=static_cast<double>(so);
     }
 }
@@ -30,8 +33,8 @@ With C++ we can use overloading to avoid the define.
 */
 void swap4(int *d)
 {
-    uint32_t so;
-    so=be32toh(static_cast<uint32_t>(*d));
+    u_int32_t so;
+    so=be32toh(static_cast<u_int32_t>(*d));
     *d=static_cast<int>(so);
 }
 

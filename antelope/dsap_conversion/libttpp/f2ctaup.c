@@ -326,7 +326,8 @@ bkin_ (int *lu, int *nrec, int *len, double *buf)
     else {
 	unsigned char *p8 ;
 	p8 = (unsigned char *) (tbl_data + (*nrec - 1) * tbl_record_len); 
-	md2hd(&p8, buf, *len) ;
+	//md2hd(&p8, buf, *len) ;
+	md2hd((double *)p8, buf, *len) ;
     }
     return 0;
 }
@@ -338,6 +339,7 @@ bkin_ (int *lu, int *nrec, int *len, double *buf)
 #define SWAP4(X)  swap4(&X,&X,1)
 Simplified version for C++ */
 #define SWAP4(X) swap4(&X)
+#define FSWAP4(X) swap4_float(&X)
 #endif
 
 int 
@@ -385,15 +387,17 @@ tabin_ (int *in, char *modelname)
     SWAP4(nl) ;
     READ (len2);
     SWAP4(len2) ;
+/* casts to int required to match swap4 function supplied by glp.
+Original did not seem to need this */
     READ (tabc_.xn);
-    SWAP4(tabc_.xn) ;
+    FSWAP4(tabc_.xn) ;
     READ (tabc_.pn);
-    SWAP4(tabc_.pn) ;
+    FSWAP4(tabc_.pn) ;
     READ (tabc_.tn);
-    SWAP4(tabc_.tn) ;
+    FSWAP4(tabc_.tn) ;
     READ (umdc_.mt);
 #ifndef WORDS_BIGENDIAN
-    swap4(umdc_.mt, umdc_.mt,2) ;
+    vectorswap4(umdc_.mt, umdc_.mt,2) ;
 #endif
     READ (brkc_.nseg);
     SWAP4(brkc_.nseg) ;
@@ -401,27 +405,28 @@ tabin_ (int *in, char *modelname)
     SWAP4(brkc_.nbrn) ;
     READ (brkc_.ku);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.ku, brkc_.ku, 2) ;
+    vectorswap4(brkc_.ku, brkc_.ku, 2) ;
 #endif
     READ (brkc_.km);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.km, brkc_.km, 2) ;
+    vectorswap4(brkc_.km, brkc_.km, 2) ;
 #endif
     READ (brkc_.fcs);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.fcs, brkc_.fcs, 90) ;
+    //vectorswap4(brkc_.fcs, brkc_.fcs, 90) ;
+    vectorswap4((int*)brkc_.fcs, (int *)brkc_.fcs, 90) ;
 #endif
     READ (brkc_.nafl);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.nafl, brkc_.nafl, 90) ;
+    vectorswap4(brkc_.nafl, brkc_.nafl, 90) ;
 #endif
     READ (brkc_.indx);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.indx, brkc_.indx, 60) ;
+    vectorswap4(brkc_.indx, brkc_.indx, 60) ;
 #endif
     READ (brkc_.kndx);
 #ifndef WORDS_BIGENDIAN
-    swap4(brkc_.kndx, brkc_.kndx, 60) ;
+    vectorswap4(brkc_.kndx, brkc_.kndx, 60) ;
 #endif
     READ (reclen2);
     SWAP4(reclen2) ;
@@ -433,13 +438,15 @@ tabin_ (int *in, char *modelname)
     SWAP4(reclen1) ;
     READ (umdc_.pm);
     p8 = (unsigned char *) umdc_.pm ; 
-    md2hd(&p8, (double *) p8, 300) ;
+    //md2hd(&p8, (double *) p8, 300) ;
+    md2hd((double *)p8, (double *) p8, 300) ;
     READ (umdc_.zm);
     p8 = (unsigned char *) umdc_.zm ; 
-    md2hd(&p8, (double *) p8, 300) ;
+    //md2hd(&p8, (double *) p8, 300) ;
+    md2hd((double *)p8, (double *) p8, 300) ;
     READ (umdc_.ndex);
 #ifndef WORDS_BIGENDIAN
-    swap4(umdc_.ndex, umdc_.ndex, 300) ;
+    vectorswap4(umdc_.ndex, umdc_.ndex, 300) ;
 #endif
     READ (reclen2);
     SWAP4(reclen2) ;
@@ -451,10 +458,12 @@ tabin_ (int *in, char *modelname)
     SWAP4(reclen1) ;
     READ (brkc_.pu);
     p8 = (unsigned char *) brkc_.pu ; 
-    md2hd(&p8, (double *) p8, 702) ;
+    //md2hd(&p8, (double *) p8, 702) ;
+    md2hd((double *)p8, (double *) p8, 702) ;
     READ (brkc_.pux);
     p8 = (unsigned char *) brkc_.pux ; 
-    md2hd(&p8, (double *) p8, 200) ;
+    //md2hd(&p8, (double *) p8, 200) ;
+    md2hd((double *)p8, (double *) p8, 200) ;
     READ (reclen2);
     SWAP4(reclen2) ;
     if (reclen1 != reclen2)
@@ -466,13 +475,15 @@ tabin_ (int *in, char *modelname)
     READ (pcdc_.phcd);
     READ (brkc_.px);
     p8 = (unsigned char *) brkc_.px ; 
-    md2hd(&p8, (double *) p8, 200) ;
+    //md2hd(&p8, (double *) p8, 200) ;
+    md2hd((double *)p8, (double *) p8, 200) ;
     READ (brkc_.xt);
     p8 = (unsigned char *) brkc_.xt ; 
-    md2hd(&p8, (double *) p8, 200) ;
+    //md2hd(&p8, (double *) p8, 200) ;
+    md2hd((double *)p8, (double *) p8, 200) ;
     READ (tabc_.jndx);
 #ifndef WORDS_BIGENDIAN
-    swap4(tabc_.jndx, tabc_.jndx, 200) ;
+    vectorswap4(tabc_.jndx, tabc_.jndx, 200) ;
 #endif
     READ (reclen2);
     SWAP4(reclen2) ;
@@ -484,10 +495,12 @@ tabin_ (int *in, char *modelname)
     SWAP4(reclen1) ;
     READ (tabc_.pt);
     p8 = (unsigned char *) tabc_.pt ; 
-    md2hd(&p8, (double *) p8, 2250) ;
+    //md2hd(&p8, (double *) p8, 2250) ;
+    md2hd((double *)p8, (double *) p8, 2250) ;
     READ (brkc_.taut);
     p8 = (unsigned char *) brkc_.taut ; 
-    md2hd(&p8, (double *) p8, 2250) ;
+    //md2hd(&p8, (double *) p8, 2250) ;
+    md2hd((double *)p8, (double *) p8, 2250) ;
 
     READ (reclen2);
     SWAP4(reclen2) ;
@@ -499,7 +512,8 @@ tabin_ (int *in, char *modelname)
     SWAP4(reclen1) ;
     READ (brkc_.coef);
     p8 = (unsigned char *) brkc_.coef ; 
-    md2hd(&p8, (double *) p8, 11250) ;
+    //md2hd(&p8, (double *) p8, 11250) ;
+    md2hd((double *)p8, (double *) p8, 11250) ;
     READ (reclen2);
     SWAP4(reclen2) ;
     if (reclen1 != reclen2)
