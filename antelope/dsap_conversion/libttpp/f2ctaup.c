@@ -574,7 +574,8 @@ L9:
 	    goto L3;
 	}
 	for (j = 1; j <= 6; ++j) {
-	    if (s_cmp (pcdc_.phcd + (i__ - 1 << 3), phdif + (j - 1 << 3), 8L,
+
+	    if (s_cmp (pcdc_.phcd + ((i__ - 1) << 3), phdif + ((j - 1) << 3), 8L,
 		       8L) == 0) {
 		goto L6;
 	    }
@@ -582,7 +583,11 @@ L9:
 	goto L3;
 L6:
 	tabc_.dbrn[i__ - 1] = 1.;
+	/* There are large numbers of these that were fixed to silence warnings about
+            dangerous parenthesis by gcc.   This is the original:
 	s_copy (phdif + (j - 1 << 3), " ", 8L, 1L);
+	This is the edited version */
+	s_copy (phdif + ((j - 1) << 3), " ", 8L, 1L);
 L3:
 	;
     }
@@ -623,7 +628,7 @@ int             pcntl_len;
     no = MIN (*nn, 30);
     i__1 = no;
     for (i__ = 1; i__ <= i__1; ++i__) {
-	s_copy (phlst + (i__ - 1 << 3), pcntl + i__ * pcntl_len, 8L, pcntl_len);
+	s_copy (phlst + ((i__ - 1) << 3), pcntl + i__ * pcntl_len, 8L, pcntl_len);
     }
     all = FALSE_;
     if (no == 1 && (s_cmp (phlst, "all", 8L, 3L) == 0 || s_cmp (phlst, "ALL",
@@ -642,7 +647,7 @@ int             pcntl_len;
 	}
 L9:
 	++j;
-	s_copy (phtmp, pcdc_.phcd + (j - 1 << 3), 8L, 8L);
+	s_copy (phtmp, pcdc_.phcd + ((j - 1) << 3), 8L, 8L);
 	for (l = 2; l <= 8; ++l) {
     L6:
 	    if (*(unsigned char *) &phtmp[l - 1] == ' ') {
@@ -679,12 +684,12 @@ L4:
 	if (kseg < 1) {
 	    goto L7;
 	}
-	if (s_cmp (phtmp, segcd + (kseg - 1 << 3), 8L, 8L) == 0) {
+	if (s_cmp (phtmp, segcd + ((kseg - 1) << 3), 8L, 8L) == 0) {
 	    goto L8;
 	}
 L7:
 	++kseg;
-	s_copy (segcd + (kseg - 1 << 3), phtmp, 8L, 8L);
+	s_copy (segcd + ((kseg - 1) << 3), phtmp, 8L, 8L);
 	nsgpt[kseg - 1] = i__;
 L8:
 	if (brkc_.jidx[j - 1] < brkc_.indx[i__ + 29]) {
@@ -697,7 +702,7 @@ L8:
     i__1 = no;
     for (i__ = 1; i__ <= i__1; ++i__) {
 	for (j = 1; j <= 4; ++j) {
-	    if (s_cmp (phlst + (i__ - 1 << 3), cmdcd + (j - 1 << 3), 8L, 8L) ==
+	    if (s_cmp (phlst + ((i__ - 1) << 3), cmdcd + ((j - 1) << 3), 8L, 8L) ==
 		    0) {
 		goto L12;
 	    }
@@ -705,7 +710,7 @@ L8:
 	fnd = FALSE_;
 	i__2 = kseg;
 	for (k = 1; k <= i__2; ++k) {
-	    if (s_cmp (phlst + (i__ - 1 << 3), segcd + (k - 1 << 3), 8L, 8L) !=
+	    if (s_cmp (phlst + ((i__ - 1) << 3), segcd + ((k - 1) << 3), 8L, 8L) !=
 		    0) {
 		goto L14;
 	    }
@@ -716,7 +721,7 @@ L8:
 	    ;
 	}
 	if (!fnd) {
-	    elog_log (0, "Brnset:  phase %s not found", phlst + (i__ - 1 << 3));
+	    elog_log (0, "Brnset:  phase %s not found", phlst + ((i__ - 1) << 3));
 	}
 	goto L10;
 L12:
@@ -726,7 +731,7 @@ L12:
 	for (j = j1; j <= i__2; ++j) {
 	    i__3 = kseg;
 	    for (k = 1; k <= i__3; ++k) {
-		if (s_cmp (cmdlst + (j - 1 << 3), segcd + (k - 1 << 3), 8L, 8L)
+		if (s_cmp (cmdlst + ((j - 1) << 3), segcd + ((k - 1) << 3), 8L, 8L)
 			!= 0) {
 		    goto L15;
 		}
@@ -1292,8 +1297,8 @@ L61:
     }
     i__1 = brkc_.nbrn;
     for (j = 1; j <= i__1; ++j) {
-	if (s_cmp (pcdc_.phcd + (j - 1 << 3), "sP", 2L, 2L) != 0 && s_cmp (
-		 pcdc_.phcd + (j - 1 << 3), "SP", 2L, 2L) != 0 || brkc_.px[j
+	if ((s_cmp (pcdc_.phcd + ((j - 1) << 3), "sP", 2L, 2L) != 0 && s_cmp (
+		 pcdc_.phcd + ((j - 1) << 3), "SP", 2L, 2L) != 0) || brkc_.px[j
 							      + 99] <= 0.) {
 	    goto L44;
 	}
@@ -1307,8 +1312,8 @@ L44:
 L59:
     i__1 = brkc_.nbrn;
     for (j = 1; j <= i__1; ++j) {
-	if (s_cmp (pcdc_.phcd + (j - 1 << 3), "pS", 2L, 2L) != 0 && s_cmp (
-		 pcdc_.phcd + (j - 1 << 3), "PS", 2L, 2L) != 0 || brkc_.px[j
+	if ((s_cmp (pcdc_.phcd + ((j - 1) << 3), "pS", 2L, 2L) != 0 && s_cmp (
+		 pcdc_.phcd + ((j - 1) << 3), "PS", 2L, 2L) != 0) || brkc_.px[j
 							      + 99] <= 0.) {
 	    goto L60;
 	}
@@ -1407,8 +1412,8 @@ L43:
 	    goto L20;
 	}
 	if (brkc_.iidx[i__ - 1] > 0 || (i__2 = brkc_.nafl[i__ - 1], ABS (
-		  i__2)) != *nph || brkc_.msrc[*nph - 1] <= 0 && brkc_.nafl[
-							     i__ - 1] > 0) {
+		  i__2)) != *nph || (brkc_.msrc[*nph - 1] <= 0 && brkc_.nafl[
+							     i__ - 1] > 0)) {
 	    goto L20;
 	}
 	iph = brkc_.nafl[i__ + 29];
@@ -1838,8 +1843,8 @@ L12:
 	hh = h1 * h2 * (h1 - h2);
 	h1 *= h1;
 	h2 = -h2 * h2;
-	xs = -(h2 * tabc_.tau[(i__ - 1 << 2) - 4] - (h2 + h1) * tabc_.tau[(
-		  i__ << 2) - 4] + h1 * tabc_.tau[(i__ + 1 << 2) - 4]) / hh;
+	xs = -(h2 * tabc_.tau[((i__ - 1) << 2) - 4] - (h2 + h1) * tabc_.tau[(
+		  i__ << 2) - 4] + h1 * tabc_.tau[((i__ + 1) << 2) - 4]) / hh;
 L14:
 	if ((d__1 = x - xs, ABS (d__1)) <= *xmin) {
 	    goto L15;
@@ -1881,8 +1886,8 @@ L8:
 	hh = h1 * h2 * (h1 - h2);
 	h1 *= h1;
 	h2 = -h2 * h2;
-	x = -(h2 * tabc_.tau[(i__ - 1 << 2) - 4] - (h2 + h1) * tabc_.tau[(
-		  i__ << 2) - 4] + h1 * tabc_.tau[(i__ + 1 << 2) - 4]) / hh;
+	x = -(h2 * tabc_.tau[((i__ - 1) << 2) - 4] - (h2 + h1) * tabc_.tau[(
+		  i__ << 2) - 4] + h1 * tabc_.tau[((i__ + 1) << 2) - 4]) / hh;
 L5:
 	if (sgn * (x - xm) <= dx2) {
 	    goto L2;
@@ -2132,13 +2137,13 @@ L4:
     if (*int__ > 2) {
 	goto L1;
     }
-    s_copy (pcdc_.phcd + (*jb - 1 << 3), pcdc_.phcd + (*jb - 1 << 3), 8L, 1L);
+    s_copy (pcdc_.phcd + ((*jb - 1) << 3), pcdc_.phcd + ((*jb - 1) << 3), 8L, 1L);
     i__ = *jb;
     i__1 = brkc_.nbrn;
     for (j = 1; j <= i__1; ++j) {
 	i__ = i__ % brkc_.nbrn + 1;
-	if (s_cmp (pcdc_.phcd + (i__ - 1 << 3), pcdc_.phcd + (*jb - 1 << 3),
-	       1L, 8L) == 0 && *(unsigned char *) &pcdc_.phcd[(i__ - 1 << 3)
+	if (s_cmp (pcdc_.phcd + ((i__ - 1) << 3), pcdc_.phcd + ((*jb - 1) << 3),
+	       1L, 8L) == 0 && *(unsigned char *) &pcdc_.phcd[((i__ - 1) << 3)
 		  + 1] != 'P' && (pe >= brkc_.px[i__ - 1] && pe <= brkc_.px[
 							       i__ + 99])) {
 	    goto L9;
@@ -2146,10 +2151,10 @@ L4:
     }
     goto L1;
 L9:
-    s_copy (pcdc_.phcd + (*jb - 1 << 3), pcdc_.phcd + (i__ - 1 << 3), 8L, 8L);
+    s_copy (pcdc_.phcd + ((*jb - 1) << 3), pcdc_.phcd + ((i__ - 1) << 3), 8L, 8L);
     if ((d__1 = tabc_.pt[i2 - 1] - tabc_.pt[tabc_.jndx[i__ - 1] - 1], ABS (
 							   d__1)) <= dtol) {
-	s_copy (pcdc_.phcd + (*jb - 1 << 3), pcdc_.phcd + (i__ - 2 << 3), 8L,
+	s_copy (pcdc_.phcd + ((*jb - 1) << 3), pcdc_.phcd + ((i__ - 2) << 3), 8L,
 		8L);
     }
 L1:
@@ -2163,7 +2168,7 @@ L3:
 L15:
     if (mxcnt > mncnt || mncnt > mxcnt + 1) {
 	char            s[9];
-	strncpy (s, pcdc_.phcd + (*jb - 1 << 3), 8);
+	strncpy (s, pcdc_.phcd + ((*jb - 1) << 3), 8);
 	s[8] = 0;
 	elog_log (0, "Bad interpolation on %s\n", s);
     }
@@ -2298,8 +2303,8 @@ L14:
 	    goto L9;
 	}
 	nph = (i__2 = brkc_.nafl[i__ - 1], ABS (i__2));
-	if (brkc_.iidx[i__ - 1] > 0 || brkc_.msrc[nph - 1] <= 0 &&
-		brkc_.nafl[i__ - 1] > 0) {
+	if (brkc_.iidx[i__ - 1] > 0 || (brkc_.msrc[nph - 1] <= 0 &&
+		brkc_.nafl[i__ - 1] > 0)) {
 	    goto L9;
 	}
 	brkc_.iidx[i__ - 1] = 1;
@@ -2439,7 +2444,7 @@ int             phnm_len;
 				 tabc_.us[nph - 1] - ps * ps), ABS (r__1)));
 	    d__1 = ABS (dps);
 	    dddp[*n] = dpn * .75 * tabc_.tau[(j << 2) - 1] / MAX (d__1, deps);
-	    s_copy (phnm + *n * phnm_len, pcdc_.phcd + (*jb - 1 << 3),
+	    s_copy (phnm + *n * phnm_len, pcdc_.phcd + ((*jb - 1) << 3),
 		    phnm_len, 8L);
 	    in = i_indx (phnm + *n * phnm_len, "ab", phnm_len, 2L);
 	    if (in <= 0) {
@@ -2492,7 +2497,7 @@ int             phnm_len;
 		d__1 = ABS (dps);
 		dddp[*n] = dpn * (tabc_.tau[(j << 2) - 2] * 2. + tabc_.tau[(
 				     j << 2) - 1] * .75 / MAX (d__1, deps));
-		s_copy (phnm + *n * phnm_len, pcdc_.phcd + (*jb - 1 << 3),
+		s_copy (phnm + *n * phnm_len, pcdc_.phcd + ((*jb - 1) << 3),
 			phnm_len, 8L);
 		in = i_indx (phnm + *n * phnm_len, "ab", phnm_len, 2L);
 		if (in <= 0) {
@@ -2529,11 +2534,11 @@ L12:
 		nph - 1] - tabc_.pt[j - 1] * tabc_.pt[j - 1]), ABS (r__1)));
 	dddp[*n] = dpn * (tabc_.tau[(j << 2) - 2] * 2. + tabc_.tau[(j << 2)
 					      - 1] * .75 / MAX (dps, deps));
-	ln = i_indx (pcdc_.phcd + (*jb - 1 << 3), " ", 8L, 1L) - 1;
+	ln = i_indx (pcdc_.phcd + ((*jb - 1) << 3), " ", 8L, 1L) - 1;
 	if (ln <= 0) {
-	    ln = i_len (pcdc_.phcd + (*jb - 1 << 3), 8L);
+	    ln = i_len (pcdc_.phcd + ((*jb - 1) << 3), 8L);
 	}
-	i__3[0] = ln, a__1[0] = pcdc_.phcd + (*jb - 1 << 3);
+	i__3[0] = ln, a__1[0] = pcdc_.phcd + ((*jb - 1) << 3);
 	i__3[1] = 4, a__1[1] = "diff";
 	s_cat (phnm + *n * phnm_len, a__1, i__3, &c__2, phnm_len);
 L10:
@@ -2769,7 +2774,7 @@ L6:
 	if (k <= 0) {
 	    goto L8;
 	}
-	if (s_cmp (phnm + k * phnm_len, ctmp + (j - 1 << 3), phnm_len, 8L) ==
+	if (s_cmp (phnm + k * phnm_len, ctmp + ((j - 1) << 3), phnm_len, 8L) ==
 		0 && (r__1 = tt[k] - tmp[j - 1], ABS (r__1)) <= atol) {
 	    goto L2;
 	}
@@ -2779,7 +2784,7 @@ L8:
 	dtdd[k] = tmp[j + 59];
 	dtdh[k] = tmp[j + 119];
 	dddp[k] = tmp[j + 179];
-	s_copy (phnm + k * phnm_len, ctmp + (j - 1 << 3), phnm_len, 8L);
+	s_copy (phnm + k * phnm_len, ctmp + ((j - 1) << 3), phnm_len, 8L);
 L2:
 	;
     }
