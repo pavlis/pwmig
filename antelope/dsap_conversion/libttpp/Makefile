@@ -14,7 +14,7 @@ DIRS=
 OBJS=TauPCalculator.o \
   Hypocenter.o \
   delta.o \
-  swap_gcc.o \
+  swap.o \
   f2ctaup.o 
 $(LIB) : $(OBJS)
 	$(RM) $@
