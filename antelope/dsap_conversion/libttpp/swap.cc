@@ -1,8 +1,20 @@
-#define _BSD_SOURCE
 #include <typeinfo>
 #include <sys/types.h>
-//#include <endian.h>
+#include <iostream>
 #include "swapbytes_pwmig.h"
+/* Taken from:  
+http://stackoverflow.com/questions/105252/how-do-i-convert-between-big-endian-and-little-endian-values-in-c
+*/
+template <typename T>
+void SwapEnd(T& var)
+{
+    T varSwapped;
+    for(long i = 0; i < static_cast<long>(sizeof(var)); i++)
+         ((char*)(&varSwapped))[sizeof(var) - 1 - i] = ((char*)(&var))[i];
+    for(long i = 0; i < static_cast<long>(sizeof(var)); i++)
+                          ((char*)(&var))[i] = ((char*)(&varSwapped))[i];
+}
+
 using namespace std;
 
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
@@ -19,12 +31,14 @@ void vectorswap4(int *in,int *out,int n)
 }
 void md2hd(double *in, double *out,int n)
 {
-    int64_t so;
     int i;
+    //cout << "Byte swapped double result - length="<<n<<endl;
     for(i=0;i<n;++i)
     {
-        so=__builtin_bswap64(static_cast<int64_t>(in[i]));
-        out[i]=static_cast<double>(so);
+        //cout << in[i]<<" ";
+        out[i]=in[i];
+        SwapEnd(out[i]);
+        //cout << out[i]<<endl;
     }
 }
 void swap4(int *d)
