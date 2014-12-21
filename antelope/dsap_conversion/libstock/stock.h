@@ -86,8 +86,8 @@ int yearday ( double e );
 char *strydtime ( double e );
 char *strtime(double e);
 char *strdate(double e);
-static int e2hz ( double epoch, char *timezone, int *year, int *doy, int *month, int *mday, int *hour, int *minute, double *second, char **zonename );
-static char* ztime2str ( char *f, double e, int year, int doy, int month, int mday, int hour, int minute, double second, char *zonename );
+//static int e2hz ( double epoch, char *timezone, int *year, int *doy, int *month, int *mday, int *hour, int *minute, double *second, char **zonename );
+//static char* ztime2str ( char *f, double e, int year, int doy, int month, int mday, int hour, int minute, double second, char *zonename );
 char *epoch2str ( double epoch, char *f );
 char *zepoch2str ( double epoch, char *f, char *timezone );
 int fmttime ( double epoch, char *result, int fmt, char *timezone );
@@ -97,7 +97,7 @@ int timeprint(struct date_time *dt);
 int zh_today(struct date_time *dt);
 int mdtodate(struct date_time *dt);
 int time_string2epoch(char *s, double *t);
-static double year2days(double year);
+//static double year2days(double year);
 double dtoepoch(long date);
 int isleap(int year);
 double timecon(char *timestr);
@@ -111,10 +111,10 @@ void doy2mday(int doy,int year, int *month, int *day);
 int mday2doy(int yr,int mon, int day);
 double h2e(int yr, int day, int hr, int min, double sec);
 void e2h(double e, int *yr, int *day, int *hr, int *min, double *sec);
-static int check_tz();
+//static int check_tz();
 int zstr2epoch(char *, double *e);
 double str2epoch(char *);
-static int my_yyinput(char *buf,int ms);
+//static int my_yyinput(char *buf,int ms);
 #ifdef	__cplusplus
 }
 #endif
