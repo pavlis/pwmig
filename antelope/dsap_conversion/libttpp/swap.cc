@@ -7,7 +7,7 @@ using namespace std;
 
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
    length n*/
-void vector_swap4(int *in,int *out,int n)
+void vectorswap4(int *in,int *out,int n)
 {
     int32_t so;  //so is short for swapped output
     int i;

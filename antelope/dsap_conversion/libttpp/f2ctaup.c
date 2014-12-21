@@ -1048,7 +1048,8 @@ int            *nph;
     static double   sgn;
 #define tup brkc_.tauc
     pdec_.deplim = 1.1;
-    pdec_.ka = 1.1;
+    //pdec_.ka = 1.1;
+    pdec_.ka = 1;
     if (*nph == brkc_.nph0) {
 	goto L1;
     }

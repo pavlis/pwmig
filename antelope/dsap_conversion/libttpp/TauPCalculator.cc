@@ -488,6 +488,7 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 }
 
 
+/* This method returns 0 for success, nonzero means an error */
 int TauPCalculator::tt_taup_set_phases(string phases)
 {
         /*
@@ -503,7 +504,7 @@ int TauPCalculator::tt_taup_set_phases(string phases)
 	int k;
         int one(1);
         // Return immediately if the desired phase hasn't changed
-        if(last_phase_code_used==phases) return 1;
+        if(last_phase_code_used==phases) return 0;
         /* Input phases array is a comma separated list.  This section 
          breaks these tokens up and puts them in the phcd array of char*/
         string phtmp(phases);
@@ -524,13 +525,13 @@ int TauPCalculator::tt_taup_set_phases(string phases)
         if(strlen(tblpath)<=0)
         {
             tt_taup_set_table(NULL);
-            return 0;
+            return 1;
         }
 
 	tabin_ (&one, tblpath) ;
 	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
 	ttopen = true;
-	return (1);
+	return (0);
 }
 
 
