@@ -143,9 +143,15 @@ double TauPCalculator::Ptime(double rdelta, double evdepth)
         vector<TauPComputedTime>ttall=tt_taup(delta);
         /* Hunt for the result tagged pure P.   For now we throw an
            error if that isn't found */
+        //DEBUG
+        cout << "Source depth="<<depth<<" epicentral distance="<<delta<<endl;
         vector<TauPComputedTime>::iterator ttptr;
         for(ttptr=ttall.begin();ttptr!=ttall.end();++ttptr)
+        {
+            //DEBUG
+            cout << "phase="<<ttptr->phase<<" time="<<ttptr->ttime<<endl;
             if(ttptr->phase == "P") return ttptr->ttime;
+        }
         /* if we land here a simple P was not found.  For now
         use same code as phasetime - expectation is we will need 
         additional error recovery here once I do an empirical test
@@ -464,7 +470,7 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
 	nn = 0;
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
 		//if (!phase[0]) continue;
-		if (phase[0]!='\0') continue;
+		if (phase[0]=='\0') continue;
 		strcpy (&phcd[nn][0], phase);
 		for (k=strlen(phase); k<SIZE_PHCD; k++) phcd[nn][k] = ' ';
 		nn++;
@@ -515,7 +521,7 @@ int TauPCalculator::tt_taup_set_phases(string phases)
         phass=strdup(phtmp.c_str());
 	nn = 0;
 	for (phase=strtok(phass, ","); phase!=NULL; phase=strtok(NULL,",")) {
-		if (!phase[0]) continue;
+		if (phase[0]=='\0') continue;
 		strcpy (&phcd[nn][0], phase);
 		for (k=strlen(phase); k<SIZE_PHCD; k++) phcd[nn][k] = ' ';
 		nn++;
@@ -591,7 +597,7 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	vector<TauPComputedTime> result;
 	result.reserve(nphases);
 	TauPComputedTime ttk;
-	for(k=0;i<nphases;++k)
+	for(k=0;k<nphases;++k)
 	{
 	    /* It seems phcd tokens are blank terminated so we have to scan
 	    for that instead of a null */
