@@ -252,12 +252,16 @@ private:
     string taup_get_modname();
     void taup_setup(const char *model, const char *phases);
     void tt_taup_set_event_depth(double edepth);
+    /* This is a debug routine - probably should be deleted when working */
+    void print_private();
     vector<TauPComputedTime> tt_taup(double del);
 };
 extern "C" {
 void tabin_(int *,char *);
 void brnset_(int *,char *,int *,int);
 void depset_(float *,float *);
+int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
+        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
 }
 
 

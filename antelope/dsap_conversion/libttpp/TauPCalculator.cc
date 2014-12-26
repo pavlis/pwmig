@@ -7,12 +7,6 @@
 #define TBL_TBL         "iasp91"
 #define	SIZE_PHCD	16
 #define	MAXPHASES		60
-extern "C"
-{
-/*Put this prototype here for now - fortran code in subs.f */
-int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
-        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
-}
 
 namespace PWMIG
 {
@@ -491,6 +485,7 @@ void TauPCalculator::taup_setup(const char *model, const char *phases)
            it expands to SIZE_PHCD X MAXPHASES]  */
 	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
 	ttopen = true;
+        this->print_private();
 }
 
 
@@ -534,9 +529,15 @@ int TauPCalculator::tt_taup_set_phases(string phases)
             return 1;
         }
 
+        /* Experimental - I think that this only causes problems.  
+           Certainly an efficiency issue.   I believe now that we 
+           always want the brnset to set the branch to all and let each
+           method sort out which phases should be returned. */
+        /*
 	tabin_ (&one, tblpath) ;
 	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
 	ttopen = true;
+        */
 	return (0);
 }
 
@@ -613,6 +614,36 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	   result.push_back(ttk);
 	}
 	return(result);
+}
+/* This is a debug routine */
+void TauPCalculator::print_private()
+{
+    cout << "model="<<model<<endl;
+    cout << "last_phase_code_used="<<last_phase_code_used<<endl;
+    cout << "depth="<<depth<<endl;
+    cout << "maxphases="<<maxphases<<endl;
+    cout << "tt dtdd dtdh dddp"<<endl;
+    int i;
+    for(i=0;i<MAXPHASES;++i)
+    {
+        cout << tt[i]<<" "
+            << dtdd[i]<<" "
+            << dtdh[i]<<" "
+            << dddp[i]<<endl;
+    }
+    cout << "phcd char matrix"<<endl;
+    for(i=0;i<MAXPHASES;++i)
+    {
+        cout << phcd[i]<<endl;
+    }
+    cout << "tblpath="<<tblpath<<endl;
+    cout << "ttopen="<<ttopen<<endl;
+    cout << "nn="<<nn<<endl;
+    cout << "prnt_0="<<prnt[0]<<endl;
+    cout << "prnt_1="<<prnt[1]<<endl;
+    cout << "prnt_2="<<prnt[2]<<endl;
+    cout << "usrc_0="<<usrc[0]<<endl;
+    cout << "usrc_1="<<usrc[1]<<endl;
 }
 
 }  // END PWMIG Namespace encapsulation
