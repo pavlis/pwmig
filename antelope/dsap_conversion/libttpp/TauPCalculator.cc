@@ -18,7 +18,12 @@ using namespace PWMIG;
 The default constructor just uses a default model */
 void TauPCalculator::initialize_Taup(string mod)
 {
-    maxphases=MAXPHASES;
+	/* this used to be done in a static int C style initialization and used
+	defines as a alias for 1 =true and 0=false.   Converted to numeric
+	equivalent to avoid the confusing curly brackets of the orignal initialzition */
+	for(int i=0;i<30;++i) prtflc_.segmsk[i]=1;
+	prtflc_.prnt[0]=0;   prtflc_.prnt[1]=0;  
+    maxphases=MAXPHASES; 
     string base_error("TauPCalculator constructor:  ");
     this->model=mod;
     depth=0.0;   // initial depth for initialize
@@ -69,6 +74,9 @@ TauPCalculator::TauPCalculator(const TauPCalculator& parent)
         }
     }
     strncpy(tblpath,parent.tblpath,MAXPATHLEN);
+    ///WARNING this is incomplete - all f2c attributes need a copy here.
+    ///left until code is stabilized to be sure I have them all
+    // SAME WARNING applies to operator=
 }
 TauPCalculator& TauPCalculator::operator=(const TauPCalculator& parent)
 {
@@ -106,7 +114,7 @@ TauPCalculator::~TauPCalculator()
     /* This is a placeholder that does nothing for now.   Not clear
        at this point how file open and close is handled with 
        table reader - think it reads and closes but may need that
-       here */
+       here.   Pretty sure we need to unmap and close the ttables */
 }
 
 

@@ -3,14 +3,107 @@
 #include <vector>
 #include <string>
 #include "TravelTimeCalculator.h"
+/* Formerly in _taup.h - not sure all of these are necessary */
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <math.h>
+/* Size definitions in f2c of subs.f - dsap and brtt versions had these in a
+different include file */
 #define MAXPHASES 60
 #define SIZE_PHCD 16
 #define MAXPATHLEN 512
+
 namespace PWMIG
 {
 using namespace std;
 using namespace SEISPP;
 using namespace PWMIG;
+/* These structs were originally in _taup.h. They are translations of 
+common block variables from f2c of the old Bulland code (subs.f).   
+They live in the private area of this object */
+struct Brkc {
+    double          zs,
+                    pk[30],
+                    pu[702] /* was [351][2] */ ,
+                    pux[200] /* was [100][2] */ ,
+                    tauu[700] /* was [350][2] */ ,
+                    xu[200] /* was [100][2] */ ,
+                    px[200] /* was [100][2] */ ,
+                    xt[200] /* was [100][2] */ ,
+                    taut[2250],
+                    coef[11250] /* was [5][2250] */ ,
+                    tauc[350],
+                    xc[100],
+                    tcoef[1000] /* was [5][100][2] */ ,
+                    tp[200]
+     /* was [100][2] */ ;
+    float           odep,
+                    fcs[90] /* was [30][3] */ ;
+    int             nin,
+                    nph0,
+                    int0[2],
+                    ki,
+                    msrc[2],
+                    isrc[2],
+                    nseg,
+                    nbrn,
+                    ku[2],
+                    km[2]
+                   ,
+                    nafl[90] /* was [30][3] */ ,
+                    indx[60] /* was [30][2] */ ,
+                    kndx[60] /* was [30][2] */ ,
+                    iidx[30],
+                    jidx[100],
+                    kk[30];
+};
+
+struct Pcdc {
+    char            phcd[800];
+};
+
+struct Prtflc {
+    int             segmsk[30],
+                    prnt[2];
+};
+
+struct Umdc {
+    double          pm[300] /* was [150][2] */ ,
+                    zm[300] /* was [150][2] */ ;
+    int             ndex[300] /* was [150][2] */ ,
+                    mt[2];
+};
+
+struct Tabc {
+    double          us[2],
+                    pt[2250],
+                    tau[9000] /* was [4][2250] */ ,
+                    xlim[4500] /* was [2][2250] */ ,
+                    xbrn[300] /* was [100][3] */ ,
+                    dbrn[200] /* was [100][2] */ ;
+    float           xn,
+                    pn,
+                    tn,
+                    dn,
+                    hn;
+    int             jndx[200] /* was [100][2] */ ,
+                    idel[300] /* was [100][3] */ ,
+                    mbr1,
+                    mbr2;
+};
+
+struct Pdec {
+    double          ua[10] /* was [5][2] */ ,
+                    taua[10] /* was [5][2] */ ;
+    float           deplim;
+    int             ka;
+};
 /* \brief Multiple phase travel time structure.
 
 This struct is a more rational way to return data from the primary
@@ -230,7 +323,7 @@ private:
     string last_phase_code_used;   
     /* Cached in object - depth change initates action */
     double depth; 
-    /* These are work arrays used by taup routines */
+    /* These are work arrays used by taup interface routines */
     int maxphases;
     float tt[MAXPHASES], dtdd[MAXPHASES], dtdh[MAXPHASES], dddp[MAXPHASES];
     char phcd[MAXPHASES][SIZE_PHCD];
@@ -243,6 +336,23 @@ private:
     int nn;
     /* a mystery static variable passed to depset fortran subroutine */
     float usrc[2];
+    /* These were originally static external variables in the _taup.h include
+    file.    We place then in the object here to allow assimilation of the 
+    f2c code as private members of this object. This is the data read from
+    tables*/
+	struct Brkc brkc_;
+	struct Pcdc pcdc_;
+	struct Prtflc prtflc_;
+	struct Umdc umdc_;
+	struct Tabc tabc_;
+	struct Pdec pdec_;
+	/* These are table size parameters loaded by tabin_.   */
+	char    *tbl_data;
+	int      tbl_data_size;
+	int      tbl_maxrec;
+	int      tbl_record_len;
+	/* END of this section of the abomination.*/
+	   
     /* used in all constructors */
     void initialize_Taup(string mod);
     /* methods converted from tt_taup.c */
@@ -255,15 +365,32 @@ private:
     /* This is a debug routine - probably should be deleted when working */
     void print_private();
     vector<TauPComputedTime> tt_taup(double del);
+    /* These began life as f2c code from taup library.   An abomination, but
+    here they are made members of this object.
+    This first group of procedures are referred to in TauPCalculator.cc code public
+    methods.*/
+	void tabin_(int *,char *);
+	int brnset_(int *,char *,int *,int);
+	int depset_(float *,float *);
+	int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
+        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len); 
+    /* These are procedures in the f2c conversion for subs.f that need access
+    to fortran common variables, but which are not explicitly referred to in
+    the C++ interface code.   Underscores are retained here to avoid hunting for
+    multiple occurences. */
+    int bkin_ (int *lu, int *nrec, int *len, double *buf);
+    double umod_0_(int n__,double *zs,int *isrc,int *nph,double *uend,int *js);
+    /* These two functions are wrappers to umod_0 created by original two entry
+    points to original fortran function*/
+    double umod_(double *zs,int *isrc,int *nph);
+    double zmod_(double *zs,int *isrc,int *nph);
+    int depcor_(int *nph);
+    int pdecu_(int *i1, int *i2, double *x0, double *x1, double *xmin,
+								int *int__, int *len);
+	int spfit_(int *jb, int *int__);
+	int findtt_(int *jb, double *x0, int *max__, int *n, float *tt, float *dtdd,
+        float *dtdh, float *dddp, char *phnm, int phnm_len); 
 };
-extern "C" {
-void tabin_(int *,char *);
-void brnset_(int *,char *,int *,int);
-void depset_(float *,float *);
-int trtm_(float *delta,int *mxphs,int *nphs, float *tt,
-        float *dtdd,float *dtdh,float *dddp,char *phnm,int phnm_len);
-}
-
 
 } // End PWMIG namespace encapsulation
 #endif
