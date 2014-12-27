@@ -10,14 +10,14 @@
 #include <stdarg.h>
 
 #include "elog.h"
-void elog_log (int flag, char *format, ...)
+void elog_log (int flag, const char *format, ...)
 {
     va_list args ;
     va_start(args, format) ; 
     fprintf(stderr,"Logged Message:  ");
     vfprintf(stderr,format,args);
 }
-void elog_notify (int flag, char *format, ...)
+void elog_notify (int flag, const char *format, ...)
 {
     va_list args ;
     va_start(args, format) ; 
@@ -26,7 +26,7 @@ void elog_notify (int flag, char *format, ...)
 }
 
 
-void elog_complain (int flag, char *format, ...)
+void elog_complain (int flag, const char *format, ...)
 {
     va_list args ;
     va_start(args, format) ; 
@@ -36,7 +36,7 @@ void elog_complain (int flag, char *format, ...)
 }
 
 
-void elog_die (int flag, char *format, ...)
+void elog_die (int flag, const char *format, ...)
 {
     va_list args ;
     va_start(args, format) ; 
