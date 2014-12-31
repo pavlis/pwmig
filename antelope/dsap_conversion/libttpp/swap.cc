@@ -49,8 +49,11 @@ void swap4(int *d)
 }
 void swap4_float(float *d)
 {
+    /*
     int32_t so;
     so=__builtin_bswap32(static_cast<int32_t>(*d));
-    *d=static_cast<int>(so);
+    *d=static_cast<float>(so);
+    */
+    SwapEnd(*d);
 }
 

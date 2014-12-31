@@ -355,6 +355,9 @@ private:
 	   
     /* used in all constructors */
     void initialize_Taup(string mod);
+    /* This is called by copy constructor and operator = to copy the fortran 
+    common block data (next abomination below) from parent to copy */
+    void copy_f2c_common_block_data(const TauPCalculator& parent);
     /* methods converted from tt_taup.c */
     void tt_taup_set_table(const char *table_path);
     int tt_taup_set_phases(string phases);

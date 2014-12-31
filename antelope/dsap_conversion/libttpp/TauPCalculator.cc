@@ -48,6 +48,121 @@ TauPCalculator::TauPCalculator(const char *mod)
 {
     this->initialize_Taup(mod);
 }
+/* This procedure copies all the struct data
+   from f2c common blocks from parent to local copy. Put in a single 
+   procedure to improve maintainability and to avoid duplicate code
+   in copy constructor and operator =.   
+   */
+void TauPCalculator::copy_f2c_common_block_data(const TauPCalculator& parent)
+{
+    int i;
+    /* First copy Brkc data */
+    brkc_.zs = parent.brkc_.zs;
+    for(i=0;i<30;++i)
+        brkc_.pk[i]=parent.brkc_.pk[i];
+    for(i=0;i<702;++i)
+        brkc_.pu[i]=parent.brkc_.pu[i];
+    for(i=0;i<200;++i)
+        brkc_.pux[i]=parent.brkc_.pux[i];
+    for(i=0;i<700;++i)
+        brkc_.tauu[i]=parent.brkc_.tauu[i];
+    for(i=0;i<200;++i)
+        brkc_.xu[i]=parent.brkc_.xu[i];
+    for(i=0;i<200;++i)
+        brkc_.px[i]=parent.brkc_.px[i];
+    for(i=0;i<200;++i)
+        brkc_.xt[i]=parent.brkc_.xt[i];
+    for(i=0;i<2250;++i)
+        brkc_.taut[i]=parent.brkc_.taut[i];
+    for(i=0;i<11250;++i)
+        brkc_.coef[i]=parent.brkc_.coef[i];
+    for(i=0;i<350;++i)
+        brkc_.tauc[i]=parent.brkc_.tauc[i];
+    for(i=0;i<100;++i)
+        brkc_.xc[i]=parent.brkc_.xc[i];
+    for(i=0;i<1000;++i)
+        brkc_.tcoef[i]=parent.brkc_.tcoef[i];
+    for(i=0;i<200;++i)
+        brkc_.tp[i]=parent.brkc_.tp[i];
+    brkc_.odep=parent.brkc_.odep;
+    for(i=0;i<90;++i)
+        brkc_.fcs[i]=parent.brkc_.fcs[i];
+    brkc_.nin=parent.brkc_.nin;
+    brkc_.nph0=parent.brkc_.nph0;
+    brkc_.ki=parent.brkc_.ki;
+    brkc_.nseg=parent.brkc_.nseg;
+    brkc_.nbrn=parent.brkc_.nbrn;
+    for(i=0;i<2;++i)
+    {
+        brkc_.int0[i]=parent.brkc_.int0[i];
+        brkc_.msrc[i]=parent.brkc_.msrc[i];
+        brkc_.isrc[i]=parent.brkc_.isrc[i];
+        brkc_.ku[i]=parent.brkc_.ku[i];
+        brkc_.km[i]=parent.brkc_.km[i];
+    }
+    for(i=0;i<90;++i)
+        brkc_.nafl[i]=parent.brkc_.nafl[i];
+    for(i=0;i<60;++i)
+        brkc_.indx[i]=parent.brkc_.indx[i];
+    for(i=0;i<60;++i)
+        brkc_.kndx[i]=parent.brkc_.kndx[i];
+    for(i=0;i<30;++i)
+        brkc_.iidx[i]=parent.brkc_.iidx[i];
+    for(i=0;i<100;++i)
+        brkc_.jidx[i]=parent.brkc_.jidx[i];
+    for(i=0;i<30;++i)
+        brkc_.kk[i]=parent.brkc_.kk[i];
+    /* Pcdc struct - only a single char * */
+    strcpy(pcdc_.phcd,parent.pcdc_.phcd);
+    /* Prtflc struct  copy */
+    for(i=0;i<30;++i)
+        prtflc_.segmsk[i]=parent.prtflc_.segmsk[i];
+    for(i=0;i<2;++i)
+        prtflc_.prnt[i]=parent.prtflc_.prnt[i];
+    /* Now copy Umdc struct */
+    for(i=0;i<300;++i)
+    {
+        umdc_.pm[i]=parent.umdc_.pm[i];
+        umdc_.zm[i]=parent.umdc_.zm[i];
+        umdc_.ndex[i]=parent.umdc_.ndex[i];
+    }
+    for(i=0;i<2;++i)
+        umdc_.mt[i]=parent.umdc_.mt[i];
+    /* Not copy Tabc struct */
+    for(i=0;i<2;++i)
+        tabc_.us[i]=parent.tabc_.us[i];
+    for(i=0;i<2250;++i)
+        tabc_.pt[i]=parent.tabc_.pt[i];
+    for(i=0;i<9000;++i)
+        tabc_.tau[i]=parent.tabc_.tau[i];
+    for(i=0;i<4500;++i)
+        tabc_.xlim[i]=parent.tabc_.xlim[i];
+    for(i=0;i<300;++i)
+        tabc_.xbrn[i]=parent.tabc_.xbrn[i];
+    for(i=0;i<200;++i)
+        tabc_.dbrn[i]=parent.tabc_.dbrn[i];
+    tabc_.xn=parent.tabc_.xn;
+    tabc_.pn=parent.tabc_.pn;
+    tabc_.tn=parent.tabc_.tn;
+    tabc_.dn=parent.tabc_.dn;
+    tabc_.hn=parent.tabc_.hn;
+    for(i=0;i<2;++i)
+        tabc_.jndx[i]=parent.tabc_.jndx[i];
+    for(i=0;i<2;++i)
+        tabc_.idel[i]=parent.tabc_.idel[i];
+    for(i=0;i<2;++i)
+        tabc_.us[i]=parent.tabc_.us[i];
+    tabc_.mbr1=parent.tabc_.mbr1;
+    tabc_.mbr2=parent.tabc_.mbr2;
+    /* Finally copy Pdec struct  data */
+    for(i=0;i<10;++i)
+    {
+        pdec_.ua[i]=parent.pdec_.ua[i];
+        pdec_.taua[i]=parent.pdec_.taua[i];
+    }
+    pdec_.deplim=parent.pdec_.deplim;
+    pdec_.ka=parent.pdec_.ka;
+}
 TauPCalculator::TauPCalculator(const TauPCalculator& parent)
 {
     model=parent.model;
@@ -74,9 +189,12 @@ TauPCalculator::TauPCalculator(const TauPCalculator& parent)
         }
     }
     strncpy(tblpath,parent.tblpath,MAXPATHLEN);
-    ///WARNING this is incomplete - all f2c attributes need a copy here.
-    ///left until code is stabilized to be sure I have them all
-    // SAME WARNING applies to operator=
+    /* This private method copies all the obnoxious variables created
+       from the original fortran common blocks.   Made a private 
+       method to allow it's use in operator= to avoid duplicate code.
+       Also useful to encapsulate this in one place to make it easier
+       to maintain. */
+    this->copy_f2c_common_block_data(parent);
 }
 TauPCalculator& TauPCalculator::operator=(const TauPCalculator& parent)
 {
@@ -106,6 +224,7 @@ TauPCalculator& TauPCalculator::operator=(const TauPCalculator& parent)
             }
         }
         strncpy(tblpath,parent.tblpath,MAXPATHLEN);
+        this->copy_f2c_common_block_data(parent);
     }
     return(*this);
 }
@@ -130,7 +249,9 @@ double TauPCalculator::Ptime(double rdelta, double evdepth)
     try {
         if(last_phase_code_used != "P")
         {
-            i=tt_taup_set_phases("P");
+            //DEBUG
+            i=tt_taup_set_phases("ALL");
+            //i=tt_taup_set_phases("P");
             if(i!=0)
                 throw SeisppError(base_error
                         + "tt_taup_set_phases failed defining P phase");
@@ -305,8 +426,8 @@ SlownessVector TauPCalculator::phaseslow(double distance,double azimuth,
            this function */
         float fdel=(float)delta;
 	trtm_ (&fdel, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
-			&(this->dtdh[0]), &(this->dddp[0]), &(this->phcd[0][0]),
-			SIZE_PHCD);
+			&(this->dtdh[0]), &(this->dddp[0]), 
+                        (char *)&(this->phcd[0]),SIZE_PHCD);
         /* Hunt for the requested phase.  For now throw and error if an exact
            match is not found.  As noted elsewhere this will probably require some
            modification after I find out how Bulland's code deals with ambiguous
@@ -537,15 +658,9 @@ int TauPCalculator::tt_taup_set_phases(string phases)
             return 1;
         }
 
-        /* Experimental - I think that this only causes problems.  
-           Certainly an efficiency issue.   I believe now that we 
-           always want the brnset to set the branch to all and let each
-           method sort out which phases should be returned. */
-        /*
-	tabin_ (&one, tblpath) ;
+	//tabin_ (&one, tblpath) ;
 	brnset_ (&nn, phcd[0], prnt, SIZE_PHCD);
 	ttopen = true;
-        */
 	return (0);
 }
 
@@ -593,8 +708,8 @@ vector<TauPComputedTime>  TauPCalculator::tt_taup(double del)
 	int nphases;   // static above, but does not seem necessary 
         float fdel=(float)del;
 	trtm_ (&fdel, &maxphases, &nphases, &(this->tt[0]),&(this->dtdd[0]),
-		&(this->dtdh[0]), &(this->dddp[0]), &(this->phcd[0][0]),
-		SIZE_PHCD);
+		&(this->dtdh[0]), &(this->dddp[0]),
+		(char *) &(this->phcd[0]),SIZE_PHCD);
 	/* Maintenance issue warning:  callers of this private method 
            can assume this error is trapped and must have a hander.
            For efficiency they do not repeat the test, but be careful if

@@ -63,7 +63,7 @@ Hypocenter::Hypocenter(Metadata& md)
 	} catch (...){throw;};
 }
 Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
-		string meth0, string mod0)
+		string meth0, string mod0) : ttcalc(mod0.c_str())
 {
 	lat=lat0;
 	lon=lon0;
@@ -77,9 +77,11 @@ Hypocenter::Hypocenter(double lat0, double lon0, double z0, double t0,
 		<< "This implementation only supports the tttaup "
 		<< "implemented in the TauPCalculator C++ object"<<endl;
 	model=mod0;
+        /*
 	try {
 	    ttcalc=TauPCalculator(mod0.c_str());
 	} catch(...){throw;};
+        */
 }
 		
 
