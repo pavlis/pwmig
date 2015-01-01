@@ -1,6 +1,7 @@
 LIB=libstock.a
 INCLUDE=stock.h \
-        elog.h
+        elog.h \
+        swapbytes_pwmig.h
 OBJS=datafile.o \
      elog.o \
      epoch.o \
@@ -8,6 +9,7 @@ OBJS=datafile.o \
      now.o \
      str2epoch.o \
     strings.o \
+    swap.o \
     time.o \
     wd.o
 cxxflags = -g
