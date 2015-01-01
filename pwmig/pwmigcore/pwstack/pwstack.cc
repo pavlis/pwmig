@@ -7,6 +7,7 @@
 #include "seispp.h"
 #include "PwmigFileHandle.h"
 #include "PfstyleMetadata.h"
+#include "SlownessVectorMatrix.h"
 #include "pwstack.h"
 #include "pwstack_reader.h"
 
@@ -287,6 +288,28 @@ int main(int argc, char **argv)
             //
             auto_ptr<ThreeComponentEnsemble> ensemble;
             ensemble=auto_ptr<ThreeComponentEnsemble>(input_handle.read_gather(event_number));
+            /* This was added 2015 to remove dependence on global travel
+               time calculators.  Previously we computed slowness vectors
+               in this program.  Now we import them through this mechanism */
+            SlownessVectorMatrix svm=input_handle.gather_svm();
+            /* Chaos will result if we don't require the svm to match
+               the dimensions of the stagrid.  svm has no coordinates so
+               the only sanity check is dimensions */
+            if( (svm.rows() != stagrid.n1) || (svm.columns()!=stagrid.n2) )
+            {
+                cerr << "WARNING:  semifatal error for ensemble with evid="
+                    <<evid<<endl
+                    << "Size mismatch between pseudostation gridname= "
+                    << stagridname<<endl
+                    << stagridname << " dimensions are "<< stagrid.n1
+                    <<"X"<<stagrid.n2<<endl
+                    <<"SlownessVectorMatrix in input data file dimension is "
+                    <<svm.rows()<<"X"<<svm.columns()<<endl
+                    <<"This ensemble was not processed"<<endl;
+                continue;
+            }
+
+
             /* Used to need this - retain as reminder until debug finished
             auto_ptr<ThreeComponentEnsemble>
                 ensemble=ArrivalTimeReference(*din,"arrival.time",
@@ -360,9 +383,12 @@ int main(int argc, char **argv)
                     ensemble->put("lon0",lon0);
                     ensemble->put("elev0",elev0);
                     ensemble->put("gridname",stagridname);
+                    /*
                     Hypocenter hypo(olat,olon,odepth,otime,
                         string("tttaup"),string("iasp91"));
                     SlownessVector slow=hypo.pslow(lat0,lon0,elev0);
+                        */
+                    SlownessVector slow=svm(i,j);
                     ensemble->put("ux0",slow.ux);
                     ensemble->put("uy0",slow.uy);
 
