@@ -2230,11 +2230,8 @@ double str2epoch ( s )
 char *s ; 
 { 
     double e ; 
-    int n ;
 
-    n = elog_mark() ;
     zstr2epoch ( s, &e ) ;
-    elog_flush(1, n) ; 
 
     return e ;
 }

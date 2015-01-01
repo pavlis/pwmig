@@ -2,20 +2,10 @@
 #include <sys/types.h>
 #include <iostream>
 #include "swapbytes_pwmig.h"
-/* Taken from:  
-http://stackoverflow.com/questions/105252/how-do-i-convert-between-big-endian-and-little-endian-values-in-c
-*/
-template <typename T>
-void SwapEnd(T& var)
-{
-    T varSwapped;
-    for(long i = 0; i < static_cast<long>(sizeof(var)); i++)
-         ((char*)(&varSwapped))[sizeof(var) - 1 - i] = ((char*)(&var))[i];
-    for(long i = 0; i < static_cast<long>(sizeof(var)); i++)
-                          ((char*)(&var))[i] = ((char*)(&varSwapped))[i];
-}
 
 using namespace std;
+using namespace SEISPP;
+namespace SEISPP{
 
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
    length n*/
@@ -56,4 +46,49 @@ void swap4_float(float *d)
     */
     SwapEnd(*d);
 }
+/*! \brief Test for little endian condition.
 
+To handle mixed processors it is essential to know if the
+word structure of this machine you are on is little or big 
+endian.  Intel processors are dominate today and are little
+endian while Sun machines, which are commonly used in geophysics,
+are big endian.  Because it is common today to mix these platforms
+on the same network a way to detect which byte order the current
+machine is, is necessary.
+
+\return true if this processor is little endian (Intel byte order).
+	Conversely returns false if the processor is big endian.
+\author  Gary L. Pavlis with the core algorithm stolen from the
+	University of Texas supercomputer web site.
+*/
+bool IntelByteOrder()
+{
+        long i = 0x11223344; unsigned char* c = (unsigned char*) &i;
+        if(*c != 0x44)
+                return(false);
+        else
+                return(true);
+}
+/*! \brief Architecture indedependent procedure 
+to byte swap a vector of doubles.
+
+In the seispp library most data are stored internally as doubles.
+External data representations, however, are subject to byte order
+issues.  This routine will take a vector of doubles and automatically
+swap bytes using a method appropriate for the parent architecture.
+It should always be preceded by logic to decide if byte swapping
+is necessary as this will always swap bytes one way or the other.
+
+\param x pointer to array of doubles to be byte swapped.
+\param nx number of elements in x.  This is quietly assumed
+	to be correct and not bounds checking is done by this procedure.
+*/
+
+void swapdvec(double *x,int nx)
+{
+    int i;
+    for(i=0;i<nx;++i) 
+        SwapEnd(x[i]);
+}
+
+} // End SEISPP namespace declaration
