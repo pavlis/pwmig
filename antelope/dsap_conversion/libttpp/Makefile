@@ -1,4 +1,4 @@
-INCLUDE=Hypocenter.h TauPCalculator.h TravelTimeCalculator.h tttaup.i
+INCLUDE=Hypocenter.h TauPCalculator.h TravelTimeCalculator.h 
 LIB = libttpp.a
 #DLIB=$(LIB:.a=$(DSUFFIX))
 
@@ -14,7 +14,6 @@ DIRS=
 OBJS=TauPCalculator.o \
   Hypocenter.o \
   delta.o \
-  swap.o \
   f2ctaup.o 
 $(LIB) : $(OBJS)
 	$(RM) $@
