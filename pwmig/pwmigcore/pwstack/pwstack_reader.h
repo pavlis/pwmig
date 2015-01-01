@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
+#include "SlownessVectorMatrix.h"
 using namespace std;
+using namespace SEISPP;
+using namespace PWMIG;
 /*! \brief Abstract base class of pwstack data reader.
 
 This is a virtual base class that allows pwstack to use polymorphism to 
@@ -19,12 +22,21 @@ public:
     PwstackBinaryFileReader(string fname);
     ~PwstackBinaryFileReader();
     ThreeComponentEnsemble *read_gather(int id);
+    SlownessVectorMatrix gather_svm()
+    {
+        return svm;
+    };
     int number_events(){return(ids.size());};
 private:
     FILE *fp;
     vector<long> ids;
     vector<long> foffs;
+    SlownessVectorMatrix svm;
 };
+/* Note that the gather header is a bit messy.   This can be
+   read as a binary fread with sizeof(PwstackGatherHeader).  
+   This is followed by a block of data that defines the
+   SlownessVectorMatrix data that will drive the processing */
 typedef struct PwstackGatherHeader
 {
     int number_members;
@@ -34,6 +46,9 @@ typedef struct PwstackGatherHeader
     double lat;
     double depth;
     double origin_time;
+    /* These are the dimension of the SlownessVectorMatrix stored
+       as part 2 of the gather header */
+    int svmrows, svmcolumns;
 } PwStackGatherHeader;
 typedef struct PwstackTraceHeader
 {

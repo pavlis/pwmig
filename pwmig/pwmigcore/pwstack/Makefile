@@ -5,9 +5,9 @@ DATA=gclgdisk gclfield
 INCLUDE=pwstack_reader.h
 
 #MAN1=pwstack.1
-cflags=-g
+cxxflags=-g -DNO_ANTELOPE
 # Use the following for Solaris
-ldlibs=-lpwmig -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid -lseispp
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lperf -lgclgrid -lseispp
 # Following is required to work with g++ 3.2.3
 #ldflags=-shared -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid
 
