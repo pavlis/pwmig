@@ -1,7 +1,7 @@
 #include <string>
 #include <sstream>
 #include "stock.h"
-#include "glputil.h"
+//#include "glputil.h"
 #include "gclgrid.h"
 #include "Hypocenter.h"
 #include "seispp.h"
@@ -199,7 +199,6 @@ int main(int argc, char **argv)
         //
         MetadataList station_mdl=get_mdlist(control,"station_metadata");
         MetadataList ensemble_mdl=get_mdlist(control,"ensemble_metadata");
-        AttributeMap InputAM("css3.0");
         bool use_fresnel_aperture=control.get_bool("use_fresnel_aperture");
         DepthDependentAperture aperture;
         if(use_fresnel_aperture)
