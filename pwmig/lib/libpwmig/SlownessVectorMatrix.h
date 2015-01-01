@@ -11,6 +11,8 @@ using namespace SEISPP;
 class SlownessVectorMatrix
 {
 public:
+    /*! Default constructor - 0x0 */
+    SlownessVectorMatrix();
     /*! \brief Initializing constructor fills with 0 vectors. 
 
       This is the main constructor for this object.   Because 
@@ -30,6 +32,16 @@ public:
     SlownessVectorMatrix(int nrow, int ncol);
     /*! Copy constructor */
     SlownessVectorMatrix(const SlownessVectorMatrix& parent);
+    /*! \brief return number of rows in this matrix */
+    int rows()
+    {
+        return nrow;
+    };
+    /*! return number of columns in this matrix */
+    int columns()
+    {
+        return ncol;
+    };
     /*! \brief overloaded subscript operator.
 
       \param i is row index (C order)

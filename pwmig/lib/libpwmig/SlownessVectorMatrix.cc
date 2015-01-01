@@ -3,6 +3,11 @@ namespace PWMIG {
 using namespace SEISPP;
 using namespace std;
 
+SlownessVectorMatrix::SlownessVectorMatrix()
+{
+    nrow=0;
+    ncol=0;
+}
 SlownessVectorMatrix::SlownessVectorMatrix(int nr, int nc)
 {
     nrow=nr;
