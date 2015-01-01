@@ -7,7 +7,7 @@ INCLUDE=pwstack_reader.h
 #MAN1=pwstack.1
 cxxflags=-g -DNO_ANTELOPE
 # Use the following for Solaris
-ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lperf -lgclgrid -lseispp
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lperf -lgclgrid -lseispp -lstock
 # Following is required to work with g++ 3.2.3
 #ldflags=-shared -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid
 
