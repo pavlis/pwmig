@@ -22,6 +22,11 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool rmode, bool smode)
 {
 	const string base_error("PwmigFileHandle constructor:  ");
 
+        /* Save this root name in private area */
+        rootname=fname;
+        /* assume output will be good by default */
+        delete_files_on_exit=false;
+
 	/* dfile_ext and hdr_ext come from the PwmigFileHandle.h include file */
 	string dfile=fname+"."+dfile_ext;
 	string hfile=fname+"."+hdr_ext;
@@ -106,10 +111,20 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool rmode, bool smode)
 }
 PwmigFileHandle::~PwmigFileHandle()
 {
+    const string base_error("PwmigFileHandle destructor:  ");
 	close(datafd);
 	if(!readmode)
 	{
-		const string message("PwmigFileHandle::destructor:  error dumping output header data");
+            if(delete_files_on_exit)
+            {
+                string dfile=rootname+"."+dfile_ext;
+                if(remove(dfile.c_str()))
+                    throw SeisppError(base_error + "stdio C function remove failed while "
+                            + "trying to remove file="+dfile);
+            }
+            else
+            {
+                string message=base_error + "error dumping output header data";
 		ssize_t test;
 		test=write(hdrfd,static_cast<void *>(&filehdr),sizeof(PwmigFileGlobals) );
 		if(test!=sizeof(PwmigFileGlobals) )
@@ -139,6 +154,7 @@ PwmigFileHandle::~PwmigFileHandle()
 				throw SeisppError(message);
 			}
 		}
+            }
 	}
 }
 template <class T> void PwmigFileRecord_load(T& ts, 
@@ -413,4 +429,125 @@ TimeSeriesEnsemble *PwmigFileHandle::load_next_tse()
 	} while( (current_record->gridid == current_gridid)
 		&& (current_record!=recs.end()) );
 	return(ens);
+}
+/* Function used to construct common name for slowness vector data file */
+string build_slowness_file_name(string base)
+{
+    string name;
+    name=base+SlownessFileExtension+"."+dfile_ext;
+    return name;
+}
+/* This was added Jan 2015 to save SlownessVector data - a 4D array */
+void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
+                RectangularSlownessGrid& ugrid)
+{
+    const string base_error("PwmigFileHandle::save_slowness_vector:  ");
+    /* This method is kind of showhorned into this object, but this is 
+       a more maintainable approach than carrying around a file name and
+       another set of read/write procedures.   First we create a file name
+       from the base name and then try to open such a file in write mode. */
+    int i,j,k,l;
+    string fname=build_slowness_file_name(rootname);
+    FILE *fp=fopen(fname.c_str(),"w");
+    if(fp==NULL)
+        throw SeisppError(base_error + "fopen failed for file="
+                + fname);
+    /* First record records sizes */
+    int dims[4];
+    dims[0]=ugrid.nux;
+    dims[1]=ugrid.nuy;
+    dims[2]=u0.rows();
+    dims[3]=u0.columns();
+    if(fwrite(dims,sizeof(int),4,fp)!=4)
+    {
+        fclose(fp);
+        throw SeisppError(base_error + "fwrite failed writing first data block"
+                + "(dimensions)");
+    }
+    /* Now we write the slowness vectors out 2 doubles at a time.
+       Order should be clear from the for loops */
+    double ubuf[2];
+    for(i=0;i<ugrid.nux;++i)
+        for(j=0;j<ugrid.nuy;++j)
+            for(k=0;k<u0.rows();++k)
+                for(l=0;l<u0.columns();++l)
+                {
+                    SlownessVector uincident=u0(k,l);
+                    SlownessVector du=ugrid.slow(i,j);
+                    /* 0 is ux, 1 is uy */
+                    ubuf[0]=uincident.ux + du.ux;
+                    ubuf[1]=uincident.uy + du.uy;
+                    if(fwrite(ubuf,sizeof(double),2,fp)!=2)
+                    {
+                        fclose(fp);
+                        throw SeisppError(base_error
+                                + "fwrite error saving slowness vector data");
+                    }
+                }
+    fclose(fp);
+}
+/* This is implemented with a open-read-close algorithm assuming this method
+   is not called a large number of times.   Since it is locked to pwmig that
+   is a good assumption since it only read with the waveform data and the program
+   then runs for hours.   This is tightly locked to the function immediately above
+   that writes this file */
+SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int iux,
+        int iuy)
+{
+   string base_error("PwmigFileHandle::plane_wave_slowness_vectors:  ");
+   string fname=build_slowness_file_name(rootname);
+    FILE *fp=fopen(fname.c_str(),"r");
+    if(fp==NULL)
+        throw SeisppError(base_error + "fopen failed for file="
+                + fname);
+    int psgn1, psgn2;   // pseudostation grid dimensions
+    int ugn1, ugn2;   // slowness grid dimensions
+    size_t count(0);
+    count += fread((void *)(&ugn1),sizeof(int),1,fp);
+    count += fread((void *)(&ugn2),sizeof(int),1,fp);
+    count += fread((void *)(&psgn1),sizeof(int),1,fp);
+    count += fread((void *)(&psgn2),sizeof(int),1,fp);
+    if(count!=4)
+    {
+        fclose(fp);
+        throw SeisppError(base_error
+            + "fread error while reading array dimensions at head of file");
+    }
+   /* The gridid is the count (starting at 1) working through the slowness grid in C order 
+      (column index runs fastest).  The slowness data file is stored in the order
+      pwmig needs it, which is the gridid components are the slowest varying index.  
+      We can then compute the file offset to the start of the needed data by the following
+      simple formula.*/
+   long pwblocksize=sizeof(double)*ugn1*ugn2;
+   long gridid=psgn2*iux + iuy + 1;  
+   long foff=(gridid-1)*pwblocksize + 4*sizeof(int);   // this is foff from file start
+   if(fseek(fp,foff,SEEK_SET)<0) 
+   {
+       fclose(fp);
+       stringstream ss;
+       ss << base_error << "fseek failed of file "<<fname<<endl
+           << "Attempted to seek to file offset="<<foff<<endl;
+       throw SeisppError(ss.str());
+   }
+   SlownessVectorMatrix result(psgn1,psgn2);
+   int i,j;
+   count=0;
+   double u[2];  // read vectors one at a time into this array
+   for(i=0;i<psgn1;++i)
+       for(j=0;j<psgn2;++j)
+       {
+           count = fread((void *)u,sizeof(double),2,fp);
+           if(count != 2)
+           {
+               fclose(fp);
+               stringstream ss;
+               ss << base_error << "fread error reading block for gridid="<<gridid<<endl
+                   << "Reading data at pseudostation grid index ("<<i<<","<<j<<")"<<endl;
+               throw SeisppError(ss.str());
+           }
+           SlownessVector slow(u[0],u[1]);
+           result(i,j)=slow;
+       }
+   fclose(fp);
+   return result;
 }
