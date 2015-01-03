@@ -30,6 +30,10 @@ typedef struct PwmigFileGlobal_
 	/* consistent with schema used in older version of this */
 	char gridname[16];
 	bool ThreeComp; //Set true when data in this file are 3 components 
+    
+    /* Added January 2015 to simplify access to incident wave slowness
+           grid */
+        int i0,j0;  /* zero delta u position of RectangularSlownessGrid */
 } PwmigFileGlobals;
 /* One of these is written for each record */
 typedef struct PwmigRecords_ 
@@ -53,14 +57,33 @@ class PwmigFileHandle
 {
 public:
 	PwmigFileGlobals filehdr;
-        /*! \brief Primary constructor usinga  file name.
+        /*! \brief Create the handle in read mode.
+        
+        This constructor is used by pwmig.  It is used for both waveform
+        data and coherence data computed by pwstack.   The cohmode
+        switch is used to distinguish the 2.  Trouble will occur if they
+        get mixed up.  This is not an ideal way to do this but preferable
+        to maintaining multiple very similar sets of code. 
 
           \param - fname is the root name used to construct a set of files created by this
                 beast.
-          \param rmode - when true create the handle in read only mode.
-          \param smode - when true assume output will be scalar data (false implies 3C data).
+          \param smode - when true assume output will be scalar data 
+          \param cohmode - when true assumes the data are coherence data
+                which will not have associated slowness vector data.
+              (false implies 3C data).
           */
-	PwmigFileHandle(string fname,bool rmode,bool smode); 
+	PwmigFileHandle(string fname,bool smode,bool cohmode); 
+	/*! \brief Create the handle in write mode. 
+	
+	This constructor is used by pwstack.  It requires the slowness grid object
+	to pass this downstream in the data file.   
+          \param - fname is the root name used to construct a set of files created by this
+                beast.
+          \param smode - when true assume output will be scalar data 
+             (false implies 3C data).
+          \param ug is the slowness grid used for phasing in pwstack.  
+	*/	 
+	PwmigFileHandle(string fname,bool smode, RectangularSlownessGrid& ug);
 	/* In writing mode this will do a weird thing and dump
 	the header contents to disk when it exits.  In read
 	mode it just closes files */
@@ -83,6 +106,20 @@ public:
 
           \exception - will throw a SeisppError if iux and iuy are outside range. */
         SlownessVectorMatrix plane_wave_slowness_vectors(int iux, int iuy);
+        /*! Return the stagrid n1xn2 matrix of slowness vectors by gridid. 
+
+          To avoid extra baggage passed through the data file the data
+          are indexed by a gridid computed from slowness grid dimensions.
+          This is actually the core method and the two related 
+          SlownessVectorMatrix methods are only wrappers for this one. 
+
+          \param gridid is a single integer counting the grid in FORTRAN order
+          \exception - will throw a SeisppError if gridid is outside range. 
+        */
+
+        SlownessVectorMatrix plane_wave_slowness_vectors(int gridid);
+        /*! Shortcut method to fetch matrix of incident wave slowness vectors.*/
+        SlownessVectorMatrix incident_wave_slowness_vectors();
         /*! Set a flag to destroy open files on exit.  This is a cleanup routine
           that is useful when writers realizes the output is empty.   Necessary because
           the file format writes somethings before pwstack knows if it will have any
@@ -93,6 +130,7 @@ public:
 private:
 	int datafd;
 	int hdrfd;
+	FILE *svmfp;
 	bool readmode;
 	bool scalar_mode;
         bool delete_files_on_exit;
