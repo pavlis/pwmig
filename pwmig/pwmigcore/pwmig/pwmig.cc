@@ -1115,6 +1115,89 @@ void accumulate_cohdata(GCLvectorfield3d& pwcomp, GCLvectorfield3d& cohimage)
 }
 bool SEISPP::SEISPP_verbose(false);
 
+/* This version of pwmig is has some major modification from
+   that in the Pavlis (2011) paper in Computers in Geosciences.  
+   It is linked to the following additional changes in the
+   suite of programs:
+
+1.  db2pwstack now builds a 2D grid of slowness vectors that go 
+with the data file now read by pwstack to make is sans database.  
+That grid is now used to drive the pwstack processing instead of 
+computing slowness vector in pwstack.  
+
+2.  pwstack is now driven by the set of incident wave slowness
+vectors defined by a new SlownessVectorMatrix object.
+
+3.  pwmig no longer uses any travel time calculator but again
+receives slowness data throug files and does all lag calculations
+in the arrival time reference frame (see below)
+
+Some history as this developed:
+Jan 1 2015
+Have pwstack converted and links cleanly without the travel time calculators.
+Have not touched db2stack yet, but that should be pretty easy.
+
+Looking at pwmig I see a problem, but one that can make this code better.
+That is, the current version cannot produce a scattered S raygrid with
+proper space varible slowness vectors.   I think the right solution for
+this is to have pwstack output a file containing a 4D array of slowness
+vector values.   4D is needed because we have a 2d space grid and a 2d
+slowness grid.   This is probably best done as an object shared by the
+two programs - pwstack write it and pwmig reads it.  May or may not want 
+to assimilate it into the existing file handle.  That is probably the
+cleanest solution.
+
+Jan 2, 2015
+Implemented the slowness grid matrix concept in the read/write method.  Now to 
+attack how to use it in the algorithm.  The current algorithm uses absolute 
+travel times, which I now realize is unnecessary baggage.  Here I want to derive
+the theoretical framework for this new approach.
+
+Let:
+x - scattering point in space
+r - receiver position in space
+rx - virtual receiver position of ray passing through x
+T_p(r) = travel time from the base of the image volume to the receiver.
+T_s(x->r) = travel time from the scattering point to the receiver
+T_p(x) = travel time from the base of the image volume to the scattering point.
+T_p(rx) = travel time from the base of the image volume to rx.   
+
+Now the key concept here is that waveforms have all been aligned to a surface datum 
+so all lags MUST be hung on that datum (the current code is not completely consistent
+on this point).   This produces an implicit assumption that if we added the T_p(r)
+times to global tt computed with a radially symmetric model there would be no mismatch
+at the base of the image volume.
+
+Anyway, with that concept, recognize
+T_p(rx) is computable from the raygrid concept for the incident P waveform.  
+That is, line integrals through the P model from the base to the surface.   However,
+a more useful function here computationally is
+T_p(rx->x) = P travel time from rx to the scattering point.
+This function is the reverse time version of T_P(rx) computed by integration from the surface down.  
+Note that T_p(rx->x)_base = T_p(rx)_0.   That is the endpoints of both integrals are the total time
+through the model for rx.  For convenience we define this travelt time as T_p(base->x).
+
+This would be clearer with a graphic (which will be needed when this is published), but with these
+symbols we can now state the lag equation
+lag = [{T_p(base->x) + T_s(x->r)] - T_p(r)
+    = [{T_p(rx)_0 -T_p(rx->x)} + T_s(x->r)] - T_p(r)
+
+Noting:  
+1.  The term in the curly brackets is the surface datum correct way to compute the time from the 
+base of the image volume to x.
+2.  Note that if x is at the bottom of the image volume the term in curly brackets goes to zero
+3.  At the surface this reduces to:   T_p(rx) + T_s(rx->r) - T_p(r)
+
+A key point is that the first form of this (without the curly brackets) is faster to compute.  
+All it will take to make this change in the code is to set the ptime formly computed by tttaup to 0
+at the base of the image volume.  Then let the raygrid integrate upward as before. Really a fairly 
+trivial change.   
+
+The above theory folds into this version for lag calculations.   Most of
+the work in the implementation required patching the PwmigFileHandle to 
+deal with the slowness vector data and reworking the grid time calculations.
+
+*/
 int main(int argc, char **argv)
 {
         //Dbptr db,dbv;
