@@ -3,7 +3,8 @@ DIRS=
 PF=pwmig.pf
 
 #MAN1=pwmig.1
-ldlibs=-lpwmig -lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
+cxxflags=-DNO_ANTELOPE
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm
 
 include $(PWMIGMAKE) 
 OBJS= mdutils.o \

@@ -2,7 +2,6 @@
 #include "dmatrix.h"
 #include "seispp.h"
 #include "ray1d.h"
-#include "pf.h"
 using namespace std;
 using namespace SEISPP;
 #include "pwmig.h"
@@ -91,8 +90,8 @@ Arguments:
 		different directions at different points even though the vector is fixed)
 		(Note used even when fixed_u_mode is false to establish
 		grid dimensions )
-	h - Hypocenter object with handle to compute slowness vecotr
-		at each grid point (ignored if fixed_u_mode is true).
+        svm - congruent matrix of slowness vectors used when fixed_u_mode
+            is set false.  Ignored when that variable is true.
 	vmod - 1d velocity model used for ray tracing 
 	zmax, tmax - depth, time maxima used to define ray trace limits.
 
@@ -113,6 +112,22 @@ It is also VERY important to recognize this constructor produces ray grids that
 are oriented from the bottom up.  This is useful to keep the set of basis vectors
 at all points right handed.  
 
+History:
+Original published in the 2011 Computers and Geosciences paper used a
+Hypocenter object and then computed slowness vectors to define 1d
+ray tracing.   Changed Jan 2015 to use a new concept of a 
+SlownessVectorMatrix passed with the data.  This eliminated the need
+to deal with the obnoxious taup calculator code in dsap, which proved
+virtually impossible to adapt, and provide a clean mechanism to allow
+variable slowness vectors for scattered wave components.  The previous
+version had to use fixed slowness vector mode which I suspect produced
+artifacts in USArray data as it grew to full scale.   Arg 4 in the 
+previous version was a Hypocenter object.  Now it is a the
+SlownessVectorMatrix. 
+
+Note the dimensions of the SlownessVectorMatrix and GCLgrid object
+are not tested for consistency.  Because this is used internally only
+in pwmig we avoid the overhead of error handlers for efficiency.
 
 Author:  Gary Pavlis
 */  
@@ -120,7 +135,7 @@ Author:  Gary Pavlis
 
 GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 		GCLgrid& parent,
-		SlownessVector u, Hypocenter h,
+		SlownessVector u, SlownessVectorMatrix& svm,
 		VelocityModel_1d& vmod,
 		double zmax, double tmax, double dt)
 {
@@ -173,8 +188,7 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 			    }
 			    else
 			    {
-				SlownessVector uij=h.pslow(parent.lat(i,j),
-					parent.lon(i,j),0.0);
+                                SlownessVector uij=svm(i,j);
 				umag=uij.mag();
 				theta=uij.baz();
 				RayPathSphere ray(vmod, uij.mag(), zmax, tmax, dt, "t");
@@ -183,11 +197,6 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 
 			    }
 			    ierr=copy_path(*path,raygrid,i,j);
-/*
-cerr << "(i,j)="<<i<<","<<j<<" r difference = "
-		<< raygrid.r(i,j,raygrid.n3-1) - parent.r(i,j)
-		<< endl;
-*/
 			    delete path;
 			    if(ierr<0) 
 			    {
