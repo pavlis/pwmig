@@ -25,7 +25,8 @@ if desired with the -pf option).   This parameter can be one of three keywords o
 the program will abort:  use_wfprocess, use_wfdisc, or database_view_mode.   
 Each of these have different requirements defined in individual paragraphs below.
 .LP
-\fIuse_wfprocess mode:\fR  In the program assumes the data have been packaged into
+\fIuse_wfprocess mode:\fR  In this mode
+the program assumes the data have been packaged into
 three component bundles.   This is the default and most likely form you will want
 to use because normally this programs will be run on the database created by 
 a related dataprep program called RFeventstacker(1).  This mode uses an extension
@@ -82,10 +83,17 @@ define a time window in time relative to the arrival.time loaded for that phase
 for a given station.   The output of the program is then in time relative to 
 this absolute time (called an arrival time reference frame in related documentation).
 .LP
+\fIPseudostationGridName\fR is the GCLgrid name that identifies the 
+pseudostation grid to be used by pwstack.   The program assumes the
+input database has the extension table gclgdisk that has a reference to
+the grid tagged with this name.   Note that the data in this grid will
+need to be converted to the file format to pass to pwstack where you
+plan to run the migration code. 
+.LP
 The following Tbl entries should normally not be changed by the user: 
 \fIstation_metadata\fR and \fIensemble_metadata\fR.     
 .SH "BUGS AND CAVEATS"
-.LP
+.IP (1)
 The special binary format output is a bit of an abomination, but useful
 for performance.  An important warning, however, is to beware the endian
 problem.   i.e. do not expect this to work if you run this on a little 
@@ -93,6 +101,15 @@ endian machine and copy the output file to run on a big endian machine
 (or vice versa).   In general, this is a fragile approach because binary
 compatibility of all basic data types (i.e. char *, int/long, and float/double)
 is assumed.   Beware if you it is anything but intel to intel.
+.IP (2)
+This program is now serving as the data interface between Antelope and
+the plane wave migration suite of programs I have given the tag pwmig.
+Building this program will be problematic for all users.   There will 
+eventually be an instructional web page for building pwmig, but for 
+now note this important detail;  two include files from the pwmig package
+MUST be copied to $ANTELOPE for this code to build in the antelope
+contrib framework.  They are:  (1) pwstack_reader.h found in the pwstack
+directory and (2) SlownessVectorMatrix.h found in libpwmig.
 .SH AUTHOR
 .LP
 Gary L. Pavlis, Indiana University
