@@ -9,6 +9,8 @@
 #include "pwstack_reader.h"
 using namespace std;
 using namespace SEISPP;
+const string svmrowkey("SlownessVectorMatrixRows");
+const string svmcolkey("SlownessVectorMatrixColumns");
 void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh)
 {
     try {
@@ -18,10 +20,15 @@ void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh)
             cout << "pwstack file writer: evid="<<evid<<" has "
                 <<gh.number_members << " three-component seismograms"<<endl;
         gh.evid=evid;
+        /* Warning - careful units are consistent with expectation of pwstack*/
         gh.lat=gather.get_double("origin.lat");
         gh.lon=gather.get_double("origin.lon");
         gh.depth=gather.get_double("origin.depth");
         gh.origin_time=gather.get_double("origin.time");
+        /* These are slowness grid dimension written to a separate file */
+        gh.svmrows=gather.get_double(svmrowkey);
+        gh.svmcolumns=gather.get_double(svmcolkey);
+        
     }catch(SeisppError& serr)
     {
         cerr << "LoadGatherHeader procedure:  Probably a problem with ensemble Metadata"
@@ -47,6 +54,67 @@ void LoadTraceHeader(ThreeComponentSeismogram& d,PwstackTraceHeader& th)
         th.lon=d.get_double("site.lon");
         th.elev=d.get_double("site.elev");
     }catch(...){throw;};
+}
+/* This procedure creates a Hypocenter object from the
+   ensemble Metadata using frozen keys */
+Hypocenter LoadHypocenter(ThreeComponentEnsemble& d)
+{
+    try{
+        double lon,lat,depth,time;
+        lon=d.get_double("origin.lon");
+        lat=d.get_double("origin.lat");
+        depth=d.get_double("origin.depth");
+        time=d.get_double("origin.time");
+        /* here we have to convert these to radians */
+        lon=rad(lon);
+        lat=rad(lat);
+        /* for now the method/model is frozen */
+        Hypocenter h(lat,lon,depth,time,string("tttaup"),string("iasp91"));
+        return(h);
+    }catch(...){throw;};
+}
+
+/* This procedure loads slowness vectors ux,uy in the field
+   variable of GCLvectorfield ug.  Travel times are computed
+   with the hypocenter object h */
+void BuildSlownessGrid(Hypocenter h, GCLvectorfield ug)
+{
+    try {
+        int i,j;
+        double lat,lon;
+        double elev(0.0);   // forced to sea level datum  - minor detail`
+        for(i=0;i<ug.n1;++i)
+            for(j=0;j<ug.n2;++j)
+            {
+                double lat,lon;
+                lat=ug.lat(i,j);
+                lon=ug.lon(i,j);
+                /* Warning - for now this is frozen as P phase.  If this
+                   is ever adapted to S to P data this needs to change*/
+                SlownessVector u=h.pslow(lat,lon,elev);
+                ug.val[i][j][0]=u.ux;
+                ug.val[i][j][1]=u.uy;
+            }
+    }catch(...){throw;};
+}
+/* This procedure takes slowness vector data stored in the 
+   GCLvectorfield object u and puts the data in a linear buffer
+   ubuf for writing.  It is blindly assumed ubuf has a size
+   consistent with the dimensions of u.
+
+Intentionally has no error handling. */
+void LoadSlownessBuffer(GCLvectorfield& ug, double *ubuf)
+{
+        int i,j,k;
+        k=0;
+        for(i=0;ug.n1;++i)
+            for(j=0;ug.n2;++j)
+            {
+                ubuf[k]=ug.val[i][j][0];
+                ++k;
+                ubuf[k]=ug.val[i][j][1];
+                ++k;
+            }
 }
 int write_ensemble(ThreeComponentEnsemble& g,FILE *fp)
 {
@@ -210,6 +278,15 @@ int main(int argc, char **argv)
         tsfull = control.get_double("data_time_window_start");
         tefull = control.get_double("data_time_window_end");
         TimeWindow data_window(tsfull,tefull);
+        string gridname=control.get_string("PseudostationGridName");
+        GCLgrid *g;
+        g=new GCLgrid(dbh,gridname);
+        /* Slowness vector data stored here */
+        GCLvectorfield u(*g,2);
+        /* this is used as a write buffer to simplify writing of svm data */
+        int nu=2*u.n1*u.n2;  // 2 because of ux,uy pairs for each grid point
+        double *ubuf=new double[nu];  // not freed in this code - warning
+        delete g;
 	cout << "Processing begins on database " 
 		<<  dbname << endl
 		<<"Number of rows in working database view== "<<dbh.number_tuples() <<endl;
@@ -236,6 +313,13 @@ int main(int argc, char **argv)
             auto_ptr<ThreeComponentEnsemble> ensemble = ArrivalTimeReference(*din,
                     "arrival.time",data_window);
             delete din;
+            Hypocenter h(LoadHypocenter(*ensemble));
+            BuildSlownessGrid(h,u);
+            LoadSlownessBuffer(u,ubuf);
+            /* Note row and column are confusing concepts here because
+               of C and fortran difference.  row is index 1 */
+            ensemble->put(svmrowkey,u.n1);
+            ensemble->put(svmcolkey,u.n2);
             LoadGatherHeader(*ensemble,gh);
             long pos=ftell(fp);
             long evid=ensemble->get_long("evid");
@@ -245,6 +329,12 @@ int main(int argc, char **argv)
             {
                 cerr << "fwrite failed writing ensemble header event for evid="
                     <<evid<<endl;
+                exit(-1);
+            }
+            if(fwrite(ubuf,sizeof(double),nu,fp)!=nu)
+            {
+                cerr << "fwrite failed writing slowness vector matrix section "
+                    << "for evid="<<evid<<endl;
                 exit(-1);
             }
             int nseis=write_ensemble(*ensemble,fp);
