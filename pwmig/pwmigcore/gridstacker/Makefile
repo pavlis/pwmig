@@ -3,6 +3,7 @@ DIRS=
 PF=gridstacker.pf
 
 #MAN1=gridstacker.1
+cxxflags=-g -DNO_ANTELOPE
 ldflags=-lseispp -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lseispp -lm
 
 include $(PWMIGMAKE) 
