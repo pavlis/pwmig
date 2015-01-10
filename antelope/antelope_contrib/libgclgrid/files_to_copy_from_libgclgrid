@@ -11,6 +11,7 @@ extract_component.cc
 extract_gridline.cc
 fileoutput.cc
 flatten.cc
+fme_weights.f
 initialize1d.cc
 interpolate.cc
 lookup.cc
