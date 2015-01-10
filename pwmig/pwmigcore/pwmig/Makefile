@@ -4,7 +4,7 @@ PF=pwmig.pf
 
 #MAN1=pwmig.1
 cxxflags=-DNO_ANTELOPE
-ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
 
 include $(PWMIGMAKE) 
 OBJS= mdutils.o \
