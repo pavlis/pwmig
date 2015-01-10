@@ -30,6 +30,7 @@ OBJS=BasicTimeSeries.o \
   TimeSeries.o \
   VelocityModel_1d.o \
   VelocityModel_3d.o \
+  converters.o \
   ensemble.o \
   ensemble_helpers.o \
   interpolator1d.o \

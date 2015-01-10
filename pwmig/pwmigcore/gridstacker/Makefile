@@ -3,7 +3,9 @@ DIRS=
 PF=gridstacker.pf
 
 #MAN1=gridstacker.1
+cxxflags=-g -DNO_ANTELOPE
 ldflags=-lseispp -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lseispp -lm
+ldflags=-lseispp -lgclgrid -lstock -lcoords -lperf -lseispp -lm
 
 include $(PWMIGMAKE) 
 CXXFLAGS+=-D_FILE_OFFSET_BITS=64

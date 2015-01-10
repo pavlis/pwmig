@@ -4,11 +4,11 @@
 #include <list>
 #include <fstream>
 #include "gclgrid.h"
-#include "dbpp.h"
 #include "perf.h"
 #include "seispp.h"
 #include "GridScratchFileHandle.h"
 #include "GridStackPenaltyFunction.h"
+#include "PfStyleMetadata.h"
 void VectorField3DWeightedStack(GCLvectorfield3d& result,GridScratchFileHandle& handle,
 		list<MemberGrid>& mgl)
 {
@@ -472,8 +472,8 @@ void compute_reswt(GCLvectorfield3d& stack,GridScratchFileHandle& handle,
 	
 void usage()
 {
-	cerr << "gridstacker db basefn [-i infile -pf pffile -norobust -v -V] "<<endl
-		<< "db is database and basefn is root grid name or output field" <<endl
+	cerr << "gridstacker basefn [-i infile -pf pffile -norobust -v -V] "<<endl
+		<< "basefn is root grid name for output data files" <<endl
 		<< "infile defaults to gridstacker.list"<<endl;
 	exit(-1);
 }
@@ -508,21 +508,6 @@ bool reswt_change_test(list<MemberGrid>& mgltest, list<MemberGrid>& mgl0)
 	return false;
 	
 }
-/* Used to test if a grid file name key is already in the db. 
-This is a very very slow algorithm and should not be used often.
-Appropriate here as it is called once and only once in a give run. */
-bool GridNameDefined(DatascopeHandle dbh, string gridname, int dimensions)
-{
-	char line[256];
-	stringstream ss(line);
-	dbh.lookup("gclgdisk");
-	ss << "gridname =~/" << gridname << "/ && dimensions == "<<dimensions;
-	dbh.subset(ss.str());
-	if(dbh.number_tuples() > 0)
-		return true;
-	else
-		return false;
-}
 bool SEISPP::SEISPP_verbose(false);
 
 int main(int argc, char **argv)
@@ -531,15 +516,12 @@ int main(int argc, char **argv)
 	ifstream in;
 	string infile("gridstacker.list");
 	string pffile("gridstacker");
-	if(argc<3) usage();
-	string dbname(argv[1]);
-	string baseofn(argv[2]);
-	cout << "Using database name="<<dbname<<endl
-		<< "Stacked fields will have root name="<<baseofn<<endl;
+	if(argc<2) usage();
+	string baseofn(argv[1]);
 	bool robust(true);
 
 	int i;
-	for(i=3;i<argc;++i)
+	for(i=2;i<argc;++i)
 	{
 		string sarg(argv[i]);
 		if(sarg=="-i")
@@ -569,7 +551,6 @@ int main(int argc, char **argv)
 		usage();
 	}
 	try {
-		DatascopeHandle dbh(dbname,false);
 		/* Build the list of grid definitions to form stack */
 		list<MemberGrid> mgl;
 		char *inputline=new char[512];
@@ -588,13 +569,7 @@ int main(int argc, char **argv)
 		}
 		delete [] inputline;
 		/* Extract control parameters */
-		Pf *pf;
-		if(pfread(const_cast<char *>(pffile.c_str()),&pf))
-		{
-			cerr << "pfread failure for pffile="<<pffile<<endl;
-			exit(-1);
-		}
-		Metadata control(pf);
+		PfStyleMetadata control=pfread(pffile);
 		string mastergridname=control.get_string("mastergridname");
 		string masterfieldname=control.get_string("masterfieldname");
 		string outdir=control.get_string("output_data_directory");
@@ -607,6 +582,8 @@ int main(int argc, char **argv)
 		string cohgname;
 		cohgname=control.get_string("coherence_grid_name");
 		string cohgdir;
+                /*  Retain this for now for reference during conversion.
+                    Needs to be deleted when finished debugging.
 		if(GridNameDefined(dbh,cohgname,3) )
 		{
 			cerr << "gridstacker (WARNING):  grid for stack coherence "
@@ -619,6 +596,8 @@ int main(int argc, char **argv)
 		{
 			cohgdir=outdir;
 		}
+                */
+                cohgdir=outdir;
 		// Default is to use the average as the initial estimate
 		// If this is set true wil use member of list with largest weight as initial
 		bool uselargest=control.get_bool("use_largest_weight_as_initial");
@@ -631,19 +610,31 @@ int main(int argc, char **argv)
 		bool normalize=control.get_bool("normalize_by_scattering_angle_range");
 		double solid_angle_cutoff=control.get_double("normalization_solid_angle_cutoff");
 
-                const int nvpwmig(5);   // Need by constructor.  number vector components in pwmig output
+                /* Check each fields data to be sure it has this number
+                   of components - a sanity in case user messes up list */
+                const int nvpwmig(5);  
 		/* End section extracting control parameters */
-
-		GCLvectorfield3d mastergrid(dbh,mastergridname,masterfieldname,nvpwmig);
-		GridScratchFileHandle gsfh(mastergrid,mgl,dbh,normalize,solid_angle_cutoff);
+                GCLvectorfield3d mastergrid(masterfieldname);
+                if(mastergridname!=mastergrid.name)
+                {
+                    cerr << "FATAL ERROR:  master grid inconsistency"<<endl
+                        << "control (pf) file defines gridname="
+                        << mastergridname<<endl
+                        << "Data file "<<masterfieldname<<" defines name="
+                        << mastergrid.name<<endl
+                        << "These must match."<<endl
+                        << "You probably need to change the entry in file "
+                        << pffile<<endl;
+                }
+		GridScratchFileHandle gsfh(mastergrid,mgl,normalize,solid_angle_cutoff);
 		gsfh.rewind();
-		/* First compute and save a straight stack.  This works because
+		/* First compute and save weighted stack.  This works because
 		mgl.reswt values are all set to 1.0 above. */
 		GCLvectorfield3d result(mastergrid);  // clone grid
 		result.zero();
 		VectorField3DWeightedStack(result,gsfh,mgl);
 		string avgfname=baseofn + "_avg";
-		result.save(dbh,string(""),outdir,avgfname,avgfname);
+		result.save(avgfname,outdir);
 		gsfh.rewind();
 		/* Now compute and save a coherence attribute grid for straight stack.
 		Grid is formed by decimation of master grid controlled by dec1,dec2,
@@ -660,10 +651,7 @@ int main(int argc, char **argv)
 		// Probably should test first to make sure it does not exist already
 		// as this will likely be a common error.  Ignored for now
 		string cohfieldname=baseofn+"_coh_avg";
-		coh.save(dbh,cohgdir,outdir,cohfieldname,cohfieldname);
-		/* At this point no matter what we set cohgdir as a null string.  This is
-		a weird feature of the gclgrid library that turns off saving grid file */
-		cohgdir=string("");
+		coh.save(cohfieldname,cohgdir);
 		// Stop if robust is turned off
 		if(!robust) exit(0);
 		/* this replaces straight stack with largest weight member as initial
@@ -689,11 +677,11 @@ int main(int argc, char **argv)
 		else
 			cout << "Robust stack loop converged after "<<robust_loop_count<<" iterations"<<endl;
 		string robustfname=baseofn+"_ravg";
-		result.save(dbh,string(""),outdir,robustfname,robustfname);
+		result.save(robustfname,outdir);
 		gsfh.rewind();
 		ComputeGridCoherence(result,gsfh,mgl,coh,dec1,dec2,dec3,coherence_component);
 		string robustcohf=baseofn+"_coh_ravg";
-		coh.save(dbh,cohgdir,outdir,robustcohf,robustcohf);
+		coh.save(robustcohf,cohgdir);
 
 	} catch (int ierr)
 	{

@@ -5,7 +5,6 @@
 #include <memory>
 #include "stock.h"
 #include "coords.h"
-#include "dbpp.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
 #include "ray1d.h"
@@ -348,6 +347,75 @@ vector<double> compute_unit_normal_P(GCLgrid3d& raygrid,double x1, double x2, do
 	}
 	return(nu);
 }
+/* This is a messy algorithm that extends the grid from each edge by
+   pad.  There is probably a more compact way to do this, but I did
+   it this way to make it more maintainable - i.e comprehendable. 
+ 
+ This routine is not intended to ever be a library routine, so it 
+ does not handle exceptions that could be thrown by the SlownessVectorMatrix
+ class.   In fact, there should not be an exception here unless I made
+ a coding error anyway.*/
+SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
+{
+    int nr,nc,nrp,ncp;
+    nr=svm.rows();
+    nc=svm.columns();
+    nrp=nr+2*pad;
+    ncp=nc+2*pad;
+    SlownessVectorMatrix paddedsvm(nr,nc);
+    SlownessVector uij;
+    int i,j,ii,jj;  
+    /* First fill the unpadded areas */
+    for(i=0;i<nr;++i)
+        for(j=0;j<nc;++j)
+        {
+            uij=svm(i,j);
+            paddedsvm(i+pad,j+pad)=uij;
+        }
+    /* Now fill the corners with the vector from each corner */
+    /* upper left*/
+    uij=svm(0,0);
+    for(i=0;i<pad;++i)
+        for(j=0;j<pad;++j) paddedsvm(i,j)=uij;
+    /* upper right */
+    uij=svm(0,nc-1);
+    for(i=0;i<pad;++i)
+        for(j=pad+nc+1;j<ncp;++j) paddedsvm(i,j)=uij;
+    /* lower left*/
+    uij=svm(nr-1,0);
+    for(i=pad+nr;i<nrp;++i)
+        for(j=0;j<pad;++j) paddedsvm(i,j)=uij;
+    /* lower right */
+    uij=svm(nr-1,nc-1);
+    for(i=pad+nr;i<nrp;++i)
+        for(j=pad+nc;j<ncp;++j) paddedsvm(i,j)=uij;
+    /* Finally do the borders.  Here we extend the value for the adjacent edge.*/
+    /* left border */
+    for(i=pad,ii=0;i<pad+nr;++i,++i)
+    {
+        uij=svm(ii,0);
+        for(j=0;j<pad;++j) paddedsvm(i,j)=uij;
+    }
+    /* Right border */
+    for(i=pad,ii=0;ii<nr;++i,++ii)
+    {
+        uij=svm(ii,nc-1);
+        for(j=0;j<pad;++j) paddedsvm(i,j+pad+nc)=uij;
+    }
+    /* Top border */
+    for(j=pad,jj=0;jj<nc;++j,++jj)
+    {
+        uij=svm(0,jj);
+        for(i=0;i<pad;++i) paddedsvm(i,j)=uij;
+    }
+    /* Bottom border */
+    for(j=pad,jj=0;jj<nc;++j,++jj)
+    {
+        uij=svm(nr-1,jj);
+        for(i=0;i<pad;++i) paddedsvm(i+pad+nr,j)=uij;
+    }
+    return(paddedsvm);
+}
 
 /*! \brief Computes incident wave travel times in pwmig
 // Computes a GCLgrid defined field (raygrid) for an incident P wavefield.  
@@ -381,13 +449,24 @@ vector<double> compute_unit_normal_P(GCLgrid3d& raygrid,double x1, double x2, do
 //\exception catches all exceptions and passes them along.  Several functions
 //      called in this procedure could throw several possible exceptions I don't
 //      know well which is the reason for the catch all syntax.
+
+Major change January 2015:   Used to receive a Hypocenter and use 
+an absolute travel time reference.  Hypocenter replaced with new concept
+of a SlownessVectorMatrix that defines incident wave direction at each
+pseudostation.   Further, we drop the absolute time reference an use
+the simpler algorithm of relative lags relative to the arrival time
+reference frame.   Point is this procedure now returns a grid with 
+complete different set of times.  The border padding creates a huge
+complication.   SlownessVectorMatrix is extended on edges by extending
+vectors on edges into pad region.   That is a much better approximation
+than previous version that used constant slowness over the entire grid.
 //
 */
 auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 	int border_pad,
 		GCLscalarfield3d& UP3d,
 			VelocityModel_1d vp1d,
-				Hypocenter h,
+                                SlownessVectorMatrix& svm,
 					double zmax,
 						double tmax, 
 							double dt,
@@ -397,7 +476,10 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 	// Incident wave slowness vector at grid origin
 	// Always use 0 elevation datum for this calculation
 	// note this isn't always used.  
-	SlownessVector u0=h.pslow(pstagrid.lat0,pstagrid.lon0,0.0);
+	//SlownessVector u0=h.pslow(pstagrid.lat0,pstagrid.lon0,0.0);
+        /* Get u0 from center of the grid - not really all that
+           necessary, but will retain it for compatibility */
+        SlownessVector u0=svm(svm.rows()/2,svm.columns()/2);
 	// First set up the new expanded grid.  The new grid has border_pad cells
 	// added on each side of the parent grid (pstagrid).  
 	int n1new, n2new;
@@ -419,6 +501,9 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 		// Use ng2d to compute a 1d reference model travel time grid
 		// Note we explicitly do no include elevation in this calculation assuming this
 		// will be handled with statics at another point
+                /* This was the old way to compute surface travel times.  
+                   done a different way not below.  Save for record */
+                /*
 		GCLscalarfield Tp0(ng2d);
 		for(i=0;i<Tp0.n1;++i)
 		{
@@ -427,7 +512,12 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 				Tp0.val[i][j]=h.ptime(Tp0.lat(i,j),Tp0.lon(i,j),0.0);
 			}
 		}
-		auto_ptr<GCLgrid3d> IncidentRaygrid(Build_GCLraygrid(false, ng2d, u0,h,vp1d,zmax,tmax,dt));
+                */
+                /* We have to add padding to the the slowness vector matrix. 
+                   This procedure does that. */
+                SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
+		auto_ptr<GCLgrid3d> IncidentRaygrid(Build_GCLraygrid(false, 
+                            ng2d, u0,svmpadded,vp1d,zmax,tmax,dt));
 		GCLgrid3d *Pttgrid=decimate(*IncidentRaygrid,1,1,zdecfac);
 		auto_ptr<GCLscalarfield3d> Tp(new GCLscalarfield3d(*Pttgrid));
 		delete Pttgrid;
@@ -441,15 +531,23 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 		{
 			for(j=0;j<Tp->n2;++j)
 			{
+                            /* the true here makes the path run from the surface to
+                               depth */
 				auto_ptr<dmatrix> path(extract_gridline(*IncidentRaygrid,
 							i,j,kkend,3,true));
 				// this is the pwmig function using 1d if path is outside 3d model
 				vector<double>Ptimes;
-				Ptimes=compute_gridttime(UP3d,i,j,vp1d,*IncidentRaygrid,*path);
+				Ptimes=compute_gridttime(UP3d,i,j,
+                                        vp1d,*IncidentRaygrid,*path);
 				//for(k=0,kk=kend;k<=kend;++k,--kk)
 				for(k=0,kk=kkend;k<kend;++k,kk-=zdecfac)
 				{
+                                    /* This was the old form 
 					Tp->val[i][j][k] = Tp0.val[i][j] - Ptimes[kk];
+                                        */
+                                    /* This is form for arrival time reference frame
+                                       lag calculation*/
+                                    Tp->val[i][j][k] = Ptimes[kk] - Ptimes[kk];
 				}
 			}
 		}
@@ -457,6 +555,10 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 	} catch (...) {throw;}
 }
 
+/* This was the old form of this procedure.  It has an unnecessary
+   inefficiency in the new form that computes lag relative to the 
+   arrival time reference frame.   The nasty overhead of the interpolation 
+   is not necessary then.  New version is below. 
 double compute_receiver_Ptime(GCLgrid3d& raygrid, int ix1, int ix2,
 		GCLscalarfield3d& TP,Hypocenter& h)
 {
@@ -485,6 +587,38 @@ double compute_receiver_Ptime(GCLgrid3d& raygrid, int ix1, int ix2,
 	}
 	return(Tpr);
 }
+*/
+double compute_receiver_Ptime(GCLgrid3d& raygrid, int ix1, int ix2,
+		GCLscalarfield3d& TP,int pad)
+{
+    /* This calculation perhaps should be put inline but for now we leave it
+       this procedure to provide debug scaffolding.   May want to eventually 
+       ditch the procedure */
+    /* This is scaffolding that should be removed once it is known to work
+       as I think it should */
+	double x1,x2,x3;
+	int nsurface=raygrid.n3 - 1;
+	x1=raygrid.x1[ix1][ix2][nsurface];
+	x2=raygrid.x2[ix1][ix2][nsurface];
+	x3=raygrid.x3[ix1][ix2][nsurface];
+        double x1p,x2p,x3p;
+        int nsTP=TP.n3 - 1;
+        if(nsTP!=nsurface)
+            cout << "DEBUG(WARNING):  raygrid nsurface="<<nsurface
+                << " TP grid nsurface="<<nsTP<<endl;
+	x1p=TP.x1[ix1+pad][ix2+pad][nsTP];
+	x2p=TP.x2[ix1+pad][ix2+pad][nsTP];
+	x3p=TP.x3[ix1+pad][ix2+pad][nsTP];
+        double ssq=(x1-x1p)*(x1-x1p)
+            + (x2-x2p)*(x2-x2p)
+            + (x3-x3p)*(x3-x3p);
+        ssq=sqrt(ssq);
+        cout << "DEBUG TPr procedure: node position distance="<<ssq<<endl;
+        /* END scaffolding - delete the above once verified */
+        return (TP.val[ix1+pad][ix2+pad][nsTP]);
+}
+
+
 	
 /* This function computes the domega term for the inverse Radon transform inversion
 formula.  It works according to this basic algorithm.
@@ -981,6 +1115,89 @@ void accumulate_cohdata(GCLvectorfield3d& pwcomp, GCLvectorfield3d& cohimage)
 }
 bool SEISPP::SEISPP_verbose(false);
 
+/* This version of pwmig is has some major modification from
+   that in the Pavlis (2011) paper in Computers in Geosciences.  
+   It is linked to the following additional changes in the
+   suite of programs:
+
+1.  db2pwstack now builds a 2D grid of slowness vectors that go 
+with the data file now read by pwstack to make is sans database.  
+That grid is now used to drive the pwstack processing instead of 
+computing slowness vector in pwstack.  
+
+2.  pwstack is now driven by the set of incident wave slowness
+vectors defined by a new SlownessVectorMatrix object.
+
+3.  pwmig no longer uses any travel time calculator but again
+receives slowness data throug files and does all lag calculations
+in the arrival time reference frame (see below)
+
+Some history as this developed:
+Jan 1 2015
+Have pwstack converted and links cleanly without the travel time calculators.
+Have not touched db2stack yet, but that should be pretty easy.
+
+Looking at pwmig I see a problem, but one that can make this code better.
+That is, the current version cannot produce a scattered S raygrid with
+proper space varible slowness vectors.   I think the right solution for
+this is to have pwstack output a file containing a 4D array of slowness
+vector values.   4D is needed because we have a 2d space grid and a 2d
+slowness grid.   This is probably best done as an object shared by the
+two programs - pwstack write it and pwmig reads it.  May or may not want 
+to assimilate it into the existing file handle.  That is probably the
+cleanest solution.
+
+Jan 2, 2015
+Implemented the slowness grid matrix concept in the read/write method.  Now to 
+attack how to use it in the algorithm.  The current algorithm uses absolute 
+travel times, which I now realize is unnecessary baggage.  Here I want to derive
+the theoretical framework for this new approach.
+
+Let:
+x - scattering point in space
+r - receiver position in space
+rx - virtual receiver position of ray passing through x
+T_p(r) = travel time from the base of the image volume to the receiver.
+T_s(x->r) = travel time from the scattering point to the receiver
+T_p(x) = travel time from the base of the image volume to the scattering point.
+T_p(rx) = travel time from the base of the image volume to rx.   
+
+Now the key concept here is that waveforms have all been aligned to a surface datum 
+so all lags MUST be hung on that datum (the current code is not completely consistent
+on this point).   This produces an implicit assumption that if we added the T_p(r)
+times to global tt computed with a radially symmetric model there would be no mismatch
+at the base of the image volume.
+
+Anyway, with that concept, recognize
+T_p(rx) is computable from the raygrid concept for the incident P waveform.  
+That is, line integrals through the P model from the base to the surface.   However,
+a more useful function here computationally is
+T_p(rx->x) = P travel time from rx to the scattering point.
+This function is the reverse time version of T_P(rx) computed by integration from the surface down.  
+Note that T_p(rx->x)_base = T_p(rx)_0.   That is the endpoints of both integrals are the total time
+through the model for rx.  For convenience we define this travelt time as T_p(base->x).
+
+This would be clearer with a graphic (which will be needed when this is published), but with these
+symbols we can now state the lag equation
+lag = [{T_p(base->x) + T_s(x->r)] - T_p(r)
+    = [{T_p(rx)_0 -T_p(rx->x)} + T_s(x->r)] - T_p(r)
+
+Noting:  
+1.  The term in the curly brackets is the surface datum correct way to compute the time from the 
+base of the image volume to x.
+2.  Note that if x is at the bottom of the image volume the term in curly brackets goes to zero
+3.  At the surface this reduces to:   T_p(rx) + T_s(rx->r) - T_p(r)
+
+A key point is that the first form of this (without the curly brackets) is faster to compute.  
+All it will take to make this change in the code is to set the ptime formly computed by tttaup to 0
+at the base of the image volume.  Then let the raygrid integrate upward as before. Really a fairly 
+trivial change.   
+
+The above theory folds into this version for lag calculations.   Most of
+the work in the implementation required patching the PwmigFileHandle to 
+deal with the slowness vector data and reworking the grid time calculations.
+
+*/
 int main(int argc, char **argv)
 {
         //Dbptr db,dbv;
@@ -1345,7 +1562,7 @@ HorizontalSlicer(mp,Us3d);
 			if(filecount%np == rank)
 			{
 			string dfname=string(fname_base)+DataFileExtension;
-			PwmigFileHandle datafh(dfname,true,false);
+			PwmigFileHandle datafh(dfname,false,false);
 			cout << "Processing pwstack file base name="<<dfname<<endl;
 			/* Note the use of an auto_ptr allows me to put these
 			inside this conditional in a clean way.  Note the auto_ptr
@@ -1355,24 +1572,34 @@ HorizontalSlicer(mp,Us3d);
 			string coh3cfname=string(fname_base)+Coh3CExtension;
 			string cohfname=string(fname_base)+CohExtension;
 			cohfh3c=auto_ptr<PwmigFileHandle>
-						(new PwmigFileHandle(coh3cfname,true,false));
+				(new PwmigFileHandle(coh3cfname,false,true));
 			cohfh=auto_ptr<PwmigFileHandle>
-						(new PwmigFileHandle(cohfname,true,true));
-		
+				(new PwmigFileHandle(cohfname,true,true));
 			double rundtime;
 			rundtime=now();
 			cout << "Main loop processing begins at time "<<strtime(rundtime)<<endl;
 			// First get the hypo for the current event
-			evid=datafh.filehdr.evid;
+                        /* old
 			Hypocenter hypo(datafh.filehdr.slat,datafh.filehdr.slon,
 				datafh.filehdr.sdepth,datafh.filehdr.stime,
 				string("tttaup"),string("iasp91"));
+                            
+                                Replaced by SlownessVectorMatrix approach */
+			evid=datafh.filehdr.evid;
+                        SlownessVectorMatrix 
+                            svm0=datafh.incident_wave_slowness_vectors();
+
 			// We build the P wave travel time field once for each
 			// event as it is constant for all.  The border_pad parameter
 			// is needed because plane waves come from outside the range
 			// of the incident rays.  
+                        /*
 			auto_ptr<GCLscalarfield3d> TPptr=ComputeIncidentWaveRaygrid(parent,
 					border_pad,Up3d,Vp1d,hypo,zmax*zpad,tmax,dt,zdecfac);
+                                        */
+                        /* New version using SlownessVectorMatrix */
+			auto_ptr<GCLscalarfield3d> TPptr=ComputeIncidentWaveRaygrid(parent,
+					border_pad,Up3d,Vp1d,svm0,zmax*zpad,tmax,dt,zdecfac);
 			cout << "Time to compute Incident P wave grid "
 					<<now()-rundtime<<endl;
 			/* Now loop over plane wave components.  The method in 
@@ -1481,8 +1708,16 @@ mp.run_interactive();
 			// VPVS approximately keeps ray sample interval near
 			// data sample interval
 			const double VPVS(1.9);  // higher than normal, but better large here
+                        /* old form using hypo and fixed u mode 
 			grdptr =  Build_GCLraygrid(true,parent,ustack,hypo,
 				Vs1d,zmax,VPVS*tmax,dt*VPVS);
+                                */
+                        /* Form using a SlownessVectorMatrix.*/
+                        SlownessVectorMatrix PSsvm
+                                    = datafh.plane_wave_slowness_vectors(gridid);
+			grdptr =  Build_GCLraygrid(true,parent,ustack,PSsvm,
+				Vs1d,zmax,VPVS*tmax,dt*VPVS);
+
 			GCLgrid3d& raygrid=*grdptr;  // convenient shorthand because we keep changing this
 			int n30;  // convenient since top surface is at n3-1
 			n30 = raygrid.n3 - 1;
@@ -1598,7 +1833,12 @@ mp.process(string("plot3c(spath);"));
 				// the S ray path (pathptr) is oriented downward.  
 				// Only need to compute P time to surface once for 
 				// each ray so we compute it before the loop below
-				double Tpr=compute_receiver_Ptime(raygrid,i,j,*TPptr,hypo);
+				/* old form
+                                   double Tpr=compute_receiver_Ptime(raygrid,i,j,
+                                            *TPptr,hypo);
+                                            */
+				double Tpr=compute_receiver_Ptime(raygrid,i,j,
+                                        *TPptr,border_pad);
 				double tlag,Tpx;
 				bool needs_padding;
 				int padmark=raygrid.n3-1;
@@ -1648,6 +1888,9 @@ mp.process(string("plot3c(spath);"));
 						padmark=k;
 					}
 					if(tcompute_problem || needs_padding) break;
+                                        /* Ths form does not change with the 
+                                           new approach.   The terms are just
+                                           computed differently. */
 					tlag=Tpx+Stime[k]-Tpr;
 					SPtime.push_back(tlag);
 				}

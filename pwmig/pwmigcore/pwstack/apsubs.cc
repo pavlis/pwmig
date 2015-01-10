@@ -1,7 +1,6 @@
 #include <math.h>
 #include "coords.h"
 #include "stock.h"
-#include "pf.h"
 //DEBUG  remove this include if not debugging
 #include <iostream>
 using namespace std;

@@ -16,6 +16,7 @@ VectorStatistics.h
 VelocityModel_1d.cc
 VelocityModel_1d.h
 VelocityModel_3d.cc
+converters.cc
 ensemble.cc
 ensemble.h
 ensemble_helpers.cc

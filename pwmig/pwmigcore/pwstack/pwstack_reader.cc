@@ -83,6 +83,25 @@ PwstackBinaryFileReader::~PwstackBinaryFileReader()
 {
     fclose(fp);
 }
+SlownessVectorMatrix build_svm_from_buffer(double *buf, int nrow, int ncol)
+{
+    SlownessVectorMatrix svm(nrow,ncol);
+    /* Assume the data are arranged in fortran order with 2 vectors in
+       each slot.  */
+    int i,j,k;
+    for(k=0,i=0;i<nrow;++i)
+        for(j=0;j<ncol;++j,++k)
+        {
+            /* Intentionally do not test for index range since 
+               svm is constructed above and there is no way it can
+               get out of bounds in this procedure */
+            SlownessVector sv(buf[k],buf[k+1]);
+            svm(i,j)=sv;
+        }
+    return svm;
+}
+
+
 /* id is the vector index for foffs */
 ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
 {
@@ -111,6 +130,23 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
             <<"   index evid expects evid="<<ids[id]<<endl;
         throw SeisppError(ss.str());
     }
+    /* Now read the block of data containing the matrix of 
+       slowness vectors.   The procedure called after fread 
+       converts this to a SlownessVectorMatrix object. */
+    int gridsize=gh.svmrows*gh.svmcolumns*2; //2 for ux,uy values
+    double *svmbuf=new double [gridsize];
+    if(fread(svmbuf,sizeof(double),gridsize,fp)!=gridsize)
+    {
+        delete [] svmbuf;
+        stringstream ss;
+        ss << base_error << "fread error while reading slowness vector "
+            << "matrix section of gather header"<<endl
+            << "Error while reading data for evid="<<gh.evid<<endl;
+        throw SeisppError(ss.str());
+    }
+    svm=build_svm_from_buffer(svmbuf, gh.svmrows, gh.svmcolumns);
+    delete [] svmbuf;
+
     try {
         Metadata ghmd=PGHtoMD(gh);
         result=new ThreeComponentEnsemble(ghmd,gh.number_members);

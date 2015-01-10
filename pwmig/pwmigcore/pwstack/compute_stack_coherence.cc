@@ -3,7 +3,6 @@
 #include "TimeWindow.h"
 #include "dmatrix.h"
 #include "ThreeComponentSeismogram.h"
-#include "dbpp.h"
 #include "pwstack.h"
 #include "seispp.h"
 #include "SeisppError.h"

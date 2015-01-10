@@ -1,5 +1,8 @@
 #ifndef __elog__
 #define __elog__
+#define register_error elog_log
+#define complain elog_complain
+#define die elog_die
 #ifdef  __cplusplus
 extern "C" {
 #endif

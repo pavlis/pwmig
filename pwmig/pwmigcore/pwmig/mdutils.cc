@@ -1,7 +1,6 @@
 #include <vector>
 using namespace std;
 #include "stock.h"
-#include "pf.h"
 #include "Metadata.h"
 #include "gclgrid.h"
 #include "slowness.h"
@@ -28,6 +27,7 @@ SlownessVector get_stack_slowness(ThreeComponentEnsemble& ensemble)
 	return(slow);
 }
 
+/*
 Hypocenter get_event_hypocenter(ThreeComponentEnsemble& ensemble)
 {
 	Hypocenter h;
@@ -43,3 +43,4 @@ Hypocenter get_event_hypocenter(ThreeComponentEnsemble& ensemble)
 	}
 	return(h);
 }
+*/
