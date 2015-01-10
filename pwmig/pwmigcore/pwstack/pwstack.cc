@@ -6,7 +6,7 @@
 #include "Hypocenter.h"
 #include "seispp.h"
 #include "PwmigFileHandle.h"
-#include "PfstyleMetadata.h"
+#include "PfStyleMetadata.h"
 #include "SlownessVectorMatrix.h"
 #include "pwstack.h"
 #include "pwstack_reader.h"
