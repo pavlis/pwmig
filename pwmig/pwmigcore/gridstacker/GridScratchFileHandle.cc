@@ -38,7 +38,7 @@ bool compare_equal(GCLvectorfield3d& g1, GCLvectorfield3d& g2)
 const double null_field_value(-1.0);  // inserted in solid angle field (3) when data are considered null
 
 GridScratchFileHandle::GridScratchFileHandle(GCLvectorfield3d& mastergrid,
-		list<MemberGrid>& mgl, DatascopeHandle& dbh,bool normalize, double cutoff)
+		list<MemberGrid>& mgl, bool normalize, double cutoff)
 {
 	const string base_error("GridScratchFileHandle constructor:  ");
 	fp=tmpfile();
@@ -55,7 +55,7 @@ GridScratchFileHandle::GridScratchFileHandle(GCLvectorfield3d& mastergrid,
 	for(mptr=mgl.begin();mptr!=mgl.end();++mptr)
 	{
 	    try{
-		GCLvectorfield3d current(dbh,mptr->gridname,mptr->fieldname,nv);
+                GCLvectorfield3d current(mptr->fieldname);
 		if(normalize) 
 		{
 			// This should perhaps be a function, but will inline it for efficiency 
