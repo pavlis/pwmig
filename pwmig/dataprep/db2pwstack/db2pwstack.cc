@@ -279,8 +279,12 @@ int main(int argc, char **argv)
         tefull = control.get_double("data_time_window_end");
         TimeWindow data_window(tsfull,tefull);
         string gridname=control.get_string("PseudostationGridName");
+        bool psg_use_file=control.get_bool("use_file_for_pseudostationgrid");
         GCLgrid *g;
-        g=new GCLgrid(dbh,gridname);
+        if(psg_use_file)
+            g=new GCLgrid(gridname);
+        else
+            g=new GCLgrid(dbh,gridname);
         /* Slowness vector data stored here */
         GCLvectorfield u(*g,2);
         /* this is used as a write buffer to simplify writing of svm data */

@@ -1,3 +1,5 @@
+PseudostationGridName grids/taimage2D
+use_file_for_pseudostationgrid true
 data_time_window_start  -25.0
 data_time_window_end    120.0
 phase_key P
