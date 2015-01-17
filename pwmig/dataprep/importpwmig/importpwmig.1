@@ -1,0 +1,90 @@
+.TH IMPORTPWMIG  1
+.SH NAME
+importpwmig - imports GCLvectorfield3d files created by pwmig
+.SH SYNOPSIS
+.nf
+importpwmig [-db dbname] file1 file2 ... filen
+.fi
+.SH DESCRIPTION
+.LP
+The pwmig suite of programs (pwstack, pwmig, and gridstacker) had to be 
+severed from Antelope to allow the package to be complete source code 
+that could be compiled on any platform without any auxiliary libraries.   
+This was necessary because of the need to run this package on high performance
+computing platforms that were not being supported by BRTT.  One of the outcomes
+of that conversion was the ability to write the GCLvectorfield3d objects 
+that are the output of pwmig and gridstacker as files.   The original 
+GCLgrid library kept all the objects it maintained in a Datascope database.  
+The primary use of this program is to merge a set of n GCLvectorfield3d
+objects from one or more runs of pwmig into a Datascope database where
+large numbers of them are easier to maintain.  
+.LP
+The output data files indexed in the database are currently forced to be written in 
+a single directory with the frozen name of pwmigdata.   The program will only work
+with data from pwmig whose output is a 5 component vector field.
+.SH OPTIONS
+.IP -db
+Use this option to change the name of the database to store results.  
+The default is imports.
+.SH FILES
+.LP
+The program will write the grid geometry in a single file defined by the name
+tag for the grid stored in the pf file linked to each file.   The field contents
+for each file are written retaining the original base names passed as arguments.
+#
+# Describe input and output files (but not down to bits).
+#
+.SH ENVIRONMENT
+#
+# Describe any special environment variables
+#
+.SH PARAMETER FILE
+#
+# Describe any parameter file
+# This is not a place to put a copy of the parameter file; it's
+# supposed to be a description of each parameter in the file.
+#
+.SH EXAMPLE
+#
+# This section should contain an example that the user can follow
+# verbatim.  For a command, this should show a sample command line and output.
+# Use the same fonts as in \fBSYNOPSIS\fR. What the user types in should
+# be bold, and program response or output should be roman. All commands 
+# should be preceded by a representative UNIX prompt.
+#
+# For a library, you might show an example program (This is usually only 
+# done for more complex routines or packages.)
+#
+.in 2c
+.ft CW
+.nf
+.fi
+.ft R
+.in
+.SH RETURN VALUES
+#
+# Describe the return values for each subroutine or command.  The usual
+# is to return 0 for normal execution and something else for errors.
+#
+.SH LIBRARY
+#
+# Indicate the libraries which need to be linked in (for library routines only)
+# in the form of the ldlibs Makefile line, eg "-ldb -lstock -lm"
+#
+.SH ATTRIBUTES
+MT-Safe ?
+.SH DIAGNOSTICS
+#
+# Describe error messages and give cautionary advice.
+.SH "SEE ALSO"
+.nf
+#
+# List related manual entries and section (lowercase, bold)., eg "file(1)"
+# or related documents
+.fi
+.SH "BUGS AND CAVEATS"
+#
+# Describe any shortcomings of the programs, known bugs, or surprising 
+# results.
+.SH AUTHOR
+# Put the author's name here (person who wrote the code) (roman).
