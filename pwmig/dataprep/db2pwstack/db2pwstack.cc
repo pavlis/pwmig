@@ -26,8 +26,8 @@ void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh)
         gh.depth=gather.get_double("origin.depth");
         gh.origin_time=gather.get_double("origin.time");
         /* These are slowness grid dimension written to a separate file */
-        gh.svmrows=gather.get_double(svmrowkey);
-        gh.svmcolumns=gather.get_double(svmcolkey);
+        gh.svmrows=gather.get_int(svmrowkey);
+        gh.svmcolumns=gather.get_int(svmcolkey);
         
     }catch(SeisppError& serr)
     {
@@ -107,8 +107,8 @@ void LoadSlownessBuffer(GCLvectorfield& ug, double *ubuf)
 {
         int i,j,k;
         k=0;
-        for(i=0;ug.n1;++i)
-            for(j=0;ug.n2;++j)
+        for(i=0;i<ug.n1;++i)
+            for(j=0;j<ug.n2;++j)
             {
                 ubuf[k]=ug.val[i][j][0];
                 ++k;
