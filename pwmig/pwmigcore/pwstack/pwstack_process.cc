@@ -188,8 +188,6 @@ PwmigFileHandle& cohfh)
         elev0=indata.get_double("elev0");
         ux0=indata.get_double("ux0");
         uy0=indata.get_double("uy0");
-        //DEBUG
-        //cerr << "(ux0,uy0)=("<<ux0<<","<<uy0<<"("<<endl;
         ix1=indata.get_int("ix1");
         ix2=indata.get_int("ix2");
         evid=indata.get_int("evid");
