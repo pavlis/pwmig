@@ -1208,7 +1208,7 @@ int main(int argc, char **argv)
 	TimeSeriesEnsemble *cohens;
 	int is,i,j,k,l;
 	int kk;
-	string pfin("pwmig");
+	string pfin("pwmig.pf");
 	dmatrix gradTs;
 	int border_pad;
 	/* This constant controls when premature cutoff of the travel
