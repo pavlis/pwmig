@@ -459,6 +459,7 @@ int main(int argc, char **argv)
                         << "("<<i<<","<<j<<")"<<endl;
                 }
             }
+	    dfh.save_slowness_vectors(svm,ugrid);
 	    char fsbuf[64];
 	    sprintf(fsbuf,"%s_%d",fieldnamebase.c_str(),evid);
 	    string fieldname(fsbuf);
