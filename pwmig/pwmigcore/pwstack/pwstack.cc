@@ -352,11 +352,11 @@ int main(int argc, char **argv)
 	    string dfile=dfilebase+DataFileExtension;
 	    string coh3cf=dfilebase+Coh3CExtension;
 	    string cohf=dfilebase+CohExtension;
-	    PwmigFileHandle dfh(dfile,false,false);
+	    PwmigFileHandle dfh(dfile,false,ugrid);
 	    load_file_globals(dfh,evid,olat,olon,odepth,otime,stagridname);
-	    PwmigFileHandle coh3cfh(coh3cf,false,false);
+	    PwmigFileHandle coh3cfh(coh3cf,false,ugrid);
 	    load_file_globals(coh3cfh,evid,olat,olon,odepth,otime,stagridname);
-	    PwmigFileHandle cohfh(cohf,false,true);
+	    PwmigFileHandle cohfh(cohf,true,ugrid);
 	    load_file_globals(cohfh,evid,olat,olon,odepth,otime,stagridname);
             double lat0,lon0,elev0;
 	    cout << "Beginning processing for event id = "<<evid<<endl;
