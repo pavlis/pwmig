@@ -362,7 +362,7 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
     nc=svm.columns();
     nrp=nr+2*pad;
     ncp=nc+2*pad;
-    SlownessVectorMatrix paddedsvm(nr,nc);
+    SlownessVectorMatrix paddedsvm(nrp,ncp);
     SlownessVector uij;
     int i,j,ii,jj;  
     /* First fill the unpadded areas */
@@ -1564,17 +1564,10 @@ HorizontalSlicer(mp,Us3d);
 			string dfname=string(fname_base)+DataFileExtension;
 			PwmigFileHandle datafh(dfname,false,false);
 			cout << "Processing pwstack file base name="<<dfname<<endl;
-			/* Note the use of an auto_ptr allows me to put these
-			inside this conditional in a clean way.  Note the auto_ptr
-			further allows automatic deletion when changed with 
-			operator = */
-			auto_ptr<PwmigFileHandle> cohfh,cohfh3c;
 			string coh3cfname=string(fname_base)+Coh3CExtension;
 			string cohfname=string(fname_base)+CohExtension;
-			cohfh3c=auto_ptr<PwmigFileHandle>
-				(new PwmigFileHandle(coh3cfname,false,true));
-			cohfh=auto_ptr<PwmigFileHandle>
-				(new PwmigFileHandle(cohfname,true,true));
+			PwmigFileHandle cohfh3c(coh3cfname,false,true);
+			PwmigFileHandle cohfh(coh3cfname,true,true);
 			double rundtime;
 			rundtime=now();
 			cout << "Main loop processing begins at time "<<strtime(rundtime)<<endl;
@@ -1630,8 +1623,8 @@ HorizontalSlicer(mp,Us3d);
 			the same number of entries.  This should always happen unless
 			pwstack fails.  For now we trust this is so and don't test
 			for that condition.  May want to change this. */
-			coh3cens=cohfh3c->load_next_3ce();
-			cohens=cohfh->load_next_tse();
+			coh3cens=cohfh3c.load_next_3ce();
+			cohens=cohfh.load_next_tse();
 			cout << "Elapsed time to finish reading data "
 				<<now()-rundtime<<endl;
 #ifdef MATLABDEBUG
