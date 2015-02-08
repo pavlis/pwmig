@@ -90,7 +90,7 @@ SlownessVectorMatrix build_svm_from_buffer(double *buf, int nrow, int ncol)
        each slot.  */
     int i,j,k;
     for(k=0,i=0;i<nrow;++i)
-        for(j=0;j<ncol;++j,++k)
+        for(j=0;j<ncol;++j,k+=2)
         {
             /* Intentionally do not test for index range since 
                svm is constructed above and there is no way it can
