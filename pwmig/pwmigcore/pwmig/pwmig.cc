@@ -380,18 +380,18 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
     /* upper right */
     uij=svm(0,nc-1);
     for(i=0;i<pad;++i)
-        for(j=pad+nc+1;j<ncp;++j) paddedsvm(i,j)=uij;
+        for(j=pad+nc-1;j<ncp;++j) paddedsvm(i,j)=uij;
     /* lower left*/
     uij=svm(nr-1,0);
-    for(i=pad+nr;i<nrp;++i)
+    for(i=pad+nr-1;i<nrp;++i)
         for(j=0;j<pad;++j) paddedsvm(i,j)=uij;
     /* lower right */
     uij=svm(nr-1,nc-1);
-    for(i=pad+nr;i<nrp;++i)
-        for(j=pad+nc;j<ncp;++j) paddedsvm(i,j)=uij;
+    for(i=pad+nr-1;i<nrp;++i)
+        for(j=pad+nc-1;j<ncp;++j) paddedsvm(i,j)=uij;
     /* Finally do the borders.  Here we extend the value for the adjacent edge.*/
     /* left border */
-    for(i=pad,ii=0;i<pad+nr;++i,++i)
+    for(i=pad,ii=0;i<pad+nr;++i,++ii)
     {
         uij=svm(ii,0);
         for(j=0;j<pad;++j) paddedsvm(i,j)=uij;
@@ -406,7 +406,8 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
     for(j=pad,jj=0;jj<nc;++j,++jj)
     {
         uij=svm(0,jj);
-        for(i=0;i<pad;++i) paddedsvm(i,j)=uij;
+        for(i=0;i<pad;++i) 
+            paddedsvm(i,j)=uij;
     }
     /* Bottom border */
     for(j=pad,jj=0;jj<nc;++j,++jj)
@@ -414,8 +415,45 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
         uij=svm(nr-1,jj);
         for(i=0;i<pad;++i) paddedsvm(i+pad+nr,j)=uij;
     }
+//DEBUG - scaffolding to make sure this works.  Commend out when verified. 
+cout << "Padded Slowess Vector Matrix "<<endl<<"i j slow  azimuth(deg)"<<endl;
+for(i=0;i<nrp;++i)
+for(j=0;j<ncp;++j)
+{
+	uij=paddedsvm(i,j);
+	cout << i <<" "<<j<<" ";
+	cout << uij.mag()<<" "<<deg(uij.azimuth())<<endl;
+}
+// End scaffolding
     return(paddedsvm);
 }
+/* This small check routine is a sanity check.   There is a rare possibility
+ * that i0 and j0 of the parent pseusostation grid is not consistent with 
+ * the actual grid contents.   This can only happen if there is an error
+ * in the pf file or db that defines the attributes of the GCLgrid.   
+ * I put this in because the cost is tiny for the potential disaster it
+ * could produce. */
+bool grid_mismatched(GCLgrid& parent, GCLgrid& padded, int pad)
+{
+	double lat1,lon1,lat2,lon2;
+	/* We could test the origin, but a more conservative test
+ 	is to compare the lat,lon of the 0,0 position of the parent*/
+	lat1=parent.lat(0,0);
+	lon1=parent.lon(0,0);
+	lat2=padded.lat(pad,pad);
+	lon2=padded.lon(pad,pad);
+        const double frac(0.01);
+	double test=parent.dx1_nom;
+	test*=frac;
+	double deltax=hypot(lat1-lat2,lon1-lon2);
+	deltax *= EQUATORIAL_EARTH_RADIUS;
+	if(deltax>test)
+		return true;
+	else
+		return false;
+}
+	
+	
 
 /*! \brief Computes incident wave travel times in pwmig
 // Computes a GCLgrid defined field (raygrid) for an incident P wavefield.  
@@ -496,8 +534,10 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 				pstagrid.lat0,pstagrid.lon0,pstagrid.r0,
 				pstagrid.azimuth_y, pstagrid.dx1_nom, pstagrid.dx2_nom, i0new, j0new);
 		// We MUST make force ng2d to be in the same coordinate
-		// system as the velocity model.
-		remap_grid(ng2d,dynamic_cast<BasicGCLgrid&>(UP3d));
+		// system as the pseudostation grid 
+		remap_grid(ng2d,dynamic_cast<BasicGCLgrid&>(pstagrid));
+		if(grid_mismatched(pstagrid,ng2d,border_pad))
+		  throw GCLgridError("padded GCLgrid geometry mismatch pseudostation.  i0 and/or j0 is probably wrong");
 		// Use ng2d to compute a 1d reference model travel time grid
 		// Note we explicitly do no include elevation in this calculation assuming this
 		// will be handled with statics at another point
@@ -594,15 +634,37 @@ double compute_receiver_Ptime(GCLgrid3d& raygrid, int ix1, int ix2,
     /* This calculation perhaps should be put inline but for now we leave it
        this procedure to provide debug scaffolding.   May want to eventually 
        ditch the procedure */
+//DEBUG to compare coordinates for a bug fix
+/*
+cout << "raygrid origin="<<deg(raygrid.lat(raygrid.i0,raygrid.j0,raygrid.n3-1))
+	<<" "<< deg(raygrid.lon(raygrid.i0,raygrid.j0,raygrid.n3-1))
+	<<" "<< raygrid.r0<<endl;
+cout << "TP origin="<<deg(TP.lat(TP.i0,TP.j0,TP.n3-1))
+	<<" "<< deg(TP.lon(TP.i0,TP.j0,TP.n3-1))
+	<<" "<< TP.r0<<endl;
+cout << "i j raygrid_lat  raygrid_lon TP_lat TP_lon"<<endl;
+for(int i=0;i<raygrid.n1;++i)
+for(int j=0;j<raygrid.n2;++j)
+	cout << i <<" "
+	 << j << " "
+	 << deg(raygrid.lat(i,j,raygrid.n3-1)) << " "
+	 << deg(raygrid.lon(i,j,raygrid.n3-1)) << " "
+	<< deg(TP.lat(i+pad,j+pad,TP.n3-1) ) << " "
+	<< deg(TP.lon(i+pad,j+pad,TP.n3-1) ) << endl;
+*/
+
     /* This is scaffolding that should be removed once it is known to work
        as I think it should */
+        /*
 	double x1,x2,x3;
 	int nsurface=raygrid.n3 - 1;
 	x1=raygrid.x1[ix1][ix2][nsurface];
 	x2=raygrid.x2[ix1][ix2][nsurface];
 	x3=raygrid.x3[ix1][ix2][nsurface];
         double x1p,x2p,x3p;
+        */
         int nsTP=TP.n3 - 1;
+        /*
         if(nsTP!=nsurface)
             cout << "DEBUG(WARNING):  raygrid nsurface="<<nsurface
                 << " TP grid nsurface="<<nsTP<<endl;
@@ -614,7 +676,8 @@ double compute_receiver_Ptime(GCLgrid3d& raygrid, int ix1, int ix2,
             + (x3-x3p)*(x3-x3p);
         ssq=sqrt(ssq);
         cout << "DEBUG TPr procedure: node position distance="<<ssq<<endl;
-        /* END scaffolding - delete the above once verified */
+        // END scaffolding - delete the above once verified 
+                */
         return (TP.val[ix1+pad][ix2+pad][nsTP]);
 }
 
@@ -1581,6 +1644,16 @@ HorizontalSlicer(mp,Us3d);
 			evid=datafh.filehdr.evid;
                         SlownessVectorMatrix 
                             svm0=datafh.incident_wave_slowness_vectors();
+                        //DEBUG
+                        cout << "Slowess Grid from File"<<endl;
+                        SlownessVector svdb;
+                        for(int id=0;id<svm0.rows();++id)
+                            for(int jd=0;jd<svm0.columns();++jd)
+                            {
+                                svdb=svm0(id,jd);
+                                cout << id <<" "<<jd<<" "
+                                    << svdb.mag()<<" "<<deg(svdb.azimuth())<<endl;
+                            }
 
 			// We build the P wave travel time field once for each
 			// event as it is constant for all.  The border_pad parameter
