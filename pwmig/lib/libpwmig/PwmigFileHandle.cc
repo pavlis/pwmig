@@ -107,8 +107,8 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool smode,RectangularSlownessGri
 	strncpy(this->filehdr.gridname,ug.name.c_str(),16);  //16 is the size of name - maintenance warning
 	/* uxlow and uylow are always negative so this formula is a bit odd.   
 	Computation is for C indexing starting at 0 */
-	filehdr.i0=(int) (-ug.uxlow/ug.dux);
-	filehdr.j0=(int) (-ug.uylow/ug.duy);
+	filehdr.i0=SEISPP::nint(-ug.uxlow/ug.dux);
+	filehdr.j0=SEISPP::nint(-ug.uylow/ug.duy);
 	/* using float eps is a simple test because slowness is of order 1 */
 	double dux0test,duy0test;
 	dux0test=ug.uxlow+ug.dux*((double)(filehdr.i0));
@@ -494,6 +494,9 @@ void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
     double ubuf[2];
     for(i=0;i<ugrid.nux;++i)
         for(j=0;j<ugrid.nuy;++j)
+{
+//DEBUG
+cout << "ugrid i,j="<<i<<","<<j<<endl;
             for(k=0;k<u0.rows();++k)
                 for(l=0;l<u0.columns();++l)
                 {
@@ -502,6 +505,7 @@ void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
                     /* 0 is ux, 1 is uy */
                     ubuf[0]=uincident.ux + du.ux;
                     ubuf[1]=uincident.uy + du.uy;
+cout << k <<","<<l<<" "<<uincident.ux<<" "<<uincident.uy<<" "<<du.ux<<" "<<du.uy<<endl;
                     if(fwrite(ubuf,sizeof(double),2,fp)!=2)
                     {
                         fclose(fp);
@@ -509,6 +513,8 @@ void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
                                 + "fwrite error saving slowness vector data");
                     }
                 }
+//DEBUG - remove when finished
+}
     fclose(fp);
 }
 SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int iux,
@@ -525,7 +531,7 @@ SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int iux,
             exit(-1);
         }
 	try {
-		if(fseek(svmfp,2*sizeof(int),SEEK_SET) < 0)
+		if(fseek(svmfp,4*sizeof(int),SEEK_SET) < 0)
 			throw SeisppError(base_error
 			  + "fseek failed on first attempt to access the slowness vector file");
 		size_t count(0);
