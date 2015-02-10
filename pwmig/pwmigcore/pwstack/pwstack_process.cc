@@ -414,7 +414,8 @@ PwmigFileHandle& cohfh)
 
     int iu,ju,gridid;
     double ux,uy,dux,duy;
-    for(iu=0,gridid=1;iu<ugrid.nux;++iu)
+    /* Note older db version started gridid at 1 instead of 0 like this is */
+    for(iu=0,gridid=0;iu<ugrid.nux;++iu)
     {
         for(ju=0;ju<ugrid.nuy;++ju,++gridid)
         {

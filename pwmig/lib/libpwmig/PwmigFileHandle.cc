@@ -520,29 +520,33 @@ cout << k <<","<<l<<" "<<uincident.ux<<" "<<uincident.uy<<" "<<du.ux<<" "<<du.uy
 SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int iux,
         int iuy)
 {
-	const string base_error("PwmigFileHandle::plane_wave_slowness_vectors(int,int) mehthod:  ");
-        if(svmfp==NULL)
-        {
-            cerr << base_error
-                << "coding error.   svmfp is NULL.  This method was "
-                << "probably called for a handl pointing at coherence files"
-                <<endl
-                << "Exiting - FATAL ERROR"<<endl;
-            exit(-1);
-        }
-	try {
-		if(fseek(svmfp,4*sizeof(int),SEEK_SET) < 0)
-			throw SeisppError(base_error
-			  + "fseek failed on first attempt to access the slowness vector file");
-		size_t count(0);
-        int psgn1,psgn2;
-	count += fread((void *)(&psgn1),sizeof(int),1,svmfp);
-    	count += fread((void *)(&psgn2),sizeof(int),1,svmfp);
-		if(count!=2) throw SeisppError(base_error
-		   + "fread error while reading array dimensions at head of file");
-	   int gridid=psgn2*iux + iuy + 1;
+    const string base_error("PwmigFileHandle::plane_wave_slowness_vectors(int,int) mehthod:  ");
+    if(svmfp==NULL)
+    {
+        cerr << base_error
+             << "coding error.   svmfp is NULL.  This method was "
+             << "probably called for a handl pointing at coherence files"
+             <<endl
+             << "Exiting - FATAL ERROR"<<endl;
+         exit(-1);
+    }
+    int psgn1, psgn2;   // pseudostation grid dimensions
+    int ugn1, ugn2;   // slowness grid dimensions
+    size_t count(0);
+    rewind(svmfp);
+    count += fread((void *)(&ugn1),sizeof(int),1,svmfp);
+    count += fread((void *)(&ugn2),sizeof(int),1,svmfp);
+    count += fread((void *)(&psgn1),sizeof(int),1,svmfp);
+    count += fread((void *)(&psgn2),sizeof(int),1,svmfp);
+    if(count!=4)
+    {
+        throw SeisppError(base_error
+            + "fread error while reading array dimensions at head of file");
+    }
+    int gridid=ugn1*iux + iuy;
+    try {
 	   return (this->plane_wave_slowness_vectors(gridid));
-	}catch(...){throw;};
+    }catch(...){throw;};
 }
 /* This is the main read routine for the slowness grid data file.   Others are 
 just wrappers on this one */
@@ -577,9 +581,9 @@ SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int gridid)
       pwmig needs it, which is the gridid components are the slowest varying index.  
       We can then compute the file offset to the start of the needed data by the following
       simple formula.*/
-   long pwblocksize=sizeof(double)*ugn1*ugn2;
+   long pwblocksize=sizeof(double)*psgn1*psgn2;
     
-   long foff=(gridid-1)*pwblocksize + 4*sizeof(int);   // this is foff from file start
+   long foff=gridid*pwblocksize + 4*sizeof(int);   // this is foff from file start
    if(fseek(svmfp,foff,SEEK_SET)<0) 
    {
        stringstream ss;

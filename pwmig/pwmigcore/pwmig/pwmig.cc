@@ -1630,7 +1630,7 @@ HorizontalSlicer(mp,Us3d);
 			string coh3cfname=string(fname_base)+Coh3CExtension;
 			string cohfname=string(fname_base)+CohExtension;
 			PwmigFileHandle cohfh3c(coh3cfname,false,true);
-			PwmigFileHandle cohfh(coh3cfname,true,true);
+			PwmigFileHandle cohfh(cohfname,true,true);
 			double rundtime;
 			rundtime=now();
 			cout << "Main loop processing begins at time "<<strtime(rundtime)<<endl;
