@@ -61,6 +61,13 @@ public:
 
       \param lines is the modified version of the text pf file.*/
     PfStyleMetadata(list<string> lines);
+    /*! \brief Construct from a file.
+
+      This is actually calling the pfread function to
+      construct this object.  
+
+      \param fname is the pf file name. (must be full name - no ".pf" assumed)*/
+    PfStyleMetadata(string fname);
     /*!  Standard copy constructor. */
     PfStyleMetadata(const PfStyleMetadata& parent);
     /*! \brief get a Tbl component by key.

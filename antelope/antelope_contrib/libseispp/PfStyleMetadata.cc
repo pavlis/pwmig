@@ -226,6 +226,19 @@ PfStyleMetadata::PfStyleMetadata(list<string> alllines) : Metadata()
     map<string,list<string> > pftbls;
     map<string, PfStyleMetadata> pfbranches;
 
+PfStyleMetadata::PfStyleMetadata(string fname)
+{
+	try {
+		PfStyleMetadata all_the_stuff;
+		all_the_stuff=pfread(fname);
+		this->mreal=all_the_stuff.mreal;
+		this->mint=all_the_stuff.mint;
+		this->mbool=all_the_stuff.mbool;
+		this->mstring=all_the_stuff.mstring;
+		this->pftbls=all_the_stuff.pftbls;
+		this->pfbranches=all_the_stuff.pfbranches;
+	}catch(...){throw;};
+}
 PfStyleMetadata::PfStyleMetadata(const PfStyleMetadata& parent)
     : Metadata(parent)
 {
