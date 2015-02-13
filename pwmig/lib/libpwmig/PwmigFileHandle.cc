@@ -185,7 +185,7 @@ PwmigFileHandle::~PwmigFileHandle()
 		}
             }
 	}
-	else
+	else if(svmfp!=NULL)
 	/* In read mode the slowness data file is kept open until destruction here */
 		fclose(svmfp);
 }
