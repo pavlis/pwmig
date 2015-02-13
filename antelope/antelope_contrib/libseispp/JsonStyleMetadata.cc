@@ -144,5 +144,40 @@ JsonStyleMetadata& JsonStyleMetadata::operator=(const JsonStyleMetadata& parent)
     }
     return(*this);
 }
+MetadataList get_mdlist(SEISPP::JsonStyleMetadata& m, const string tag)
+{
+	try {
+		MetadataList mdl;
+		Metadata_typedef mdt;
+		string mdtype;
+		JsonStyleMetadata t=m.get_branch(tag);
+		MetadataList tl=t.keys();
+		list<Metadata_typedef>::iterator tptr;
+		for(tptr=tl.begin();tptr!=tl.end();++tptr)
+		{
+			mdt.tag = (*tptr).tag;
+			mdtype=t.get_string((*tptr).tag);
+			if(mdtype=="real" || mdtype=="REAL")
+				mdt.mdt = MDreal;
+			else if(mdtype=="int" || mdtype=="INT" || mdtype=="integer")
+				mdt.mdt = MDint;
+			else if(mdtype=="string" || mdtype=="STRING")
+				mdt.mdt = MDstring;
+			else if(mdtype=="boolean" || mdtype=="BOOLEAN")
+				mdt.mdt = MDboolean;
+			else
+			{
+				cerr << "get_mdlist:  Warning type keyword = "
+				    << mdtype << " not recognized."<<endl
+				    << mdt.tag <<" attribute in input list ignored"
+				    <<endl;
+				continue;
+			}
+
+			mdl.push_back(mdt);
+		}
+		return(mdl);
+	}catch(...){throw;};
+}
 
 } // End SEISPP Namespace declaration 
