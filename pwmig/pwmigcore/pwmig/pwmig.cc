@@ -30,9 +30,8 @@ MatlabProcessor mp(stdout);
 void usage()
 {
     cerr << "Usage: "<<endl
-        << "pwmig listfile outdir [-np np -rank r -V -v -pf pfname]"<<endl
+        << "pwmig listfile [-np np -rank r -V -v -pf pfname]"<<endl
         << "  listfile contains names of output files from pwstack that drive processing"
-        << "  Files of results are written to outdir"<<endl
         << "  -np and -rank are used for cluster processing"<<endl;
         exit(-1);
 }
@@ -416,6 +415,7 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
         for(i=0;i<pad;++i) paddedsvm(i+pad+nr,j)=uij;
     }
 //DEBUG - scaffolding to make sure this works.  Commend out when verified. 
+/*
 cout << "Padded Slowess Vector Matrix "<<endl<<"i j slow  azimuth(deg)"<<endl;
 for(i=0;i<nrp;++i)
 for(j=0;j<ncp;++j)
@@ -424,6 +424,7 @@ for(j=0;j<ncp;++j)
 	cout << i <<" "<<j<<" ";
 	cout << uij.mag()<<" "<<deg(uij.azimuth())<<endl;
 }
+*/
 // End scaffolding
     return(paddedsvm);
 }
@@ -491,10 +492,10 @@ bool grid_mismatched(GCLgrid& parent, GCLgrid& padded, int pad)
 Major change January 2015:   Used to receive a Hypocenter and use 
 an absolute travel time reference.  Hypocenter replaced with new concept
 of a SlownessVectorMatrix that defines incident wave direction at each
-pseudostation.   Further, we drop the absolute time reference an use
-the simpler algorithm of relative lags relative to the arrival time
+pseudostation.   Further, we drop the absolute time reference and use
+the simpler algorithm of lags relative to the arrival time
 reference frame.   Point is this procedure now returns a grid with 
-complete different set of times.  The border padding creates a huge
+a completely different set of times.  The border padding creates a huge
 complication.   SlownessVectorMatrix is extended on edges by extending
 vectors on edges into pad region.   That is a much better approximation
 than previous version that used constant slowness over the entire grid.
@@ -561,11 +562,21 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 		GCLgrid3d *Pttgrid=decimate(*IncidentRaygrid,1,1,zdecfac);
 		auto_ptr<GCLscalarfield3d> Tp(new GCLscalarfield3d(*Pttgrid));
 		delete Pttgrid;
+//DEBUG
+/*
+cout << "Depths at top surface"<<endl;
+for(int iii=0;iii<Tp->n1;++iii)
+    for(int jjj=0;jjj<Tp->n2;++jjj)
+        cout << iii<<" "<<jjj<<" "<<Tp->depth(iii,jjj,Tp->n3-1)<<endl;
+        */
 		/* this is complicated by reverse order of the two paths used here.
 		Without decimation I used kend=Tp->n3 - 1  This is the form with decimation
 		which should work correctly for any zdecfac */
 		int kend=Tp->n3;
-		int kkend=((Tp->n3)-1)*zdecfac;
+		/*Because raygrid runs from bottom up we need to start here
+                 * This is necessary to mesh with decimate, which uses this same
+                 * construct */
+		int kkend=(IncidentRaygrid->n3) - 1;
 		int kk;
 		for(i=0;i<Tp->n1;++i)
 		{
@@ -577,6 +588,8 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
 							i,j,kkend,3,true));
 				// this is the pwmig function using 1d if path is outside 3d model
 				vector<double>Ptimes;
+                                /* The vector returned here is integrated time from the surface downward along
+                                 * path */
 				Ptimes=compute_gridttime(UP3d,i,j,
                                         vp1d,*IncidentRaygrid,*path);
 				//for(k=0,kk=kend;k<=kend;++k,--kk)
@@ -587,7 +600,13 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                                         */
                                     /* This is form for arrival time reference frame
                                        lag calculation*/
-                                    Tp->val[i][j][k] = Ptimes[kk] - Ptimes[kk];
+                                    Tp->val[i][j][k] = Ptimes[kkend]-Ptimes[kk];
+//DEBUG
+/*
+cout << "i,j,k,kk,depth,Tp_depth"
+    <<i<<" "<<j<<" "<<k<<" "<<kk<<" "<<Tp->depth(i,j,k)
+    <<" "<<IncidentRaygrid->depth(i,j,kk)<<endl;
+    */
 				}
 			}
 		}
@@ -1289,7 +1308,7 @@ int main(int argc, char **argv)
         int rank(-1), np(-1);
 
 
-        if(argc < 3) usage();
+        if(argc < 2) usage();
 	/* We will open this file immediately because if that fails we 
 	should exit right away */
 	FILE *flistfp=fopen(argv[1],"r");
@@ -1298,13 +1317,6 @@ int main(int argc, char **argv)
 		cerr << "Cannot open list of pwstack output files = "<<argv[2]<<endl;
 		usage();
 	}
-        string outdir(argv[2]);
-        if(makedir(argv[2]))
-        {
-            cerr << "makedir failed to create output directory = "
-                << outdir<<endl;
-            usage();
-        }
 	string dfile;  // used repeatedly below for data file names
 
         for(i=3;i<argc;++i)
@@ -1645,6 +1657,7 @@ HorizontalSlicer(mp,Us3d);
                         SlownessVectorMatrix 
                             svm0=datafh.incident_wave_slowness_vectors();
                         //DEBUG
+                        /*
                         cout << "Slowess Grid from File"<<endl;
                         SlownessVector svdb;
                         for(int id=0;id<svm0.rows();++id)
@@ -1654,6 +1667,7 @@ HorizontalSlicer(mp,Us3d);
                                 cout << id <<" "<<jd<<" "
                                     << svdb.mag()<<" "<<deg(svdb.azimuth())<<endl;
                             }
+                            */
 
 			// We build the P wave travel time field once for each
 			// event as it is constant for all.  The border_pad parameter
@@ -1958,6 +1972,14 @@ mp.process(string("plot3c(spath);"));
                                            new approach.   The terms are just
                                            computed differently. */
 					tlag=Tpx+Stime[k]-Tpr;
+//DEBUG
+cout << "i="<<i
+    << " j="<<j
+    << " k="<<k
+    << " Tpx="<<Tpx
+    << " Stime="<<Stime[k]
+    << " Tpr="<<Tpr<<"tlag="<<tlag<<endl;
+cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 					SPtime.push_back(tlag);
 				}
 
@@ -1969,6 +1991,9 @@ mp.process(string("plot3c(spath);"));
 						<< i << ","
 						<< j << ").  GCLscalarfield3d lookup failed at ray index="
 						<< k <<endl
+                                                << "Geographic location: "<<raygrid.lat(i,j,kk)
+                                                <<", "<<deg(raygrid.lon(i,j,kk))
+                                                <<", "<<raygrid.depth(i,j,kk)<<endl
 						<< "Data from failed ray index downward will be zeroed"<<endl
 						<< "This may leave ugly holes in the output image."
 						<<endl;
@@ -2010,11 +2035,9 @@ mp.process(string("plot3c(spath);"));
 					for(k=padmark;k<raygrid.n3;++k)
 						for(l=0;l<3;++l)  work(l,k)=0.0;
 					//DEBUG
-/*
 					dmatrix wtr=tr(work);
 					cout << "Padded data vector after interpolation"<<endl
 						<< wtr <<endl;
-*/
 				}
 
 #ifdef MATLABDEBUG
@@ -2192,7 +2215,7 @@ delete sfptr;
 				// with different names.  
 				dfile=MakeDfileName(dfilebase
 					+string("_psum"),gridid+1000);
-                                migrated_image.save(dfile,outdir);
+                                migrated_image.save(dfile,fielddir);
 			}
 			cout << "Total time for this plane wave component="<<now()-rundtime<<endl;
 //DEBUG  save partial sums
@@ -2264,6 +2287,7 @@ const string merge_command("F=cat(3,F,f);");
 			migrated_image.zero();
 			dfile=MakeDfileName(dfilebase+string("_coh"),evid);
 			cohimage.save(dfile,fielddir);
+                        cout << "Results saved in directory "<<fielddir<<endl;
 		}
 		} // Bottom of np%rank conditional 
 		++filecount;
