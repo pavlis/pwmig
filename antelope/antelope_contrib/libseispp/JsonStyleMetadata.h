@@ -102,9 +102,9 @@ public:
             found. */
     JsonStyleMetadata get_branch(const string key);
     /*! Return a list of keys for branches (Arrs) in the pf file. */
-    //list<string> branch_keys();
+    list<string> branch_keys();
     /*! Return a list of keys for Tbls in the pf.*/
-    //list<string> tbl_keys();
+    list<string> array_keys();
     /*! Standard assignment operator, */
     JsonStyleMetadata& operator=(const JsonStyleMetadata& parent);
     /*! \brief save result in a pf format.

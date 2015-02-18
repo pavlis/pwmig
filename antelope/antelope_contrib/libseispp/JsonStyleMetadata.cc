@@ -127,6 +127,22 @@ JsonStyleMetadata JsonStyleMetadata::get_branch(const string key)
             "get_branch failed trying to find data for key="+key);
     return(mbranch[key]);
 }
+list<string> JsonStyleMetadata::branch_keys()
+{
+    map<string,JsonStyleMetadata>::iterator iptr;
+    list<string> result;
+    for(iptr=mbranch.begin();iptr!=mbranch.end();++iptr)
+        result.push_back((*iptr).first);
+    return(result);
+}
+list<string> JsonStyleMetadata::array_keys()
+{
+    map<string,list<Value> >::iterator iptr;
+    list<string> result;
+    for(iptr=marray.begin();iptr!=marray.end();++iptr)
+        result.push_back((*iptr).first);
+    return(result);
+}
 JsonStyleMetadata& JsonStyleMetadata::operator=(const JsonStyleMetadata& parent)
 {
     if(this!=&parent)
