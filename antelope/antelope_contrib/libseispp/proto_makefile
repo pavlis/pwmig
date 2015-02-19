@@ -6,6 +6,7 @@ INCLUDE= \
   BasicTimeSeries.h\
   Metadata.h\
   PfStyleMetadata.h \
+  JsonStyleMetadata.h \
   SeisppError.h\
   SeisppKeywords.h \
   SphericalCoordinate.h\
@@ -26,6 +27,8 @@ include $(PWMIGMAKE)
 OBJS=BasicTimeSeries.o \
   Metadata.o \
   PfStyleMetadata.o \
+  JsonStyleMetadata.o \
+  jsoncpp.o \
   ThreeComponentSeismogram.o \
   TimeSeries.o \
   VelocityModel_1d.o \
