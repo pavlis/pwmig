@@ -3,12 +3,14 @@ DIRS=
 PF=pwmig.pf
 
 #MAN1=pwmig.1
-cxxflags=-DNO_ANTELOPE
+cxxflags=-g -DNO_ANTELOPE
 ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
+DBX=-g
 
 include $(PWMIGMAKE) 
-OBJS= mdutils.o \
-pwmig.o \
+OBJS= pwmig.o \
+decimate.o \
+mdutils.o \
 ray_transformation_operator.o \
 raygrid.o
 # include dependencies

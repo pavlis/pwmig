@@ -24,7 +24,8 @@ private:
 // function prototypes 
 SlownessVector get_stack_slowness(ThreeComponentEnsemble& ensemble);
 //Hypocenter get_event_hypocenter(ThreeComponentEnsemble& ensemble);
-GCLgrid3d *Build_GCLraygrid(bool fixed_u,
+GCLscalarfield3d *Build_GCLraygrid(bool fixed_u,
 	GCLgrid& parent,SlownessVector u,SlownessVectorMatrix& svm,
 	VelocityModel_1d& vmod,double zmax, double tmax, double dt);
 dmatrix *ray_path_tangent(dmatrix&);
+GCLscalarfield3d *decimate(GCLscalarfield3d& g,int dec1, int dec2, int dec3);

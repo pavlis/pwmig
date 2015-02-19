@@ -26,7 +26,7 @@ coordinate system in finite element style boxes.  This means the
 path needs to be inverted (first column of path is placed at 
 the n3-1 position in the raygrid).  
 */
-int copy_path(dmatrix& ray,GCLgrid3d& raygrid,int i, int j)
+int copy_path(dmatrix& ray,RayPathSphere& rps, GCLscalarfield3d& raygrid,int i, int j)
 {
 	int k,kk;
 	int status;
@@ -36,10 +36,13 @@ int copy_path(dmatrix& ray,GCLgrid3d& raygrid,int i, int j)
 	{
 		for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
 		{
+                    /* This copies the 1D travel time field to ray path val position.
+                     * Note this accumulates time from the surface downward.   */
 			if(k>=path_length) break;
 			raygrid.x1[i][j][kk]=ray(0,k);
 			raygrid.x2[i][j][kk]=ray(1,k);
 			raygrid.x3[i][j][kk]=ray(2,k);
+                        raygrid.val[i][j][kk]=rps.t[k];
 		}
 		status=0;
 	}
@@ -54,6 +57,9 @@ int copy_path(dmatrix& ray,GCLgrid3d& raygrid,int i, int j)
 		dx1=ray(0,path_length-1)-ray(0,path_length-2);
 		dx2=ray(1,path_length-1)-ray(1,path_length-2);
 		dx3=ray(2,path_length-1)-ray(2,path_length-2);
+                // Extend travel time vector by increment in last path pair
+                double delta_time=rps.t[path_length-1]
+                                    - rps.t[path_length-2];
 		dmatrix extendedray(3,raygrid.n3);
 		for(k=0;k<path_length;++k)
 			for(int l=0;l<3;++l)
@@ -71,7 +77,9 @@ int copy_path(dmatrix& ray,GCLgrid3d& raygrid,int i, int j)
 			raygrid.x3[i][j][kk]=extendedray(2,k);
 
 		}
-		status = +1;
+                //set status as number of extension points
+                for(k=raygrid.n3-path_length-1,status=0;k>=0;--k,++status)
+                    raygrid.val[i][j][k]=raygrid.val[i][j][k+1]+delta_time;
 	}
 	return(status);
 }
@@ -129,11 +137,17 @@ Note the dimensions of the SlownessVectorMatrix and GCLgrid object
 are not tested for consistency.  Because this is used internally only
 in pwmig we avoid the overhead of error handlers for efficiency.
 
+Further change Feb 2015
+Modified assuming 3D model was travel time perturbations.  This was
+a major change.  The pervious version returned a GCLgrid3d object.
+This returns a GCLscalarfield3d object with 1D travel times loaded
+in the field variables.  
+
 Author:  Gary Pavlis
 */  
 
 
-GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
+GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 		GCLgrid& parent,
 		SlownessVector u, SlownessVectorMatrix& svm,
 		VelocityModel_1d& vmod,
@@ -150,8 +164,10 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 	RayPathSphere base_ray(vmod, u.mag(), zmax, tmax, dt, "t");
 
 	// call the simple, parameterized GCLgrid constructor that allocs space but has no content
-	GCLgrid3d *rgptr = new GCLgrid3d(parent.n1, parent.n2, base_ray.npts);
-	GCLgrid3d& raygrid = *rgptr;
+	GCLgrid3d *gptr = new GCLgrid3d(parent.n1, parent.n2, base_ray.npts);
+        GCLscalarfield3d *rgptr=new GCLscalarfield3d(*gptr);
+        delete gptr;
+	GCLscalarfield3d& raygrid = *rgptr;
 	// clone these parent grid variable
 	raygrid.name=parent.name;
 	raygrid.lat0=parent.lat0;
@@ -173,9 +189,10 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 	// as it can only be set through this mechanism
 	raygrid.set_transformation_matrix();
 	//
-	// now start filling up the grid with the cartesian points
+	// now start filling up the field with the cartesian points and travel times
 	//
 	dmatrix *path;
+        RayPathSphere ray(base_ray);
 	for(i=0;i<parent.n1;++i)
 		for(j=0;j<parent.n2;++j)
 		{
@@ -191,12 +208,12 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
                                 SlownessVector uij=svm(i,j);
 				umag=uij.mag();
 				theta=uij.baz();
-				RayPathSphere ray(vmod, uij.mag(), zmax, tmax, dt, "t");
+				ray=RayPathSphere(vmod, uij.mag(), zmax, tmax, dt, "t");
 				path = GCLgrid_Ray_project(parent,ray, 
 					theta, i,j);
 
 			    }
-			    ierr=copy_path(*path,raygrid,i,j);
+			    ierr=copy_path(*path,ray,raygrid,i,j);
 			    delete path;
 			    if(ierr<0) 
 			    {
@@ -206,6 +223,13 @@ GCLgrid3d *Build_GCLraygrid(bool fixed_u_mode,
 					<< "Cannot continue"<<endl;
 				exit(-1);
 			    }
+                            else if(ierr>0)
+                            {
+                                cout << "copy_path(WARNING):   ray path for grid position "
+                                    << "i="<<i<<" j="<<j<<" was extended by "<<ierr<<"points"
+                                    <<endl<<"Caused by turning rays - could cause distortion"
+                                    <<endl;
+                            }
 
 			}
 			catch (GCLgrid_error& err)
