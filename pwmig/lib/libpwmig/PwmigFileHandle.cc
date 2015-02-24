@@ -496,7 +496,7 @@ void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
         for(j=0;j<ugrid.nuy;++j)
 {
 //DEBUG
-cout << "ugrid i,j="<<i<<","<<j<<endl;
+//cout << "ugrid i,j="<<i<<","<<j<<endl;
             for(k=0;k<u0.rows();++k)
                 for(l=0;l<u0.columns();++l)
                 {
@@ -505,7 +505,7 @@ cout << "ugrid i,j="<<i<<","<<j<<endl;
                     /* 0 is ux, 1 is uy */
                     ubuf[0]=uincident.ux + du.ux;
                     ubuf[1]=uincident.uy + du.uy;
-cout << k <<","<<l<<" "<<uincident.ux<<" "<<uincident.uy<<" "<<du.ux<<" "<<du.uy<<endl;
+//cout << k <<","<<l<<" "<<uincident.ux<<" "<<uincident.uy<<" "<<du.ux<<" "<<du.uy<<endl;
                     if(fwrite(ubuf,sizeof(double),2,fp)!=2)
                     {
                         fclose(fp);
@@ -576,12 +576,12 @@ SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int gridid)
         throw SeisppError(base_error
             + "fread error while reading array dimensions at head of file");
     }
-   /* The gridid is the count (starting at 1) working through the slowness grid in C order 
+   /* The gridid is the count (starting at 0) working through the slowness grid in C order 
       (column index runs fastest).  The slowness data file is stored in the order
       pwmig needs it, which is the gridid components are the slowest varying index.  
       We can then compute the file offset to the start of the needed data by the following
       simple formula.*/
-   long pwblocksize=sizeof(double)*psgn1*psgn2;
+   long pwblocksize=2*sizeof(double)*(psgn1)*(psgn2);
     
    long foff=gridid*pwblocksize + 4*sizeof(int);   // this is foff from file start
    if(fseek(svmfp,foff,SEEK_SET)<0) 
