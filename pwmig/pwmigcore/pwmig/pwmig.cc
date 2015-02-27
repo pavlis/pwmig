@@ -12,9 +12,6 @@
 #include "seispp.h"
 #include "interpolator1d.h"
 #include "PwmigFileHandle.h"
-#ifdef MATLABDEBUG
-#include "MatlabProcessor.h"
-#endif
 #ifdef MPI_SET
 	#include <mpi.h>
 #endif
@@ -23,10 +20,6 @@ using namespace SEISPP;
 using namespace INTERPOLATOR1D;
 #include "pwmig.h"
 
-//DEBUG  Uncomment if not using matlab for debu
-#ifdef MATLABDEBUG
-MatlabProcessor mp(stdout);
-#endif
 void usage()
 {
     cerr << "Usage: "<<endl
@@ -1772,51 +1765,6 @@ HorizontalSlicer(mp,Us3d);
 			cohens=cohfh.load_next_tse();
 			cout << "Elapsed time to finish reading data "
 				<<now()-rundtime<<endl;
-#ifdef MATLABDEBUG
-/* To examine P travel time volume.  Copied from MatlabGCLgrid*/
-const string volname("F");
-const string slicename("f");
-const string merge_command("F=cat(3,F,f);");
-               dmatrix slice(TPptr->n1,TPptr->n2);
-               for(k=0,kk=TPptr->n3-1;k<TPptr->n3;++k,--kk)
-                {
-                        for(i=0;i<TPptr->n1;++i)
-                                for(j=0;j<TPptr->n2;++j)
-                                {
-                                                slice(i,j)=TPptr->val[i][j][kk];
-                                }
-                        if(k==0)
-                        {
-                                mp.load(slice,volname);
-                        }
-                        else
-                        {
-                                mp.load(slice,slicename);
-                                mp.process(merge_command);
-                        }
-                }
-		mp.run_interactive();
-
-/*
-string chans[3]={"x1","x2","x3"};
-for(i=0;i<pwdata->member.size();++i)
-{
-int itest,jtest;
-double smax=0;
-for(jtest=0;jtest<3;++jtest) for(itest=0;itest<pwdata->member[i].ns;++itest) 
-		smax=max(smax,pwdata->member[i].u(jtest,itest));
-cerr << "smax="<<smax<<endl;
-	mp.load(pwdata->member[i],"s");
-	mp.process(string("subplot(3,1,1),plot(s(1,:));")
-		+string("subplot(3,1,2),plot(s(2,:));")
-		+string("subplot(3,1,3),plot(s(3,:));") );
-	mp.process(string("pause(1);"));
-}
-mp.load(*pwdata,chans);
-mp.process(string("figure;wigb(x1);figure;wigb(x2);figure;wigb(x3);"));
-mp.run_interactive();
-*/
-#endif
 			int gridid=pwdata->member[0].get_int("gridid");
 
 			// A necessary bailout
@@ -1944,20 +1892,6 @@ mp.run_interactive();
 				// less memory use in the loop below, but the simplification
 				// it provides seems useful to me
 				gradTs = compute_gradS(raygrid,i,j,Vs1d);
-//DEBUG
-#ifdef MATLABDEBUG
-/*
-mp.load(gradTs,string("gradts"));
-mp.load(&(Stime[0]),Stime.size(),string("stime"));
-cout << "Loaded gradts and stime"<<endl;
-cout << "plotting gradts"<<endl;
-mp.process(string("plot3c(gradts);"));
-mp.process(string("pause(1)"));
-mp.load(*pathptr,string("spath"));
-cout << "plotting S wave path components for (i,j)="<<i<<","<<j;
-mp.process(string("plot3c(spath);"));
-*/
-#endif
 				dmatrix gradTp(3,n3);
 				dmatrix nup(3,n3);
 				vector<double> zP(n3);
@@ -2096,22 +2030,6 @@ cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 					cout << "Padded data vector after interpolation and taper"<<endl
 						<< wtr <<endl;
 				}
-
-#ifdef MATLABDEBUG
-//DEBUG
-cout << "Input data number of samples="<<pwdata->member[is].ns<<endl;
-cout << "DAta before interpolation" << endl;
-for(int ifoo=0;ifoo<pwdata->member[is].ns;++ifoo)
-	cout << pwdata->member[is].time(ifoo) << " "
-		<< pwdata->member[is].u(0,ifoo) << " "
-		<< pwdata->member[is].u(1,ifoo) << " "
-		<< pwdata->member[is].u(2,ifoo) << endl;
-mp.load(pwdata->member[is],string("de"));
-mp.load(&(SPtime[0]),SPtime.size(),string("sptime"));
-mp.load(work,string("di"));
-cerr << "Loaded sptime and interpolated data (work matrix)"<<endl;
-mp.process(string("plot6c(de,sptime,di);pause(1.0);"));
-#endif
 				dmatrix raycoh(4,coh3cens->member[is].ns);
 				int ncohcopy=coh3cens->member[i].ns;
 				/* excessively paranoid, but murphy's law */
@@ -2229,14 +2147,6 @@ mp.process(string("plot6c(de,sptime,di);pause(1.0);"));
 					pwdgrid.val[i][j][k][3]=domega_ij[kk];
 					pwdgrid.val[i][j][k][4]=dweight_ij[kk];
 				}
-#ifdef MATLABDEBUG
-//DEBUG
-dmatrix dproj(3,n3);
-for(k=0;k<n3;++k)
-	for(l=0;l<3;++l) dproj(l,k)=pwdgrid.val[i][j][k][l];
-mp.load(dproj,string("d"));
-mp.process(string("plot3c(d);pause(0.1);"));
-#endif
 			}
 			delete pwdata;
 /*
@@ -2291,33 +2201,6 @@ delete sfptr;
 						=static_cast<double>(kd%100);
 */
 		//psum += pwdgrid;
-#ifdef MATLABDEBUG
-/*
-const string volname("F");
-const string slicename("f");
-const string merge_command("F=cat(3,F,f);");
-               dmatrix slice(psum.n1,psum.n2);
-               for(k=0,kk=psum.n3-1;k<psum.n3;++k,--kk)
-                {
-                        for(i=0;i<psum.n1;++i)
-// Select x1 for display
-                                for(j=0;j<psum.n2;++j)
-                                {
-                                                slice(i,j)=psum.val[i][j][kk][0];
-                                }
-                        if(k==0)
-                        {
-                                mp.load(slice,volname);
-                        }
-                        else
-                        {
-                                mp.load(slice,slicename);
-                                mp.process(merge_command);
-                        }
-                }
-		mp.run_interactive();
-*/
-#endif
                 //psum.dbsave(db,"",fielddir,dfile,dfile);
 
 
