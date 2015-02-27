@@ -247,9 +247,9 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 		double dx1,dx2,dx3;
 		double du;   // interpolated slowness perturbation
 		/* Only add points when lookup succeeds - returns 0 */
-		if(U3d.lookup(path(0,i),path(1,i),path(2,i))
+		if(U3d.lookup(path(0,i),path(1,i),path(2,i)))
 		{
-			du=U3d.interpolate(path(0,i),path(1,i),path(2,i);
+			du=U3d.interpolate(path(0,i),path(1,i),path(2,i));
 			dx1=path(0,i)-path(0,i-1);
 			dx2=path(1,i)-path(1,i-1);
 			dx3=path(2,i)-path(2,i-1);
@@ -281,7 +281,6 @@ void cosine_taper_highend(dmatrix& d,int mark, int taper_length)
 		double w;
 		w=(cos(a*static_cast<double>(ii)) + 1.0)/2.0;
 		for(k=0;k<3;++k) d(k,i)*=w;
-		}
 	}
 }
 	
@@ -712,7 +711,7 @@ vector<double> compute_Stime(GCLscalarfield3d& U3d,
         vector<double> dtS3d;
         dtS3d=compute_3Dmodel_time(U3d,*path);
         int dtrange=dtS3d.size();
-        if(dtrange.size()>0)
+        if(dtrange>0)
         {
         	for(k=0;k<min(dtrange,raygrid.n3);++k)
             	Stime[k] += dtS3d[k];
@@ -2020,7 +2019,7 @@ cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 				/* Cosine aper all data that was padded and zero the extension */
 				if(needs_padding)
 				{
-					cosine_taper_highend(work,padmark,taper_width);
+					cosine_taper_highend(work,padmark,taper_length);
 					//DEBUG
 					dmatrix wtr=tr(work);
 					cout << "Padded data vector after interpolation and taper"<<endl
