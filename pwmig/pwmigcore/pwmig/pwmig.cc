@@ -224,9 +224,6 @@ Arguments:
   U3d - slowness PERTURBATION field.  It is assume the field stores slowness
   		perturbation values with units of s/km. 
   path - 3xN matrix of Cartesian points defining the path for integration.
-  raygrid - reference to ray grid from which path was extracted.  We only
-       require the BasicGCLgrid to define the Cartesian/Geographic mapping.  
-       This is done to guaranteed the path is congruent with U3d.   
 
 Returns:  
    vector of integral of travel time anomalies along the path.  Direction
@@ -237,8 +234,7 @@ Returns:
    for this application).
 
 */
-vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d,
-	dmatrix& path, BasicGCLGrid& raygrid)
+vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 {
 	double tsum;   // holds accumulating sum of times 
 	int count;   // number of points actually accumulated in path integral
@@ -664,7 +660,7 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                              * surface to mesh with 3 coordinate ray paths */
                             auto_ptr<dmatrix> path(extract_gridline(*Tp,i,j,0,3,false));
                             vector<double>dtP3d;
-                            dtP3d=compute_3Dmodel_time(UP3d,*path,*Tp);
+                            dtP3d=compute_3Dmodel_time(UP3d,*path);
                             /* the above procedure returns a zero length vector if the 
                             ray has no intersection with UP3d */
                             int dtrange=dtP3d.size();
@@ -714,7 +710,7 @@ vector<double> compute_Stime(GCLscalarfield3d& U3d,
     /* This retrieves a path from the surface downward from raygrid */
         auto_ptr<dmatrix> path(extract_gridline(raygrid,i,j,raygrid.n3-1,3,true));
         vector<double> dtS3d;
-        dtS3d=compute_3Dmodel_time(U3d,*path,raygrid);
+        dtS3d=compute_3Dmodel_time(U3d,*path);
         int dtrange=dtS3d.size();
         if(dtrange.size()>0)
         {
