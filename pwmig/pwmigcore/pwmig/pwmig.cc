@@ -204,48 +204,97 @@ double fudge_model_upward(GCLscalarfield3d& model,double dz)
 	}
 	return(offset);
 }
-	
+			
 /* computes travel times along a ray path defined by the input dmatrix of Cartesian
 coordinate (path) using a 3D model defined by the GCLsclarfield3d variable U3d.  
-The path is assumed to be congruent with the ray geometry GCLgrid (raygrid)
-but not necessarily congruent with the velocity model field.  Thus we use the
-not equal operator to test for conguence between raygride and U3d.  
-It is assumed the U3d holds SLOWNESS values in units of s/km.
-
-A previous version assumed the model was wave slowness.  This was revised in 
+The path is assumed to be congruent coordinate system used in the 3d model grid. 
+This is true in this code because of code in main that guarantees raygrids and 
+the models are congruent.  DO NOT transport this code without dealing with that
+issue. 
+ 
+The original pwmig code used a grid of total slowness.  This was revised in 
 a 2015 revision to require the 3d model be specified as slowness perturbation from 
 an (unspecified) background.   Regional tomography models have a finite extent
-so it is highly likely a ray will run outside of the model's bounding box.   When
-that happens the output travel time vector will be truncated.  Callers should 
-only use the actual length of the return vector to correct 1D times for 3D model
-perturbation times. 
+so it is highly likely a ray will run outside of the model's bounding box.  
+This is complicated by the fact a ray be truncated on either (including possibly 
+both) ends.   The previous pwmig version only handled one end member of this family -
+rays that start at the surface but pass outside the model.  This version uses
+a very different algorithm.   Instead of using the GCLgrid pathintegral procedure
+this procedure basically does it's own path integral assuming it should zero 
+points that fail the grid lookup procedure.  We assume that indicates a ray passing
+outside the tomography model.   The returned vector is then the accumulated
+time along the specified path.  For efficiency if no points in the path intersect
+the model volume the returned travel time vector will be zero length.  Otherwise it
+is guaranteed to be the same length as the number of points in path.
 
-Note path is intentionally passed by value not by reference as remap 
-path can redefine it.
+Arguments:
+  U3d - slowness PERTURBATION field.  It is assume the field stores slowness
+  		perturbation values with units of s/km. 
+  path - 3xN matrix of Cartesian points defining the path for integration.
+  raygrid - reference to ray grid from which path was extracted.  We only
+       require the BasicGCLgrid to define the Cartesian/Geographic mapping.  
+       This is done to guaranteed the path is congruent with U3d.   
+
+Returns:  
+   vector of integral of travel time anomalies along the path.  Direction
+   of integration is defined by the path argument with integration done by 
+   simple summation.   This tacitly assumes that path is more densely 
+   sampled than U3d, which today is always true of tomography models for 
+   use with pwmig (i.e. paths must be much more closely sampled than velocities
+   for this application).
+
 */
-
-vector<double> compute_gridttime(GCLscalarfield3d& U3d, 
-	int ix1, int ix2,
-		VelocityModel_1d& V1d, 
-			GCLgrid3d& raygrid,
-				dmatrix& path)
+vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d,
+	dmatrix& path, BasicGCLGrid& raygrid)
 {
-
-	dmatrix thispath(path);
-	// test to be sure the grids are congruent or paths will not mesh
-	if(dynamic_cast<BasicGCLgrid&>(U3d)
-			!=dynamic_cast<BasicGCLgrid&>(raygrid))
-	{
-		thispath=remap_path(raygrid,path,U3d);
-	}
+	double tsum;   // holds accumulating sum of times 
+	int count;   // number of points actually accumulated in path integral
+	int npts=path.columns();
 	vector<double> times;
-	times=pathintegral(U3d,thispath);
-        /* This needs an automatic reverse the path and integral in 
-         * reverse direction when pathintegral length is 0 or 1 */
-	return(times);
+	times.reserve(npts);
+	times.push_back(0.0);   /* First point is always 0 */
+	for(int i=1,count=1,tsum=0.0;i<npts;++i)
+	{
+		double dx1,dx2,dx3;
+		double du;   // interpolated slowness perturbation
+		/* Only add points when lookup succeeds - returns 0 */
+		if(U3d.lookup(path(0,i),path(1,i),path(2,i))
+		{
+			du=U3d.interpolate(path(0,i),path(1,i),path(2,i);
+			dx1=path(0,i)-path(0,i-1);
+			dx2=path(1,i)-path(1,i-1);
+			dx3=path(2,i)-path(2,i-1);
+			tsum+=sqrt(dx1*dx1+dx2*dx2+dx3*dx3)*du;
+			times.push_back(tsum);
+			++count;
+		}
+	}
+	/* clear the contents if there are zero hits.  Caller should test size of 
+	return for zero length */
+	if(count<=1) 
+		times.clear();
+	return times;
 }
-			
-
+/* applies a cosine taper to the high end of a 3c matrix of data
+from the point mark-taper_length to mark.   This assumes the
+points in d are close to a regular sample interval, which is true
+in pwmig.   This procedure should not be used outside pwmig.
+*/
+void cosine_taper_highend(dmatrix& d,int mark, int taper_length)
+{
+	/* Shorten the taper length if mark is less than taper_length to 
+	simplify logic.   */
+	if(taper_length>mark) taper_length=mark+1;
+	double a=M_PI/static_cast<double>(taper_length);
+	int i,ii,k;
+	for(i=mark-taper_length,ii=0;ii<taper_length;++i,++ii)
+	{
+		double w;
+		w=(cos(a*static_cast<double>(ii)) + 1.0)/2.0;
+		for(k=0;k<3;++k) d(k,i)*=w;
+		}
+	}
+}
 	
 /* Returns a 3x nx  matrix of ray path unit vectors pointing in
 direction of tangent to the path defined by the 3 x nx  input matrix 
@@ -599,32 +648,21 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                 SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
                 auto_ptr<GCLscalarfield3d> Tp(Build_GCLraygrid(false,ng2d,u0,
                                                     svmpadded,vp1d,zmax,tmax,dt));
-                /*
-cout << "Incident field - output of Build_GCLraygrid"<<endl;
-cout << *Tp<<endl;
-*/
                 /* For the incident wave data we need to reverse the travel 
                  * time order from that computed by Build_GCLraygrid (top to 
                  * bottom is returned there).  This is because incident wave
                  * is propagating up. */
                  reverse_time_field(*Tp,string("downward"));
-//DEBUG
-/*
-cout << "Incident Travel times from 1D model"<<endl
-    << "i j tt depth(top)  Depth(base)"<<endl;
-for(int iii=0;iii<Tp->n1;++iii)
-    for(int jjj=0;jjj<Tp->n2;++jjj)
-        cout << iii<<" "<<jjj<<" "<<
-            Tp->val[iii][jjj][Tp->n3-1]<<" "<<Tp->depth(iii,jjj,Tp->n3-1)
-            <<" "<< Tp->depth(iii,jjj,0) <<endl;
-            */
 
                 /* Now apply a correction for 3D structure if requested.
-                 * This algorithm uses a path integral in compute_gridttime.
+                 * This algorithm uses a path integral in compute_3Dmodel_time.
                  * Loop is over each ray path that runs in k order from the 
                  * base of IncidentRaygrid to the surface. */
                 if(use_3d)
                 {
+                	/* This is the accumulated maximum travel time correction for the
+                	3D model.  This is reported to stdout */
+                	double dtmax(0.0);
                     for(i=0;i<Tp->n1;++i)
                     {
                         for(j=0;j<Tp->n2;++j)
@@ -633,43 +671,24 @@ for(int iii=0;iii<Tp->n1;++iii)
                              * surface to mesh with 3 coordinate ray paths */
                             auto_ptr<dmatrix> path(extract_gridline(*Tp,i,j,0,3,false));
                             vector<double>dtP3d;
-                            dtP3d=compute_gridttime(UP3d,i,j,vp1d,*Tp,*path);
-                            /* Be a bit of a size mismatch but mainly add dtP3d values
-                             * to the 1d times.  Assume it is only every smaller than
-                             * n3.   Do this silently as this will be a common thing
-                             * with any model.  */
+                            dtP3d=compute_3Dmodel_time(UP3d,*path,*Tp);
+                            /* the above procedure returns a zero length vector if the 
+                            ray has no intersection with UP3d */
                             int dtrange=dtP3d.size();
-                            /* Need work here - When base of point is outside the model
-                             * we need a recovery mechanism to retrace ray from top down
-                             * and  return a reversed set of times.  */
-                            //intentional error to stop compilation
-                            // DEBUG - during debug issue a warning - delete when verified
-                            if(dtrange!=Tp->n3)
-                                cout << "IncidentWave calculation: compute_gridttime truncated "
-                                    << "ray in 3d model for i,j="<<i<<","<<j<<endl
-                                    << "raygrid n3="<<Tp->n3<<" ray length = "<<dtrange<<endl;
-                            cout << "1DPtime 3Dcorrection depth"<<endl;
-                            //END DEBUG scaffolding
-                            for(k=0;k<min(dtrange,Tp->n3);++k)
-                            for(k=0;k<Tp->n3;++k)
+                            if(dtrange>0)
                             {
-                                if(k<dtrange)
-                                {
-                                //DEBUG
-                                cout<< Tp->val[i][j][k] << "  "<<dtP3d[k]
-                                    <<" "<<Tp->depth(i,j,k)<<endl;
-                                    Tp->val[i][j][k] += dtP3d[k];
-                                }
-                                else
-                                {
-                                //DEBUG
-                                cout<< Tp->val[i][j][k] << "  "<<dtP3d[dtrange-1]
-                                    <<" "<<Tp->depth(i,j,k)<<endl;
-                                    Tp->val[i][j][k] += dtP3d[dtrange-1];
-                                }
+                            	/* this min test is not necessary but safe to avoid 
+                            	seg faults.  */
+                            	for(k=0;k<min(dtrange,Tp->n3);++k)
+                            	{
+                            		Tp->val[i][j][k] += dtP3d[k];
+                            		dtmax=max(dtP3d[k],tmax);
+                            	}
                             }
                         }
                     }
+                    cout << "Incident Wave Ray Grid:  maximum 3D time correction="
+                    	<< tmax<<endl;
                 }
                 if(zdecfac>1)
                     return(auto_ptr<GCLscalarfield3d> (decimate(*Tp,1,1,zdecfac)));
@@ -702,10 +721,13 @@ vector<double> compute_Stime(GCLscalarfield3d& U3d,
     /* This retrieves a path from the surface downward from raygrid */
         auto_ptr<dmatrix> path(extract_gridline(raygrid,i,j,raygrid.n3-1,3,true));
         vector<double> dtS3d;
-        dtS3d=compute_gridttime(U3d,i,j,V1d,raygrid,*path);
+        dtS3d=compute_3Dmodel_time(U3d,*path,raygrid);
         int dtrange=dtS3d.size();
-        for(k=0;k<min(dtrange,raygrid.n3);++k)
-            Stime[k] += dtS3d[k];
+        if(dtrange.size()>0)
+        {
+        	for(k=0;k<min(dtrange,raygrid.n3);++k)
+            	Stime[k] += dtS3d[k];
+        }
     }
     return Stime;
 }
@@ -1484,6 +1506,7 @@ int main(int argc, char **argv)
 			smooth_wt=false;
 		else
 			smooth_wt=true;
+		double taper_length=control.get_double("taper_length_turning_rays");
 		/* Parameters for handling elevation statics. */
 		bool ApplyElevationStatics=control.get_bool("apply_elevation_statics");
 		double static_velocity
@@ -2064,14 +2087,13 @@ cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 				dmatrix work(3,raygrid.n3);
 				linear_vector_regular_to_irregular(t0,dt,pwdata->member[is].u,
 					&(SPtime[0]),work);
-				/* Zero all data that was padded */
+				/* Cosine aper all data that was padded and zero the extension */
 				if(needs_padding)
 				{
-					for(k=padmark;k<raygrid.n3;++k)
-						for(l=0;l<3;++l)  work(l,k)=0.0;
+					cosine_taper_highend(work,padmark,taper_width);
 					//DEBUG
 					dmatrix wtr=tr(work);
-					cout << "Padded data vector after interpolation"<<endl
+					cout << "Padded data vector after interpolation and taper"<<endl
 						<< wtr <<endl;
 				}
 
