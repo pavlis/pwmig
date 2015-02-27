@@ -70,19 +70,62 @@ int copy_path(dmatrix& ray,RayPathSphere& rps, GCLscalarfield3d& raygrid,int i, 
 			extendedray(1,k)=extendedray(1,k-1)+dx2;
 			extendedray(2,k)=extendedray(2,k-1)+dx3;
 		}
-		for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
+		for(k=0,kk=raygrid.n3-1,status=0;k<raygrid.n3;++k,--kk)
 		{
 			raygrid.x1[i][j][kk]=extendedray(0,k);
 			raygrid.x2[i][j][kk]=extendedray(1,k);
 			raygrid.x3[i][j][kk]=extendedray(2,k);
-
+                        if(k<path_length)
+                            raygrid.val[i][j][kk]=rps.t[k];
+                        else
+                        {
+                            raygrid.val[i][j][kk]
+                                =raygrid.val[i][j][kk+1]+delta_time;
+                            ++status;
+                        }
 		}
-                //set status as number of extension points
-                for(k=raygrid.n3-path_length-1,status=0;k>=0;--k,++status)
-                    raygrid.val[i][j][k]=raygrid.val[i][j][k+1]+delta_time;
 	}
+        /* Return the number of extension points */
 	return(status);
 }
+/* Brutal procedure found to be necessary to deal with turning rays in the P 
+ * raygrid for incident waves and likely also for some S grids.  This trims
+ * the raygrid from raygrid.n3 to n3trimlen.   This assumes the major
+ * complication that the points need to be stripped from the bottom which is
+ * the 0 to raygrid.n3-n3trimlen points. */
+GCLscalarfield3d *trim_raygrid_n3(GCLscalarfield3d& raygrid, int n3trimlen)
+{
+    GCLscalarfield3d *tptr = new GCLscalarfield3d(raygrid.n1, raygrid.n2, n3trimlen);
+    tptr->lat0=raygrid.lat0;
+    tptr->lon0=raygrid.lon0;
+    tptr->r0=raygrid.r0;
+    tptr->azimuth_y=raygrid.azimuth_y;
+    tptr->dx1_nom=raygrid.dx1_nom;
+    tptr->dx2_nom=raygrid.dx2_nom;
+    tptr->dx3_nom=raygrid.dx3_nom;
+    tptr->n1=raygrid.n1;
+    tptr->n2=raygrid.n2;
+    tptr->i0=raygrid.i0;
+    tptr->j0=raygrid.j0;
+    tptr->name=raygrid.name;
+    tptr->name=raygrid.name;
+    tptr->k0=n3trimlen-1;  // earth surface in new grid
+    tptr->set_transformation_matrix();
+    int i,j,k,kk;
+    for(i=0;i<raygrid.n1;++i)
+        for(j=0;j<raygrid.n2;++j)
+            /* k is index for raygrid and kk for trimmed grid */
+            for(k=raygrid.n3-1,kk=n3trimlen-1;kk>=0;--k,--kk)
+            {
+                tptr->x1[i][j][kk]=raygrid.x1[i][j][k];
+                tptr->x2[i][j][kk]=raygrid.x2[i][j][k];
+                tptr->x3[i][j][kk]=raygrid.x3[i][j][k];
+                tptr->val[i][j][kk]=raygrid.val[i][j][k];
+            }
+    return tptr;
+    // WARNING - memory leak prone here
+}
+
 
 
 /* This function acts like a constructor, but it isn't made an explicit part of the object
@@ -164,9 +207,7 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 	RayPathSphere base_ray(vmod, u.mag(), zmax, tmax, dt, "t");
 
 	// call the simple, parameterized GCLgrid constructor that allocs space but has no content
-	GCLgrid3d *gptr = new GCLgrid3d(parent.n1, parent.n2, base_ray.npts);
-        GCLscalarfield3d *rgptr=new GCLscalarfield3d(*gptr);
-        delete gptr;
+	GCLscalarfield3d *rgptr = new GCLscalarfield3d(parent.n1, parent.n2, base_ray.npts);
 	GCLscalarfield3d& raygrid = *rgptr;
 	// clone these parent grid variable
 	raygrid.name=parent.name;
@@ -193,10 +234,12 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 	//
 	dmatrix *path;
         RayPathSphere ray(base_ray);
+        int trimlength=raygrid.n3;
 	for(i=0;i<parent.n1;++i)
 		for(j=0;j<parent.n2;++j)
 		{
-			int ierr;
+			int nextended;
+                        int tlenthis;
 			try {
 			    if(fixed_u_mode)
 			    {
@@ -213,9 +256,9 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 					theta, i,j);
 
 			    }
-			    ierr=copy_path(*path,ray,raygrid,i,j);
+			    nextended=copy_path(*path,ray,raygrid,i,j);
 			    delete path;
-			    if(ierr<0) 
+			    if(nextended<0) 
 			    {
 				cerr << "copy_path:  length error"<<endl
 					<< "Passed a path of length "
@@ -223,12 +266,11 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 					<< "Cannot continue"<<endl;
 				exit(-1);
 			    }
-                            else if(ierr>0)
+                            else if(nextended>0)
                             {
-                                cout << "copy_path(WARNING):   ray path for grid position "
-                                    << "i="<<i<<" j="<<j<<" was extended by "<<ierr<<"points"
-                                    <<endl<<"Caused by turning rays - could cause distortion"
-                                    <<endl;
+                                tlenthis=raygrid.n3-nextended;
+                                if(tlenthis<trimlength) trimlength=tlenthis;
+                                
                             }
 
 			}
@@ -239,10 +281,25 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 				exit(-1);
 			}
 		}
-
+        //cout << "TP field before calling trim_raygrid_n3"<<endl;
+        //cout<<raygrid;
+        if(trimlength<raygrid.n3)
+        {
+            cout << "Warning:  Triming incident P wave grid from "
+                <<raygrid.n3<<" points on ray path to "<<trimlength<<endl
+                << "Created by turning rays for P.  Consider reducing tmax or zmax parameters"
+                <<endl;
+            GCLscalarfield3d *trgptr;
+            /*Note raygrid and rgptr are the same object */
+            trgptr=trim_raygrid_n3(raygrid,trimlength);
+            delete rgptr;
+            rgptr=trgptr;
+        }
+        //cout << "TP field after trim_raygrid_n3"<<endl;
+        //cout << *rgptr<<endl;
 
 	// Before we return we have to recompute the grid extents.
-	raygrid.compute_extents();
+	rgptr->compute_extents();
 
 	return(rgptr);
 

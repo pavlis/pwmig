@@ -83,16 +83,18 @@ void reverse_time_field(GCLscalarfield3d& f, string current_order)
                 tlast=0.0;
                 for(k=1;k<f.n3-1;++k)
                 {
-                    dt_here=f.val[i][j][k+1] - f.val[i][j][k];
+                    dt_here=f.val[i][j][k] - f.val[i][j][k+1];
                     f.val[i][j][k]=tlast+deltat;
                     deltat=dt_here;
                     tlast=f.val[i][j][k];
                 }
-                f.val[i][j][f.n3-1]=tlast+deltat;
+                /* k=0 is not altered in the above loop*/
+                f.val[i][j][0]=0.0;
             }
     }
     else if(current_order=="upward")
     {
+        /* Warning - this block has never been tested */
         for(i=0;i<f.n1;++i)
             for(j=0;j<f.n2;++j)
             {
@@ -100,12 +102,12 @@ void reverse_time_field(GCLscalarfield3d& f, string current_order)
                 tlast=0.0;
                 for(k=f.n3-2;k>0;--k)
                 {
-                    dt_here=f.val[i][j][k] - f.val[i][j][k+1];
+                    dt_here=f.val[i][j][k-1] - f.val[i][j][k];
                     f.val[i][j][k]=tlast+deltat;
                     deltat=dt_here;
                     tlast=f.val[i][j][k];
                 }
-                f.val[i][j][0]=tlast+deltat;
+                f.val[i][j][f.n3-1]=0.0;
             }
     }
     else
@@ -238,6 +240,8 @@ vector<double> compute_gridttime(GCLscalarfield3d& U3d,
 	}
 	vector<double> times;
 	times=pathintegral(U3d,thispath);
+        /* This needs an automatic reverse the path and integral in 
+         * reverse direction when pathintegral length is 0 or 1 */
 	return(times);
 }
 			
@@ -595,18 +599,25 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                 SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
                 auto_ptr<GCLscalarfield3d> Tp(Build_GCLraygrid(false,ng2d,u0,
                                                     svmpadded,vp1d,zmax,tmax,dt));
-//DEBUG
-/*
-cout << "Depths at top surface"<<endl;
-for(int iii=0;iii<Tp->n1;++iii)
-    for(int jjj=0;jjj<Tp->n2;++jjj)
-        cout << iii<<" "<<jjj<<" "<<Tp->depth(iii,jjj,Tp->n3-1)<<endl;
-        */
+                /*
+cout << "Incident field - output of Build_GCLraygrid"<<endl;
+cout << *Tp<<endl;
+*/
                 /* For the incident wave data we need to reverse the travel 
                  * time order from that computed by Build_GCLraygrid (top to 
                  * bottom is returned there).  This is because incident wave
                  * is propagating up. */
                  reverse_time_field(*Tp,string("downward"));
+//DEBUG
+/*
+cout << "Incident Travel times from 1D model"<<endl
+    << "i j tt depth(top)  Depth(base)"<<endl;
+for(int iii=0;iii<Tp->n1;++iii)
+    for(int jjj=0;jjj<Tp->n2;++jjj)
+        cout << iii<<" "<<jjj<<" "<<
+            Tp->val[iii][jjj][Tp->n3-1]<<" "<<Tp->depth(iii,jjj,Tp->n3-1)
+            <<" "<< Tp->depth(iii,jjj,0) <<endl;
+            */
 
                 /* Now apply a correction for 3D structure if requested.
                  * This algorithm uses a path integral in compute_gridttime.
@@ -622,13 +633,16 @@ for(int iii=0;iii<Tp->n1;++iii)
                              * surface to mesh with 3 coordinate ray paths */
                             auto_ptr<dmatrix> path(extract_gridline(*Tp,i,j,0,3,false));
                             vector<double>dtP3d;
-                            dtP3d.reserve(Tp->n3);
                             dtP3d=compute_gridttime(UP3d,i,j,vp1d,*Tp,*path);
                             /* Be a bit of a size mismatch but mainly add dtP3d values
                              * to the 1d times.  Assume it is only every smaller than
                              * n3.   Do this silently as this will be a common thing
                              * with any model.  */
                             int dtrange=dtP3d.size();
+                            /* Need work here - When base of point is outside the model
+                             * we need a recovery mechanism to retrace ray from top down
+                             * and  return a reversed set of times.  */
+                            //intentional error to stop compilation
                             // DEBUG - during debug issue a warning - delete when verified
                             if(dtrange!=Tp->n3)
                                 cout << "IncidentWave calculation: compute_gridttime truncated "
@@ -637,11 +651,22 @@ for(int iii=0;iii<Tp->n1;++iii)
                             cout << "1DPtime 3Dcorrection depth"<<endl;
                             //END DEBUG scaffolding
                             for(k=0;k<min(dtrange,Tp->n3);++k)
+                            for(k=0;k<Tp->n3;++k)
                             {
+                                if(k<dtrange)
+                                {
                                 //DEBUG
                                 cout<< Tp->val[i][j][k] << "  "<<dtP3d[k]
                                     <<" "<<Tp->depth(i,j,k)<<endl;
-                                Tp->val[i][j][k] += dtP3d[k];
+                                    Tp->val[i][j][k] += dtP3d[k];
+                                }
+                                else
+                                {
+                                //DEBUG
+                                cout<< Tp->val[i][j][k] << "  "<<dtP3d[dtrange-1]
+                                    <<" "<<Tp->depth(i,j,k)<<endl;
+                                    Tp->val[i][j][k] += dtP3d[dtrange-1];
+                                }
                             }
                         }
                     }
@@ -652,6 +677,39 @@ for(int iii=0;iii<Tp->n1;++iii)
 		    return Tp;
 	} catch (...) {throw;}
 }
+/* This is a comparable function to Incident Wave calculator immediately
+ * above but this compute a vector of S travel times from the surface to 
+ * positions on ray paths into the surface.   i.e. the travel time vector
+ * returned is travel time from the surface to a position in raygrid.  
+ * Specifically result Stime[k] is the travel time from the surface postion
+ * raygrid at [i][j][raygrid.n3-1] to image position 
+ * raygrid at [i][j][raygrid.n3-k-1].  Confusing indexing is the grid order
+ * complication.  
+ *
+ * if use_3d is false only 1d travel times will be returned. */
+vector<double> compute_Stime(GCLscalarfield3d& U3d,
+   int i, int j, VelocityModel_1d& V1d,GCLscalarfield3d& raygrid,bool use_3d)
+{
+    /* First we retrieve a vector of the 1D travel times in surface
+       to bottom order */
+    vector<double> Stime;
+    Stime.reserve(raygrid.n3);
+    int k,kk;
+    for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
+        Stime.push_back(raygrid.val[i][j][kk]);
+    if(use_3d)
+    {
+    /* This retrieves a path from the surface downward from raygrid */
+        auto_ptr<dmatrix> path(extract_gridline(raygrid,i,j,raygrid.n3-1,3,true));
+        vector<double> dtS3d;
+        dtS3d=compute_gridttime(U3d,i,j,V1d,raygrid,*path);
+        int dtrange=dtS3d.size();
+        for(k=0;k<min(dtrange,raygrid.n3);++k)
+            Stime[k] += dtS3d[k];
+    }
+    return Stime;
+}
+
 
 	
 /* This function computes the domega term for the inverse Radon transform inversion
@@ -1468,32 +1526,32 @@ int main(int argc, char **argv)
                         remove_mean_x3(*Up3d);
                         remove_mean_x3(*Us3d);
                     }
-                }
-                else
-                {
-                    Up3d=NULL;
-                    Us3d=NULL;
-                }
 		// The travel time calculator using a path integral 
 		// can fail from rounding errors if the velocity model
 		// is not absolutely registered to be at or above the
 		// reference ellipsoid.  Here we force the model to be
 		// properly registered with a fudge factor read from
 		// the parameter file.
-		double dzshift=control.get_double("Velocity_model_surface_tolerance");
-		double dz0;
-		dz0=fudge_model_upward(*Up3d,dzshift);
-		if(dz0>0.0)
+		    double dzshift=control.get_double("Velocity_model_surface_tolerance");
+		    double dz0;
+		    dz0=fudge_model_upward(*Up3d,dzshift);
+		    if(dz0>0.0)
 			cout << "P wave 3D model shifted upward by "
 				<< dz0 
 				<< " km to avoid travel time calculator errors"
 				<<endl;
-		dz0=fudge_model_upward(*Us3d,dzshift);
-		if(dz0>0.0)
+		    dz0=fudge_model_upward(*Us3d,dzshift);
+		    if(dz0>0.0)
 			cout << "S wave 3D model shifted upward by "
 				<< dz0 
 				<< " km to avoid travel time calculator errors"
 				<< endl;
+                }
+                else
+                {
+                    Up3d=NULL;
+                    Us3d=NULL;
+                }
 //DEBUG
 //MatlabProcessor mp(string("zemlya"));
 //MatlabProcessor mp(stdout);
@@ -1625,6 +1683,14 @@ HorizontalSlicer(mp,Us3d);
                         SlownessVectorMatrix 
                             svm0=datafh.incident_wave_slowness_vectors();
                         //DEBUG
+                        /*
+                        for(int id=0;id<121;++id)
+                        {
+                            cout << "Gridid="<<id<<endl;
+                            svm0=datafh.plane_wave_slowness_vectors(id);
+                            cout << svm0<<endl;
+                        }
+                        */
                         /*
                         cout << "Slowess Grid from File"<<endl;
                         SlownessVector svdb;
@@ -1767,7 +1833,7 @@ mp.run_interactive();
 			grdptr =  Build_GCLraygrid(true,parent,ustack,PSsvm,
 				Vs1d,zmax,VPVS*tmax,dt*VPVS);
 
-			GCLgrid3d& raygrid=*grdptr;  // convenient shorthand because we keep changing this
+			GCLscalarfield3d& raygrid=*grdptr;  // convenient shorthand because we keep changing this
 			int n30;  // convenient since top surface is at n3-1
 			n30 = raygrid.n3 - 1;
 			int SPtime_SIZE_MIN=static_cast<int>(N3_FRACTION_ERROR*static_cast<double>(n30));
@@ -1849,8 +1915,7 @@ mp.run_interactive();
 				// are parallel with the ray path associated with the 
 				// current seismogram (i,j).  First we compute the S wave
 				// travel time down this ray path (i.e. ordered from surface down)
-				dmatrix *pathptr=extract_gridline(raygrid,i,j,raygrid.n3-1,3,true);
-				Stime = compute_gridttime(*Us3d,i,j,Vs1d,raygrid,*pathptr);
+                                Stime = compute_Stime(*Us3d,i,j,Vs1d,raygrid,use_3d_vmodel);
 				// Now we compute the gradient in the S ray travel time
 				// for each point on the ray.  Could have been done with 
 				// less memory use in the loop below, but the simplification
@@ -1941,6 +2006,7 @@ mp.process(string("plot3c(spath);"));
                                            computed differently. */
 					tlag=Tpx+Stime[k]-Tpr;
 //DEBUG
+/*
 cout << "i="<<i
     << " j="<<j
     << " k="<<k
@@ -1948,6 +2014,7 @@ cout << "i="<<i
     << " Stime="<<Stime[k]
     << " Tpr="<<Tpr<<"tlag="<<tlag<<endl;
 cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
+*/
 					SPtime.push_back(tlag);
 				}
 
@@ -2068,6 +2135,7 @@ mp.process(string("plot6c(de,sptime,di);pause(1.0);"));
 				// ray point in space.  This comes in two flavors.
 				// A fast, inexact version and a exact slow version
 				//
+                                dmatrix *pathptr=extract_gridline(raygrid,i,j,raygrid.n3-1,3,true);
 				if(use_depth_variable_transformation)
 				{
 					// the slow, exact method
