@@ -247,8 +247,18 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 		double dx1,dx2,dx3;
 		double du;   // interpolated slowness perturbation
 		/* Only add points when lookup succeeds - returns 0 */
-		if(U3d.lookup(path(0,i),path(1,i),path(2,i)))
+                int iret=U3d.lookup(path(0,i),path(1,i),path(2,i));
+		if(iret==0)
 		{
+                    //DEBUG
+                    int index[3];
+                    U3d.get_index(index);
+                    if(index[0]<0 || index[1]<0 || index[2]<0)
+                    {
+                        cout << "Negative index"<<endl;
+                    }
+                    else
+                    {
 			du=U3d.interpolate(path(0,i),path(1,i),path(2,i));
 			dx1=path(0,i)-path(0,i-1);
 			dx2=path(1,i)-path(1,i-1);
@@ -256,6 +266,7 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 			tsum+=sqrt(dx1*dx1+dx2*dx2+dx3*dx3)*du;
 			times.push_back(tsum);
 			++count;
+                    }
 		}
 	}
 	/* clear the contents if there are zero hits.  Caller should test size of 
@@ -274,7 +285,7 @@ void cosine_taper_highend(dmatrix& d,int mark, int taper_length)
 	/* Shorten the taper length if mark is less than taper_length to 
 	simplify logic.   */
 	if(taper_length>mark) taper_length=mark+1;
-	double a=M_PI/static_cast<double>(taper_length);
+	double a=M_PI/static_cast<double>(taper_length-1);
 	int i,ii,k;
 	for(i=mark-taper_length,ii=0;ii<taper_length;++i,++ii)
 	{
@@ -282,6 +293,9 @@ void cosine_taper_highend(dmatrix& d,int mark, int taper_length)
 		w=(cos(a*static_cast<double>(ii)) + 1.0)/2.0;
 		for(k=0;k<3;++k) d(k,i)*=w;
 	}
+        /* Zero all beyond mark */
+        for(i=mark;i<d.columns();++i) 
+            for(k=0;k<3;++k) d(i,i)=0.0;
 }
 	
 /* Returns a 3x nx  matrix of ray path unit vectors pointing in
@@ -2018,13 +2032,7 @@ cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 					&(SPtime[0]),work);
 				/* Cosine aper all data that was padded and zero the extension */
 				if(needs_padding)
-				{
 					cosine_taper_highend(work,padmark,taper_length);
-					//DEBUG
-					dmatrix wtr=tr(work);
-					cout << "Padded data vector after interpolation and taper"<<endl
-						<< wtr <<endl;
-				}
 				dmatrix raycoh(4,coh3cens->member[is].ns);
 				int ncohcopy=coh3cens->member[i].ns;
 				/* excessively paranoid, but murphy's law */
