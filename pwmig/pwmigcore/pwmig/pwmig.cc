@@ -662,9 +662,9 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                  * base of IncidentRaygrid to the surface. */
                 if(use_3d)
                 {
-                	/* This is the accumulated maximum travel time correction for the
-                	3D model.  This is reported to stdout */
-                	double dtmax(0.0);
+               	/* This is the accumulated maximum travel time correction for the
+               	3D model.  This is reported to stdout */
+               	    double dtmax(0.0);
                     for(i=0;i<Tp->n1;++i)
                     {
                         for(j=0;j<Tp->n2;++j)
@@ -684,13 +684,13 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                             	for(k=0;k<min(dtrange,Tp->n3);++k)
                             	{
                             		Tp->val[i][j][k] += dtP3d[k];
-                            		dtmax=max(dtP3d[k],tmax);
+                            		dtmax=max(dtP3d[k],dtmax);
                             	}
                             }
                         }
                     }
                     cout << "Incident Wave Ray Grid:  maximum 3D time correction="
-                    	<< tmax<<endl;
+                    	<< dtmax<<endl;
                 }
                 if(zdecfac>1)
                     return(auto_ptr<GCLscalarfield3d> (decimate(*Tp,1,1,zdecfac)));
@@ -1461,29 +1461,6 @@ int main(int argc, char **argv)
 		"_evid".  We warn for +2, abort if dfilebase is larger than this number */
 		const int dfbase_max_size(15-10);
 		string dfilebase=control.get_string("output_filename_base");
-		int dfbsize=dfilebase.length();
-		if(dfbsize>dfbase_max_size)
-		{
-			cerr << "Warning:  output_filename_base name = "
-                                        << dfilebase<<" is too long"<<endl
-                                        << "Recommended maximum length = "
-                                        << dfbase_max_size<<endl
-                                        << "Longer strings can overflow key field in output db"
-                                        <<endl;
-			if(dfbsize>(dfbase_max_size+2))
-			{
-				cerr << "Fatal:  this name is far to long.  It must be changed"
-					<<endl;
-				exit(-1);
-			}
-			else
-			{
-				cerr << "Be warned that data for any evid with more than "
-					<< dfbase_max_size + 5 - dfbsize <<" digits "
-					<< "may generate an error and not be saved"
-					<<endl;
-			}
-		}
 		int evid;  // output file name is build from dfilebase+"_"+evid
 		bool use_depth_variable_transformation
 			=control.get_bool("use_depth_variable_transformation");
