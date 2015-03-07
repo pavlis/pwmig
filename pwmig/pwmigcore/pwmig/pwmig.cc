@@ -81,7 +81,8 @@ void reverse_time_field(GCLscalarfield3d& f, string current_order)
                     deltat=dt_here;
                     tlast=f.val[i][j][k];
                 }
-                /* k=0 is not altered in the above loop*/
+                /* First and last points are not altered in above loop*/
+                f.val[i][j][f.n3-1]=tlast+deltat;
                 f.val[i][j][0]=0.0;
             }
     }
@@ -101,6 +102,7 @@ void reverse_time_field(GCLscalarfield3d& f, string current_order)
                     tlast=f.val[i][j][k];
                 }
                 f.val[i][j][f.n3-1]=0.0;
+                f.val[i][j][0]=tlast+deltat;
             }
     }
     else
@@ -242,7 +244,9 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 	vector<double> times;
 	times.reserve(npts);
 	times.push_back(0.0);   /* First point is always 0 */
-	for(int i=1,count=1,tsum=0.0;i<npts;++i)
+        tsum=0.0;
+        count=1;
+	for(int i=1;i<npts;++i)
 	{
 		double dx1,dx2,dx3;
 		double du;   // interpolated slowness perturbation
@@ -250,15 +254,6 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
                 int iret=U3d.lookup(path(0,i),path(1,i),path(2,i));
 		if(iret==0)
 		{
-                    //DEBUG
-                    int index[3];
-                    U3d.get_index(index);
-                    if(index[0]<0 || index[1]<0 || index[2]<0)
-                    {
-                        cout << "Negative index"<<endl;
-                    }
-                    else
-                    {
 			du=U3d.interpolate(path(0,i),path(1,i),path(2,i));
 			dx1=path(0,i)-path(0,i-1);
 			dx2=path(1,i)-path(1,i-1);
@@ -266,7 +261,7 @@ vector<double> compute_3Dmodel_time(GCLscalarfield3d& U3d, dmatrix& path)
 			tsum+=sqrt(dx1*dx1+dx2*dx2+dx3*dx3)*du;
 			times.push_back(tsum);
 			++count;
-                    }
+                        //fprintf(stdout,"i=%d time=%15.5g\n",i,tsum);
 		}
 	}
 	/* clear the contents if there are zero hits.  Caller should test size of 
@@ -295,7 +290,7 @@ void cosine_taper_highend(dmatrix& d,int mark, int taper_length)
 	}
         /* Zero all beyond mark */
         for(i=mark;i<d.columns();++i) 
-            for(k=0;k<3;++k) d(i,i)=0.0;
+            for(k=0;k<3;++k) d(k,i)=0.0;
 }
 	
 /* Returns a 3x nx  matrix of ray path unit vectors pointing in
@@ -650,11 +645,22 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                 SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
                 auto_ptr<GCLscalarfield3d> Tp(Build_GCLraygrid(false,ng2d,u0,
                                                     svmpadded,vp1d,zmax,tmax,dt));
+                 //DEBUG
+                 /*
+                 cout << "Before reverse_time_field"<<endl;
+                 for(int kd=0;kd<Tp->n3;++kd)
+                     cout << "time from base up for 20,20 kd="<<kd<<" "<<Tp->val[20][20][kd]<<endl;
+                     */
                 /* For the incident wave data we need to reverse the travel 
                  * time order from that computed by Build_GCLraygrid (top to 
                  * bottom is returned there).  This is because incident wave
                  * is propagating up. */
                  reverse_time_field(*Tp,string("downward"));
+                 //DEBUG
+                 /*
+                 for(int kd=0;kd<Tp->n3;++kd)
+                     cout << "time from base up for 20,20 kd="<<kd<<" "<<Tp->val[20][20][kd]<<endl;
+                     */
 
                 /* Now apply a correction for 3D structure if requested.
                  * This algorithm uses a path integral in compute_3Dmodel_time.
@@ -665,6 +671,8 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                	/* This is the accumulated maximum travel time correction for the
                	3D model.  This is reported to stdout */
                	    double dtmax(0.0);
+                    double dtmin(0.0);
+                    vector<double>dtP3d;
                     for(i=0;i<Tp->n1;++i)
                     {
                         for(j=0;j<Tp->n2;++j)
@@ -672,25 +680,26 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                             /* This extracts a path from the bottom of the grid to the
                              * surface to mesh with 3 coordinate ray paths */
                             auto_ptr<dmatrix> path(extract_gridline(*Tp,i,j,0,3,false));
-                            vector<double>dtP3d;
                             dtP3d=compute_3Dmodel_time(UP3d,*path);
-                            /* the above procedure returns a zero length vector if the 
-                            ray has no intersection with UP3d */
+                            /* the above procedure returns a vector of length 1
+                            if the ray has no intersection with UP3d */
                             int dtrange=dtP3d.size();
-                            if(dtrange>0)
+                            //cout << "length dtP3d="<<dtrange<<" ";
+                            if(dtrange>1)
                             {
                             	/* this min test is not necessary but safe to avoid 
                             	seg faults.  */
                             	for(k=0;k<min(dtrange,Tp->n3);++k)
                             	{
                             		Tp->val[i][j][k] += dtP3d[k];
-                            		dtmax=max(dtP3d[k],dtmax);
+                                        if(dtP3d[k]>dtmax) dtmax=dtP3d[k];
+                                        if(dtP3d[k]<dtmin) dtmin=dtP3d[k];
                             	}
                             }
                         }
                     }
-                    cout << "Incident Wave Ray Grid:  maximum 3D time correction="
-                    	<< dtmax<<endl;
+                    cout << "Incident Wave Ray Grid:  3d correction range="
+                    	<< dtmin<<" to "<<dtmax<<endl;
                 }
                 if(zdecfac>1)
                     return(auto_ptr<GCLscalarfield3d> (decimate(*Tp,1,1,zdecfac)));
@@ -1520,7 +1529,7 @@ int main(int argc, char **argv)
                     velocity.  
                     */
                     bool absmods;
-                    absmods==control.get_bool("3d_models_are_total_velocity");
+                    absmods=control.get_bool("3d_models_are_total_velocity");
                     if(absmods)
                     {
 		        VelocityFieldToSlowness(*Up3d);
@@ -1658,7 +1667,7 @@ HorizontalSlicer(mp,Us3d);
 		double totalruntime=now();
 		while(fscanf(flistfp,"%s",fname_base)==1)
 		{
-		/* When using paralle mode this skips files that aren't assigned to this
+		/* When using parallel mode this skips files that aren't assigned to this
 		processor.  The mod operator with number of processors (np) is 
 		a simple way to do this. In single processor mode this 
 		does nothing because np=1 and rank=0 */
@@ -1719,6 +1728,11 @@ HorizontalSlicer(mp,Us3d);
                                         zmax*zpad,tmax,dt,zdecfac,use_3d_vmodel);
 			cout << "Time to compute Incident P wave grid "
 					<<now()-rundtime<<endl;
+                 //DEBUG
+                 /*
+                 for(int kd=0;kd<TPptr->n3;++kd)
+                     cout << "time from base up for 20,20 kd="<<kd<<" "<<TPptr->val[20][20][kd]<<endl;
+                     */
 			/* Now loop over plane wave components.  The method in 
 			the PwmigFileHandle used returns a new data ensemble for
 			one plane wave component for each call.  NULL return is
@@ -1895,6 +1909,11 @@ HorizontalSlicer(mp,Us3d);
                                             *TPptr,hypo);
                                             */
                                 double Tpr=TPptr->val[i+border_pad][j+border_pad][TPptr->n3-1];
+                                //DEBUG
+                                /*
+                                for(int id=0;id<TPptr->n1;++id)for(int jd=0;jd<TPptr->n2;++jd)
+                                    cout << "Top surface TP for i,j="<<id<<","<<jd<<" is "<<TPptr->val[id][jd][TPptr->n3-1]<<endl;
+                                    */
 				double tlag,Tpx;
 				bool needs_padding;
 				int padmark=raygrid.n3-1;
