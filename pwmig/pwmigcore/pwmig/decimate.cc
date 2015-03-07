@@ -35,7 +35,8 @@ GCLscalarfield3d *decimate(GCLscalarfield3d& g,int dec1, int dec2, int dec3)
 		{
 			// note reverse order 
 			//for(k=0,kk=0;k<g.n3 && kk<n3; k+=dec3,++kk)
-			for(k=g.n3-1,kk=n3-1;kk>=0; k-=dec3,--kk)
+                        kk=n3-1;
+			for(k=g.n3-1;kk>=0; k-=dec3,--kk)
 			{
 				result->x1[ii][jj][kk]=g.x1[i][j][k];
 				result->x2[ii][jj][kk]=g.x2[i][j][k];
