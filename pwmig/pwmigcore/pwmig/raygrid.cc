@@ -281,8 +281,6 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 				exit(-1);
 			}
 		}
-        //cout << "TP field before calling trim_raygrid_n3"<<endl;
-        //cout<<raygrid;
         if(trimlength<raygrid.n3)
         {
             cout << "Warning:  Triming incident P wave grid from "
@@ -295,8 +293,6 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
             delete rgptr;
             rgptr=trgptr;
         }
-        //cout << "TP field after trim_raygrid_n3"<<endl;
-        //cout << *rgptr<<endl;
 
 	// Before we return we have to recompute the grid extents.
 	rgptr->compute_extents();

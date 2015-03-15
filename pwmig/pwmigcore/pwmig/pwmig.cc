@@ -513,18 +513,6 @@ SlownessVectorMatrix pad_svm(SlownessVectorMatrix& svm, int pad)
         uij=svm(nr-1,jj);
         for(i=0;i<pad;++i) paddedsvm(i+pad+nr,j)=uij;
     }
-//DEBUG - scaffolding to make sure this works.  Commend out when verified. 
-/*
-cout << "Padded Slowess Vector Matrix "<<endl<<"i j slow  azimuth(deg)"<<endl;
-for(i=0;i<nrp;++i)
-for(j=0;j<ncp;++j)
-{
-	uij=paddedsvm(i,j);
-	cout << i <<" "<<j<<" ";
-	cout << uij.mag()<<" "<<deg(uij.azimuth())<<endl;
-}
-*/
-// End scaffolding
     return(paddedsvm);
 }
 /* This small check routine is a sanity check.   There is a rare possibility
@@ -645,23 +633,11 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
                 SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
                 auto_ptr<GCLscalarfield3d> Tp(Build_GCLraygrid(false,ng2d,u0,
                                                     svmpadded,vp1d,zmax,tmax,dt));
-                 //DEBUG
-                 /*
-                 cout << "Before reverse_time_field"<<endl;
-                 for(int kd=0;kd<Tp->n3;++kd)
-                     cout << "time from base up for 20,20 kd="<<kd<<" "<<Tp->val[20][20][kd]<<endl;
-                     */
                 /* For the incident wave data we need to reverse the travel 
                  * time order from that computed by Build_GCLraygrid (top to 
                  * bottom is returned there).  This is because incident wave
                  * is propagating up. */
                  reverse_time_field(*Tp,string("downward"));
-                 //DEBUG
-                 /*
-                 for(int kd=0;kd<Tp->n3;++kd)
-                     cout << "time from base up for 20,20 kd="<<kd<<" "<<Tp->val[20][20][kd]<<endl;
-                     */
-
                 /* Now apply a correction for 3D structure if requested.
                  * This algorithm uses a path integral in compute_3Dmodel_time.
                  * Loop is over each ray path that runs in k order from the 
@@ -816,20 +792,6 @@ vector<double> compute_domega_for_path(SlownessVector& u0,double dux, double duy
 	RayPathSphere raydx2(vmod,udx2.mag(),zmax,1.0e99,dz,"z");
 	RayPathSphere raydy1(vmod,udy1.mag(),zmax,1.0e99,dz,"z");
 	RayPathSphere raydy2(vmod,udy2.mag(),zmax,1.0e99,dz,"z");
-/*
-mp.load(raydx1.r,string("rdx1"));
-mp.load(raydx2.r,string("rdx2"));
-mp.load(raydy1.r,string("rdy1"));
-mp.load(raydy2.r,string("rdy2"));
-mp.load(raydx1.delta,string("deltax1"));
-mp.load(raydx2.delta,string("deltax2"));
-mp.load(raydy1.delta,string("deltay1"));
-mp.load(raydy2.delta,string("deltay2"));
-mp.load(raydx1.t,string("tdx1"));
-mp.load(raydx2.t,string("tdx2"));
-mp.load(raydy1.t,string("tdy1"));
-mp.load(raydy2.t,string("tdy2"));
-*/
 	//
 	// project these into the GCLgrid coordinate system
 	//
@@ -842,13 +804,6 @@ mp.load(raydy2.t,string("tdy2"));
 				g.n3-1);
 		pathdy2 = GCLgrid_Ray_project_down(g,raydy2, udy2.azimuth(),ix1,ix2,
 				g.n3-1);
-/*
-mp.load(*pathdx1,string("pdx1"));
-mp.load(*pathdx2,string("pdx2"));
-mp.load(*pathdy1,string("pdy1"));
-mp.load(*pathdy2,string("pdy2"));
-mp.process(string("plotrays(pdx1,pdx2,pdy1,pdy2)"));
-*/
 	}  catch (GCLgrid_error& err)
 	{
 		err.log_error();
@@ -892,17 +847,6 @@ mp.process(string("plotrays(pdx1,pdx2,pdy1,pdy2)"));
 		dscal(3,slow,gradSdy1->get_address(0,i),1);
 		dscal(3,slow,gradSdy2->get_address(0,i),1);
 	}
-/*
-mp.load(gradP,string("gp"));
-mp.load(*gradSdx1,string("gsdx1"));
-mp.load(*gradSdx2,string("gsdx2"));
-mp.load(*gradSdy1,string("gsdy1"));
-mp.load(*gradSdy2,string("gsdy2"));
-mp.process(string("figure; unitvectorplot(gsdx1);"));
-mp.process(string("figure; unitvectorplot(gsdx2);"));
-mp.process(string("figure; unitvectorplot(gsdy1);"));
-mp.process(string("figure; unitvectorplot(gsdy2);"));
-*/
 	//
 	// Now we interpolate the gradS vector arrays onto the gradP set
 	// of depths. This produces a domega congruent with gradS and gradP
@@ -939,17 +883,6 @@ mp.process(string("figure; unitvectorplot(gsdy2);"));
 		dr3norm(nudy1.get_address(0,i));
 		dr3norm(nudy2.get_address(0,i));
 	}
-/*
-mp.load(nudx1,string("nudx1"));
-mp.load(nudx2,string("nudx2"));
-mp.load(nudy1,string("nudy1"));
-mp.load(nudy2,string("nudy2"));
-mp.process(string("figure; unitvectorplot(nudx1);"));
-mp.process(string("figure; unitvectorplot(nudx2);"));
-mp.process(string("figure; unitvectorplot(nudy1);"));
-mp.process(string("figure; unitvectorplot(nudy2);"));
-mp.run_interactive();
-*/
 	//
 	// Now get domega using cross products between pairs of unit vectors and 
 	// small angle approximation (sin theta approx theta when theta is small)
@@ -1322,6 +1255,17 @@ The above theory folds into this version for lag calculations.   Most of
 the work in the implementation required patching the PwmigFileHandle to 
 deal with the slowness vector data and reworking the grid time calculations.
 
+Final major change in this version were two issues related to 3D models:
+1.  Previous version required a grid of absolute values.  This version uses a 1d model and 
+requires the model be defined by slowness perturbation.  Absolute velocity is allowed but 
+converted to slowness perturbation if given in that form.
+2.  Cleaned up (I hope) blemishes caused (I think) by turning rays.   Added a cosine tapering
+to any data where the ray path terminates early indicating a turning ray.
+
+Further a related change in libgclgrid significantly improves performance.   Have turned off
+code for recovery of points in highly distorted grids.  In pwmig that happens near turning
+rays so the hope is this problem will disappear with cosine tapering addition.
+
 */
 int main(int argc, char **argv)
 {
@@ -1563,31 +1507,11 @@ int main(int argc, char **argv)
                     Up3d=NULL;
                     Us3d=NULL;
                 }
-//DEBUG
-//MatlabProcessor mp(string("zemlya"));
-//MatlabProcessor mp(stdout);
-/*
-cout << "Display P velocity model horizontal slices"<<endl;
-HorizontalSlicer(mp,Up3d);
-cout << "Display S velocity model horizontal slices"<<endl;
-sleep(5);
-HorizontalSlicer(mp,Us3d);
-*/
 		string Pmodel1d_name=control.get_string("P_velocity_model1d_name");
 		string Smodel1d_name=control.get_string("S_velocity_model1d_name");
 		VelocityModel_1d Vp1d,Vs1d;
-                /* depricated feature 
-		if(Pmodel1d_name=="derive_from_3d")
-		    //Caution this procedure assumes Up3d is slowness
-		    Vp1d=DeriveVM1Dfrom3D(Up3d);
-                    */
                 Vp1d=VelocityModel_1d(Pmodel1d_name,string("mod1d"),
                             string("P"));
-                /*
-		if(Smodel1d_name=="derive_from_3d")
-		    Vs1d=DeriveVM1Dfrom3D(Us3d);
-		else
-                */
                 Vs1d=VelocityModel_1d(Smodel1d_name,string("mod1d"),
                             string("S"));
 		string parent_grid_name=control.get_string("Parent_GCLgrid_Name");
@@ -1619,12 +1543,6 @@ HorizontalSlicer(mp,Us3d);
 		initialize_cohimage(cohimage);
 		int cohsl=control.get_int("coherence_smoother_length");
 		int cohdecfac=control.get_int("coherence_raygrid_decimation");
-// DEBUG -- used ONLY for partial sum accumulation.  delete next line otherwise
-/*
-		GCLvectorfield3d psum(migrated_image);
-		remap_grid(dynamic_cast<GCLgrid3d&>(psum),
-			dynamic_cast<BasicGCLgrid&>(parent));
-*/
 		/* Silently remap all grids that are not congruent with
 		the parent.  This speeds execution by avoiding excess
 		call to geographical conversions. */
@@ -1683,56 +1601,15 @@ HorizontalSlicer(mp,Us3d);
 			double rundtime;
 			rundtime=now();
 			cout << "Main loop processing begins at time "<<strtime(rundtime)<<endl;
-			// First get the hypo for the current event
-                        /* old
-			Hypocenter hypo(datafh.filehdr.slat,datafh.filehdr.slon,
-				datafh.filehdr.sdepth,datafh.filehdr.stime,
-				string("tttaup"),string("iasp91"));
-                            
-                                Replaced by SlownessVectorMatrix approach */
 			evid=datafh.filehdr.evid;
                         SlownessVectorMatrix 
                             svm0=datafh.incident_wave_slowness_vectors();
-                        //DEBUG
-                        /*
-                        for(int id=0;id<121;++id)
-                        {
-                            cout << "Gridid="<<id<<endl;
-                            svm0=datafh.plane_wave_slowness_vectors(id);
-                            cout << svm0<<endl;
-                        }
-                        */
-                        /*
-                        cout << "Slowess Grid from File"<<endl;
-                        SlownessVector svdb;
-                        for(int id=0;id<svm0.rows();++id)
-                            for(int jd=0;jd<svm0.columns();++jd)
-                            {
-                                svdb=svm0(id,jd);
-                                cout << id <<" "<<jd<<" "
-                                    << svdb.mag()<<" "<<deg(svdb.azimuth())<<endl;
-                            }
-                            */
-
-			// We build the P wave travel time field once for each
-			// event as it is constant for all.  The border_pad parameter
-			// is needed because plane waves come from outside the range
-			// of the incident rays.  
-                        /*
-			auto_ptr<GCLscalarfield3d> TPptr=ComputeIncidentWaveRaygrid(parent,
-					border_pad,Up3d,Vp1d,hypo,zmax*zpad,tmax,dt,zdecfac);
-                                        */
                         /* New version using SlownessVectorMatrix */
 			auto_ptr<GCLscalarfield3d> TPptr=ComputeIncidentWaveRaygrid(parent,
 					border_pad,*Up3d,Vp1d,svm0,
                                         zmax*zpad,tmax,dt,zdecfac,use_3d_vmodel);
 			cout << "Time to compute Incident P wave grid "
 					<<now()-rundtime<<endl;
-                 //DEBUG
-                 /*
-                 for(int kd=0;kd<TPptr->n3;++kd)
-                     cout << "time from base up for 20,20 kd="<<kd<<" "<<TPptr->val[20][20][kd]<<endl;
-                     */
 			/* Now loop over plane wave components.  The method in 
 			the PwmigFileHandle used returns a new data ensemble for
 			one plane wave component for each call.  NULL return is
@@ -1909,11 +1786,6 @@ HorizontalSlicer(mp,Us3d);
                                             *TPptr,hypo);
                                             */
                                 double Tpr=TPptr->val[i+border_pad][j+border_pad][TPptr->n3-1];
-                                //DEBUG
-                                /*
-                                for(int id=0;id<TPptr->n1;++id)for(int jd=0;jd<TPptr->n2;++jd)
-                                    cout << "Top surface TP for i,j="<<id<<","<<jd<<" is "<<TPptr->val[id][jd][TPptr->n3-1]<<endl;
-                                    */
 				double tlag,Tpx;
 				bool needs_padding;
 				int padmark=raygrid.n3-1;
@@ -1967,16 +1839,6 @@ HorizontalSlicer(mp,Us3d);
                                            new approach.   The terms are just
                                            computed differently. */
 					tlag=Tpx+Stime[k]-Tpr;
-//DEBUG
-/*
-cout << "i="<<i
-    << " j="<<j
-    << " k="<<k
-    << " Tpx="<<Tpx
-    << " Stime="<<Stime[k]
-    << " Tpr="<<Tpr<<"tlag="<<tlag<<endl;
-cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
-*/
 					SPtime.push_back(tlag);
 				}
 
@@ -2148,33 +2010,12 @@ cout << "Depth to bottom of this ray="<<raygrid.depth(i,j,kk)<<endl;
 				}
 			}
 			delete pwdata;
-/*
-cout << "plane wave data component" << endl;
-bool debugexit;
-debugexit=true;
-//cout << pwdgrid;
-GCLscalarfield3d *sfptr;
-sfptr=extract_component(pwdgrid,0);
-//output_gcl3d_to_vtksg(*sfptr,"component0.vtk");
-SliceX1(mp,*sfptr);
-delete sfptr;
-sfptr=extract_component(pwdgrid,1);
-//output_gcl3d_to_vtksg(*sfptr,"component1.vtk");
-SliceX1(mp,*sfptr);
-delete sfptr;
-sfptr=extract_component(pwdgrid,2);
-//output_gcl3d_to_vtksg(*sfptr,"component2.vtk");
-SliceX1(mp,*sfptr);
-delete sfptr;
-*/
+                        //
 			// last but not least, add this component to the stack
 			//
 			cout << "Elapsed time to compute pwdgrid="<<now()-rundtime<<endl;
 			migrated_image += pwdgrid;
-//cout << pwcohgrid<<endl;
 			accumulate_cohdata(pwcohgrid,cohimage);
-//cout << "image grid after accumulate:"<<endl;
-//cout << cohimage;
 			if(save_partial_sums)
 			{
                                 // Oddity note:
@@ -2185,24 +2026,6 @@ delete sfptr;
                                 migrated_image.save(dfile,fielddir);
 			}
 			cout << "Total time for this plane wave component="<<now()-rundtime<<endl;
-//DEBUG  save partial sums
-/*
-                dfile=MakeDfileName(dfilebase+string("_psum"),gridid+1000);
-		psum.zero();
-*/
-/*  DEBUG Scaffold to retain for now.  Loads ramp to test grid summation
-		// test setting pwdgrid values all to zero
-		int id,jd,kd,ld;
-		for(id=0;id<pwdgrid.n1;++id)
-		 for(jd=0;jd<pwdgrid.n2;++jd)
-		  for(kd=0;kd<pwdgrid.n3;++kd)
-		   for(ld=0;ld<3;++ld) pwdgrid.val[id][jd][kd][ld]
-						=static_cast<double>(kd%100);
-*/
-		//psum += pwdgrid;
-                //psum.dbsave(db,"",fielddir,dfile,dfile);
-
-
 			delete grdptr;
 			rundtime=now();
 
@@ -2259,5 +2082,3 @@ delete sfptr;
                 <<endl;
 	}
 }
-
-
