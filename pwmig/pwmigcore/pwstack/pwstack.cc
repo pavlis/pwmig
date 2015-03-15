@@ -334,7 +334,6 @@ int main(int argc, char **argv)
 			<<"Number of seismograms remaining="
 			<<ensemble->member.size()<<endl;
 	    }
-            //DEBUG
             // this should probably be in a try block, but we need to
             // extract it here or we extract it many times later.
             evid=ensemble->get_int("evid");

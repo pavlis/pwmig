@@ -453,11 +453,6 @@ PwmigFileHandle& cohfh)
                 {
 
                     lag = tstart - (iv->t0) + moveout[i];
-                    //DEBUG
-                    /*
-                    cerr << "lag="<<lag<<" time 0 lag="<<tstart - (iv->t0)<< "moveout="<<moveout[i]<<endl
-                        << "i="<<i<<", dnorth="<<dnorth[i]<<", deast="<<deast[i]<<endl;
-                    */
                     is0=SEISPP::nint(lag/dt);
                     if(is0>=0)
                     {
@@ -498,8 +493,6 @@ PwmigFileHandle& cohfh)
                             iend_this=nsout;
                         }
                     }
-                    //DEBUG
-                    //cerr << "is="<<is<<" j0="<<j0<<"ns_to_copy="<<ns_to_copy<<" nsout="<<nsout<<endl;
 
                     if(ns_to_copy>0)
                     {
