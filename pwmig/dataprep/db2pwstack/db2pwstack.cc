@@ -76,8 +76,9 @@ Hypocenter LoadHypocenter(ThreeComponentEnsemble& d)
 
 /* This procedure loads slowness vectors ux,uy in the field
    variable of GCLvectorfield ug.  Travel times are computed
-   with the hypocenter object h */
-void BuildSlownessGrid(Hypocenter h, GCLvectorfield ug)
+   with the hypocenter object h.  
+*/
+void BuildSlownessGrid(Hypocenter h, GCLvectorfield& ug)
 {
     try {
         int i,j;
