@@ -121,23 +121,37 @@ int write_ensemble(ThreeComponentEnsemble& g,FILE *fp)
 {
     const string base_error("Error in write_ensemble procedure: ");
     try {
+	if(SEISPP_verbose)
+		cout << "Processing ensemble with the following attributes:"<<endl
+			<< dynamic_cast<Metadata&>(g)<<endl;
         PwstackTraceHeader th;
         int n=g.member.size();
         vector<ThreeComponentSeismogram>::iterator gptr;
         int count;
         for(gptr=g.member.begin(),count=0;gptr!=g.member.end();++gptr,++count)
         {
-            LoadTraceHeader(*gptr,th);
-            if(fwrite(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
-                throw SeisppError(base_error
-                        + "fwrite error writing trace header for station "
-                        + th.sta);
-            double *dptr=gptr->u.get_address(0,0);
-            int nstotal=3*(gptr->ns);
-            if(fwrite(dptr,sizeof(double),nstotal,fp)!=nstotal)
-                throw SeisppError(base_error
-                        + "fwrite error writing sample data for station "
-                        + th.sta);
+	    if(gptr->live)
+	    {
+                LoadTraceHeader(*gptr,th);
+                if(fwrite(&th,sizeof(PwstackTraceHeader),1,fp)!=1)
+                    throw SeisppError(base_error
+                            + "fwrite error writing trace header for station "
+                            + th.sta);
+                double *dptr=gptr->u.get_address(0,0);
+                int nstotal=3*(gptr->ns);
+                if(fwrite(dptr,sizeof(double),nstotal,fp)!=nstotal)
+                    throw SeisppError(base_error
+                            + "fwrite error writing sample data for station "
+                            + th.sta);
+	   }
+           else if(SEISPP_verbose)
+	   {
+		/* Note this logic always skips data marked dead but only writes a message
+		if verbose is set */
+		cout << "Warning:   member number "<<count<<" of ensemble was marked dead"<<endl
+		  << "Probably database problem.   Metadata for this seismogram follow:"<<endl
+		  << dynamic_cast<Metadata&>(*gptr)<<endl;
+           }
         }
         return(count);
     } catch(...){throw;};
