@@ -223,6 +223,7 @@ int main(int argc, char **argv)
         DatascopeHandle dbh(dbname, true);
         Metadata control(pf);
         string arrival_phase=control.get_string("phase_key");
+	int minimum_gather_size=control.get_int("minimum_gather_size");
 	string dbviewmode(control.get_string("database_view_mode"));
 	if(dbviewmode=="dbprocess")
         	dbh=DatascopeHandle(dbh,pf,string("dbprocess_commands"));
@@ -356,12 +357,25 @@ int main(int argc, char **argv)
                     << "for evid="<<evid<<endl;
                 exit(-1);
             }
-            int nseis=write_ensemble(*ensemble,fp);
-            if(SEISPP_verbose)
-            {
-                cout << "Event id ="<<evid<<endl
-                    << "Wrote "<<nseis<<" seismograms of expected "<<ensemble->member.size()<<endl;
-            }
+	    int gather_size=ensemble->member.size();
+	    if(gather_size<minimum_gather_size)
+	    {
+		cout << "Event id="<<evid<<" number of seismograms="
+			<< gather_size<<" is below threshold of "
+			<< minimum_gather_size<<endl
+			<< "Data for this event not written to output file"
+			<<endl;
+	    }
+	    else
+	    {
+                int nseis=write_ensemble(*ensemble,fp);
+                if(SEISPP_verbose)
+                {
+                    cout << "Event id ="<<evid<<endl
+                        << "Wrote "<<nseis<<" seismograms of expected "
+    		    << gather_size<<endl;
+                }
+	    }
         }
         write_directory(ids,foffs,nevents,fp);
         delete [] ids;

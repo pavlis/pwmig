@@ -3,6 +3,7 @@ use_file_for_pseudostationgrid true
 data_time_window_start  -25.0
 data_time_window_end    120.0
 phase_key P
+minimum_gather_size 100
 database_view_mode use_wfprocess
 dbprocess_commands      &Tbl{
     dbopen event

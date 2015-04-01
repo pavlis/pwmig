@@ -90,6 +90,12 @@ the grid tagged with this name.   Note that the data in this grid will
 need to be converted to the file format to pass to pwstack where you
 plan to run the migration code. 
 .LP
+\fIminimum_gather_size\fR sets a threshold for the number of three-component
+seismograms a gather needs to contain before it will be written to output.
+As noted in the Pavlis (2010) paper in Geosphere events with few seismograms 
+can do more harm than good in the imaging.   With ccp stacking this parameter
+should be set to 0 as it is not prone to this problem.
+.LP
 The following Tbl entries should normally not be changed by the user: 
 \fIstation_metadata\fR and \fIensemble_metadata\fR.     
 .SH "BUGS AND CAVEATS"
