@@ -40,7 +40,11 @@ private:
 typedef struct PwstackGatherHeader
 {
     int number_members;
+    /* This holds event id inherited from database.*/
     long evid;
+    /* This holds the sequence number of this gather in the
+    file starting with 0 and counting sequentially */
+    int sequence_number;
     /* These are event location  (radians) */
     double lon;
     double lat;

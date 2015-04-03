@@ -279,7 +279,7 @@ int main(int argc, char **argv)
         for(event_number=rank;event_number<np;event_number+=np)
         {
             int iret;
-            int evid;
+            long evid;
             double olat,olon,odepth,otime;
             // ensemble is read once for entire grid in this
             // version of the program.  This assumes newer
@@ -288,6 +288,7 @@ int main(int argc, char **argv)
             //
             auto_ptr<ThreeComponentEnsemble> ensemble;
             ensemble=auto_ptr<ThreeComponentEnsemble>(input_handle.read_gather(event_number));
+	    evid=ensemble->get_long("evid");
             /* This was added 2015 to remove dependence on global travel
                time calculators.  Previously we computed slowness vectors
                in this program.  Now we import them through this mechanism */
@@ -316,8 +317,7 @@ int main(int argc, char **argv)
                 data_window);
                 */
             // Release this potentially large memory area
-	    if(SEISPP_verbose) cout << "Ensemble for evid="
-			<<  ensemble->get_int("evid")
+	    if(SEISPP_verbose) cout << "Ensemble for evid="<<evid
 			<< " has "<<ensemble->member.size()<<" seismograms"
 			<<endl;
             /* Throws out data without overlaping times*/

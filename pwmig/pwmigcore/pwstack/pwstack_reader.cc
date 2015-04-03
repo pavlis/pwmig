@@ -122,12 +122,12 @@ ThreeComponentEnsemble *PwstackBinaryFileReader::read_gather(int id)
             <<"gather header for evid="<<ids[id];
         throw SeisppError(ss.str());
     }
-    if(ids[id]!=gh.evid)
+    if(id!=gh.sequence_number)
     {
         stringstream ss;
-        ss << base_error << "evid mismatch.  "
-            <<"gather header evid="<<gh.evid
-            <<"   index evid expects evid="<<ids[id]<<endl;
+        ss << base_error << "sequence number  mismatch.  "<<endl
+            <<"gather header sequence number="<<gh.sequence_number <<endl
+            <<"Expected sequence number "<<id<<" for evid="<<ids[id]<<endl;
         throw SeisppError(ss.str());
     }
     /* Now read the block of data containing the matrix of 
