@@ -11,14 +11,31 @@ using namespace std;
 using namespace SEISPP;
 const string svmrowkey("SlownessVectorMatrixRows");
 const string svmcolkey("SlownessVectorMatrixColumns");
+int number_live_members(ThreeComponentEnsemble& gather)
+{
+    int live_count;
+    vector<ThreeComponentSeismogram>::iterator gptr;
+    for(gptr=gather.member.begin(),live_count=0;
+		gptr!=gather.member.end();++gptr)
+    {
+	if(gptr->live)++live_count;
+    }
+    return live_count;
+}
 void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh)
 {
     try {
-        gh.number_members=gather.member.size();
+	int gather_size=gather.member.size();
+        gh.number_members=number_live_members(gather);
         long evid=gather.get_long("evid");
         if(SEISPP_verbose) 
+	{
             cout << "pwstack file writer: evid="<<evid<<" has "
-                <<gh.number_members << " three-component seismograms"<<endl;
+                <<gh.number_members << " live three-component seismograms"<<endl;
+	    if(gather_size!=gh.number_members)
+		cout << (gather_size - gh.number_members) << " gather members "
+			<< "are marked dead and will be deleted" <<endl;
+	}
         gh.evid=evid;
         /* Warning - careful units are consistent with expectation of pwstack*/
         gh.lat=gather.get_double("origin.lat");
@@ -324,6 +341,8 @@ int main(int argc, char **argv)
         fwrite(&diroffset,sizeof(long),1,fp);
         fwrite(&diroffset,sizeof(long),1,fp);
         int rec;
+	int number_events_processed=dbh.number_tuples();
+	int number_events_saved(0);
         for(rec=0,dbh.rewind();rec<dbh.number_tuples();++rec,++dbh)
         {
             /* This requires segmented data */
@@ -375,9 +394,13 @@ int main(int argc, char **argv)
                         << "Wrote "<<nseis<<" seismograms of expected "
     		    << gather_size<<endl;
                 }
+		++number_events_saved;
 	    }
         }
-        write_directory(ids,foffs,nevents,fp);
+	/* Note we use number_events_saved because above loop
+	can and usually will drop some gathers. write_directory
+	and the file structure handles this correctly */
+        write_directory(ids,foffs,number_events_saved,fp);
         delete [] ids;
         delete [] foffs;
     }catch(std::exception& excp)
