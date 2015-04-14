@@ -22,9 +22,11 @@ int number_live_members(ThreeComponentEnsemble& gather)
     }
     return live_count;
 }
-void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh)
+void LoadGatherHeader(ThreeComponentEnsemble& gather,PwstackGatherHeader& gh,
+		int sequence_number)
 {
     try {
+	gh.sequence_number=sequence_number;
 	int gather_size=gather.member.size();
         gh.number_members=number_live_members(gather);
         long evid=gather.get_long("evid");
@@ -352,30 +354,7 @@ int main(int argc, char **argv)
             auto_ptr<ThreeComponentEnsemble> ensemble = ArrivalTimeReference(*din,
                     "arrival.time",data_window);
             delete din;
-            Hypocenter h(LoadHypocenter(*ensemble));
-            BuildSlownessGrid(h,u);
-            LoadSlownessBuffer(u,ubuf);
-            /* Note row and column are confusing concepts here because
-               of C and fortran difference.  row is index 1 */
-            ensemble->put(svmrowkey,u.n1);
-            ensemble->put(svmcolkey,u.n2);
-            LoadGatherHeader(*ensemble,gh);
-            long pos=ftell(fp);
             long evid=ensemble->get_long("evid");
-            ids[rec]=evid;
-            foffs[rec]=pos;
-            if(fwrite(&gh,sizeof(PwstackGatherHeader),1,fp)!=1)
-            {
-                cerr << "fwrite failed writing ensemble header event for evid="
-                    <<evid<<endl;
-                exit(-1);
-            }
-            if(fwrite(ubuf,sizeof(double),nu,fp)!=nu)
-            {
-                cerr << "fwrite failed writing slowness vector matrix section "
-                    << "for evid="<<evid<<endl;
-                exit(-1);
-            }
 	    int gather_size=ensemble->member.size();
 	    if(gather_size<minimum_gather_size)
 	    {
@@ -387,6 +366,29 @@ int main(int argc, char **argv)
 	    }
 	    else
 	    {
+                Hypocenter h(LoadHypocenter(*ensemble));
+                BuildSlownessGrid(h,u);
+                LoadSlownessBuffer(u,ubuf);
+                /* Note row and column are confusing concepts here because
+                   of C and fortran difference.  row is index 1 */
+                ensemble->put(svmrowkey,u.n1);
+                ensemble->put(svmcolkey,u.n2);
+                LoadGatherHeader(*ensemble,gh,number_events_saved);
+                long pos=ftell(fp);
+                ids[number_events_saved]=evid;
+                foffs[number_events_saved]=pos;
+                if(fwrite(&gh,sizeof(PwstackGatherHeader),1,fp)!=1)
+                {
+                    cerr << "fwrite failed writing ensemble header event for evid="
+                        <<evid<<endl;
+                    exit(-1);
+                }
+                if(fwrite(ubuf,sizeof(double),nu,fp)!=nu)
+                {
+                    cerr << "fwrite failed writing slowness vector matrix section "
+                        << "for evid="<<evid<<endl;
+                    exit(-1);
+                }
                 int nseis=write_ensemble(*ensemble,fp);
                 if(SEISPP_verbose)
                 {
