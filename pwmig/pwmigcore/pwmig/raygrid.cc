@@ -256,6 +256,12 @@ GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
 					theta, i,j);
 
 			    }
+                            /* A very confusing thing here is that through
+                             * evolution of this program the easiest way to
+                             * add the travel time to the field is in this
+                             * procedure.   That is travel times from ray
+                             * are copied into the raygrid val array by
+                             * this procedure. */
 			    nextended=copy_path(*path,ray,raygrid,i,j);
 			    delete path;
 			    if(nextended<0) 
