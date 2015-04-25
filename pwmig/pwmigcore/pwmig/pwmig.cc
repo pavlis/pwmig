@@ -1306,7 +1306,7 @@ int main(int argc, char **argv)
 	}
 	string dfile;  // used repeatedly below for data file names
 
-        for(i=3;i<argc;++i)
+        for(i=2;i<argc;++i)
         {
 		string sarg(argv[i]);
 		if(sarg=="-V")
