@@ -515,7 +515,7 @@ int main(int argc, char **argv)
 	cout << "Starting gridstacker program"<<endl;
 	ifstream in;
 	string infile("gridstacker.list");
-	string pffile("gridstacker");
+	string pffile("gridstacker.pf");
 	if(argc<2) usage();
 	string baseofn(argv[1]);
 	bool robust(true);
