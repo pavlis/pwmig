@@ -1,0 +1,5 @@
+The files in this directory are extensions of libseispp that are not
+considered appropriate for antelope contrib.   These need to be installed
+properly, however, or the version of libseispp required by pwmig will
+not build properly.  See INSTALL file in the top level this repository 
+for details.
