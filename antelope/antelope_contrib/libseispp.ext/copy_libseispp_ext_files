@@ -3,7 +3,7 @@
 # These are not quite like contrib files because they don't live
 # in contrib but only here in pwmig.  They are treated as local 
 # extensions of libpwmig.
-if [ -v $PWMIG ] ; then
+if [ -z "$PWMIG" ] ; then
     echo The environment variable PWMIG is not set
     echo Run the setup script for pwmig
     exit -1

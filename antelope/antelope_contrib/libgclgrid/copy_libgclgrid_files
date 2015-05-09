@@ -6,12 +6,12 @@
 # 
 # The Makefile will also require a make clean that will remove everything
 # but the makefile and this script.
-if [ -v $PWMIG ] ; then
+if [ -z "$PWMIG" ] ; then
     echo The environment variable PWMIG is not set
     echo Run the setup script for pwmig
     exit -1
 fi
-if [ -v $ANTELOPE_CONTRIB ] ; then
+if [ -z "$ANTELOPE_CONTRIB" ] ; then
     echo Required environment variable ANTELOPE_CONTRIB not set
     echo Must be set top level directory of antelope contrib repository
     echo Standard is something like /opt/antelope/5.4/src/contrib
