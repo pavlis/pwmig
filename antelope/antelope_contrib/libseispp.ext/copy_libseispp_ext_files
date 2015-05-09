@@ -16,10 +16,7 @@ if [ ! -d $outdir ] ; then
 fi
 fromdir=`pwd`
 echo Attempting to copy required libseispp modules from $fromdir
-for f in `cat files_to_copy`
-do
-    cp -r json $outdir
-    echo Copied directory json to $outdir
-    cp *.cc *.h $outdir
-    echo Copied *.cc and *.h to $outdir
-done
+cp -r json $outdir
+echo Copied directory json to $outdir
+cp *.cc *.h $outdir
+echo Copied *.cc and *.h to $outdir
