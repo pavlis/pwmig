@@ -88,4 +88,13 @@ make Include
 cd $PWMIG/antelope_src
 make Include
 
+5)  Once this is done we do a comparable thing with make install:
+cd antelope/dsap_conversion
+make install
+cd $PWMIG/antelope_src
+make install
+
+Note the libttpp is presently broken.   This file was retained because
+there is still hope it can be fixed, but don't try to use this.  It will
+build but will not work.
 
