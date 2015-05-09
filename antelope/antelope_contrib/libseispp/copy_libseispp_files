@@ -35,7 +35,7 @@ do
     cp $seispphome/$f $outdir
     echo Copied source code file $f to $outdir
 done
-echo Copying proto_makefile to $seispphome
+echo Copying proto_makefile to $outdir
 cp proto_makefile $outdir/Makefile
-echo Now cd to $seispphome and run make
+echo Now cd to $outdir and run make
 
