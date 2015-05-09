@@ -470,7 +470,7 @@ int main(int argc, char **argv)
             }
 	    dfh.save_slowness_vectors(svm,ugrid);
 	    char fsbuf[64];
-	    sprintf(fsbuf,"%s_%d",fieldnamebase.c_str(),evid);
+	    sprintf(fsbuf,"%s_%ld",fieldnamebase.c_str(),evid);
 	    string fieldname(fsbuf);
             /* This uses the new file based save metod */
             try {
