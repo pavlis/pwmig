@@ -69,6 +69,8 @@ cd antelope/antelope_contrib/libgclgrid
 ./copy_libgclgrid_files
 cd ../libseispp
 ./copy_libseispp_files
+cd ../libseispp.ext
+./copy_libseispp_ext_files
 cd ../libperf
 ./copy_libperf_files
 
