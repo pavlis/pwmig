@@ -35,7 +35,7 @@ do
     cp $perfhome/$f $outdir
     echo Copied source code file $f to $outdir
 done
-echo Copying proto_makefile to $perfhome
+echo Copying proto_makefile to $outdir
 cp proto_makefile $outdir/Makefile
-echo Now cd to $perfhome and run make
+echo Now cd to $outdir and run make
 
