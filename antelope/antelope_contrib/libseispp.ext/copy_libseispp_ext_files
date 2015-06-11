@@ -1,0 +1,22 @@
+#!/bin/sh
+# This script copies libseispp.ext files to the master location
+# These are not quite like contrib files because they don't live
+# in contrib but only here in pwmig.  They are treated as local 
+# extensions of libpwmig.
+if [ -z "$PWMIG" ] ; then
+    echo The environment variable PWMIG is not set
+    echo Run the setup script for pwmig
+    exit -1
+fi
+outdir=$PWMIG/antelope_src/libseispp
+if [ ! -d $outdir ] ; then
+    echo "Required directory $outdir does not exist"
+    echo "Check configuration and create if necessary"
+    exit -1
+fi
+fromdir=`pwd`
+echo Attempting to copy required libseispp modules from $fromdir
+cp -r json $outdir
+echo Copied directory json to $outdir
+cp *.cc *.h $outdir
+echo Copied *.cc and *.h to $outdir

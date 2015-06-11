@@ -7,6 +7,7 @@ PF=convertRTdata.pf
 cxxflags=-g 
 DBX=-g
 ldlibs= -lseispp -lgclgrid -ltrvltm $(DBLIBS) $(TRLIBS) -lperf -lm
+SUBDIR=/contrib
 
 include $(ANTELOPEMAKE)
 DIRS=

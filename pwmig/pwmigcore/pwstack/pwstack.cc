@@ -287,7 +287,17 @@ int main(int argc, char **argv)
             // will prove better than pseudostation method
             //
             auto_ptr<ThreeComponentEnsemble> ensemble;
-            ensemble=auto_ptr<ThreeComponentEnsemble>(input_handle.read_gather(event_number));
+            try{
+              ensemble=auto_ptr<ThreeComponentEnsemble>(input_handle.read_gather(event_number));
+            }
+            catch(std::exception& stdexc)
+            {
+                cerr << "Error reading ensemble for evid="<<evid<<endl
+                    << "Message from reader:"<<endl
+                    << stdexc.what()<<endl
+                    << "Skipping data for this event"<<endl;
+                continue;
+            }
 	    evid=ensemble->get_long("evid");
             /* This was added 2015 to remove dependence on global travel
                time calculators.  Previously we computed slowness vectors
@@ -460,7 +470,7 @@ int main(int argc, char **argv)
             }
 	    dfh.save_slowness_vectors(svm,ugrid);
 	    char fsbuf[64];
-	    sprintf(fsbuf,"%s_%d",fieldnamebase.c_str(),evid);
+	    sprintf(fsbuf,"%s_%ld",fieldnamebase.c_str(),evid);
 	    string fieldname(fsbuf);
             /* This uses the new file based save metod */
             try {

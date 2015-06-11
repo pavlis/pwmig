@@ -9,7 +9,13 @@ other people need to use the package, make sure the directory you choose for the
 installation is readable by others.  You need to first create the install
 directory.   
 
-2.  edit the file setup/setup.csh to set the location you chose above.  
+2.  Edit the file setup/setup.csh point to the top level directory 
+described in 1.   This requires setting one internal variable in
+setup.csh.   The default line is this:
+set BASE=/opt/pwmig
+Edit this to point to your install location.  For example, here is
+what I used for the HPC machine called Karst at Indiana University.
+set BASE=/N/u/pavlis/Karst/PWMIG
 
 3.  In the setup directory copy either pwmigmakefile.macos or 
 pwmigmakefile.linux to pwmigmakefile (i.e. without the .ext).  
@@ -59,14 +65,114 @@ found in two directories to do this.  Assuming the current directory
 is the same as that where this file is found type this set of 
 commands to build the required antelope libraries:
 
-cd antelope/libgclgrid
+cd antelope/antelope_contrib/libgclgrid
 ./copy_libgclgrid_files
 cd ../libseispp
 ./copy_libseispp_files
+cd ../libseispp.ext
+./copy_libseispp_ext_files
 cd ../libperf
 ./copy_libperf_files
 
-4) Type these commands:
+4) Installing this package requires mixing C and C++ include files
+found in both antelope contrib and some components of antelope I converted
+from the original open source version of datascope.  This complicates
+the build process because we have to install all of the include files
+first before we compile anything.  Assuming you ran the "source setup.csh"
+command earlier this sequence of commands should do that:
+
+Return to the top level directory for this repository (the one
+where this file is located) and type:
+cd antelope/dsap_conversion
+make Include
 cd $PWMIG/antelope_src
 make Include
+
+5)  Once this is done we do a comparable thing with make install:
+cd antelope/dsap_conversion
 make install
+cd $PWMIG/antelope_src
+make install
+
+Note the libttpp is presently broken.   This file was retained because
+there is still hope it can be fixed, but don't try to use this.  It will
+build but will not work.
+
+6) At this point there are limits on what programs in this package
+can be built without antelope and which require it.   The primary 
+split is the directory found in the top level called pwmigcore.  Only 
+programs in that directory will build without antelope.  Most of the 
+rest of this package requires antelope libraries.  
+
+To build the 4 main programs that perform plane wave migration do 
+the following (again assuming the current directory is the same one
+where this file is found):
+
+cd pwmig/lib/libpwmig
+make Include
+make install
+cd ../../pwmigcore
+make install
+
+This will put the plane wave migration codes in $PWMIG/bin.  
+
+7) To use the plane wave migration code tcsh/csh users should add these lines 
+to .cshrc or .tcshrc:
+
+setenv PWMIG --top level directory of pwmig install --
+source $PWMIG/setup.csh
+
+bash and sh users will need to do some minor conversion to modify setup.csh
+to work for bash/sh and create a comparable initialization.
+
+8) The other programs in this package require antelope.  There presently 
+no automated compile mechanism so these need to be installed as needed. 
+All these programs echo a usage line if the command is entered with no
+arguments.   Most have unix man pages.
+
+In gclgrid:
+extract_section - extracts an arbitrary line through an image volume.
+extract_volume - converts an image volume to segy for use in petrel.
+gaingrid - applies a specified gain and power factor to image volume
+horizonstats - computes metrics on a GCLgrid define surface.
+
+In paraview:
+gclfield2vtk - converts a gclfield object to vtk format used by paraview
+grdtodb - converts a GMT grd file to a surface (mainly used for topography)
+vtk_gcl_converter - converts a range of types of data to files that can be
+    viewed with paraview in a scene with plane wave migration image volumes.
+
+In pwmig:
+Programs not in the pwmigcore directory mostly require antelope.   An
+important one is migsimulation, which is used for error appraisal by 
+creating simulations of a complete data set for several choices of 
+synthetic methods.   migsimulation requires one to build the libsynthetics 
+library found in lib/libsynthetic.   cd to that directory and type the
+usual:
+make Include
+make install
+
+This puts the libsynthetics.a static library in the standard antelope location
+like antelope contrib.
+
+The other programs under the pwmig directory are assorted utilities:
+
+Under dataprep:
+convert_ak135 - converts the stock text file for ak135 to an input file format
+    used by pwmig. 
+convertRTdata - used to convert RF data in Sac format computed in R and T 
+    directions
+db2pwstack - converter to take data stored in an antelope database and build
+    the input file format used by pwstack.
+importpwmig - utility used to import a series of files produced by pwmig 
+    to the database format used in antelope programs.
+project1dmod - builds a 3d model from a 1D model file (depricated)
+RFeventstacker and telecluster - and important pair of programs used to build
+    receiver side stacks.  Telecluster builds a radial grid of control points
+    and links to events in the neighborhood of those control points.  
+    RFeventstacker is run after telecluster to build composite events from 
+    different source regions.  See the man pages for both programs.
+
+The EARS directory contains a suite of programs used to work with data
+from the Earthscope Automated Receiver function Survey (EARS).   If you
+are interested in using these programs contact the author pavlis@indiana.edu.

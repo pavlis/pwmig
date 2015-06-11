@@ -2,6 +2,8 @@ BasicTimeSeries.cc
 BasicTimeSeries.h
 Metadata.cc
 Metadata.h
+PfStyleMetadata.h
+PfStyleMetadata.cc
 SeisppError.h
 SeisppKeywords.h
 SphericalCoordinate.h

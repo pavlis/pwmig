@@ -694,7 +694,7 @@ auto_ptr<GCLscalarfield3d> ComputeIncidentWaveRaygrid(GCLgrid& pstagrid,
  *
  * if use_3d is false only 1d travel times will be returned. */
 vector<double> compute_Stime(GCLscalarfield3d& U3d,
-   int i, int j, VelocityModel_1d& V1d,GCLscalarfield3d& raygrid,bool use_3d)
+   int i, int j, GCLscalarfield3d& raygrid,bool use_3d)
 {
     /* First we retrieve a vector of the 1D travel times in surface
        to bottom order */
@@ -1097,6 +1097,64 @@ SlownessVector slowness_average(ThreeComponentEnsemble *d)
 		return(SlownessVector(ux,uy));
 	}
 }
+/* New functions added April 2015 for version using relative times.   These
+ * are procedures that deal with the p*delta term in the travel time equations.
+ * See documenation of version 2.0 for details */
+/* This procedure finds an interpolated geographic point at the depth zx
+ * along the incident ray defined by the path in TP with top at i,j. Note 
+ * the issue about border padding makes this not consistent with S ray raygrid 
+ * positions.*/
+Geographic_point find_TP_at_x_depth(GCLscalarfield3d& TP,int i, int j, double zx)
+{
+    /* The grid is always oriented with n3-1 at the earth's surface.  We assume the
+     * number of points along a ray here is not huge so we do a simple linear search 
+     * and use a linear interpolator for lat a lon */
+    int k;
+    k=TP.n3-1;
+    while((zx >= TP.depth(i,j,k)) && (k>0)) --k;
+    /* Silently return with the last point coordinate if we hit the bottom (this 
+     * perhaps should be treated as an exception */
+    if(k==0) 
+        return(TP.geo_coordinates(i,j,0));
+    double lat1,lat2,lon1,lon2,z1,z2;
+    lat1=TP.lat(i,j,k-1);
+    lon1=TP.lon(i,j,k-1);
+    z1=TP.depth(i,j,k-1);
+    lat2=TP.lat(i,j,k);
+    lon2=TP.lon(i,j,k);
+    z2=TP.depth(i,j,k);
+    Geographic_point gpr0;
+    gpr0.lat=INTERPOLATOR1D::linear_scalar(zx,z1,lat1,z2,lat2);
+    gpr0.lon=INTERPOLATOR1D::linear_scalar(zx,z1,lon1,z2,lon2);
+    gpr0.r=r0_ellipse(gpr0.lat)-zx;
+    return gpr0;
+}
+/* This procedure returns the p*delta term for scatter at point x and 
+ * incident ray path intersection of same depth level as rz.  Depends on spherical
+ * ray parameter formula.  This is an approximation but one that should not
+ * prove problematic unless this is ever used to far into the lower mantle */
+double compute_delta_p_term(Geographic_point x, Geographic_point rz,
+        SlownessVector u0)
+{
+    /* dsap function to computer distance and azimuth.   gcp distance in degrees
+     * is depth independent */
+    double delta,az;
+    dist(rz.lat,rz.lon,x.lat,x.lon,&delta,&az);
+    /*az is the angle from N of gcp from rz to x.  This defines offset component
+     * for distance components as gcp angles */
+    double delx=delta*sin(az);
+    double dely=delta*cos(az);
+    //DEBUG
+    /*
+    cout << "Radius of x and rz points="<<x.r<<" "<<rz.r<<" diff="<<x.r-rz.r<<endl
+        << "Delta (deg)="<<deg(delta)<<" azimuth(deg)="<<deg(az)<<endl
+        << "Delx,dely(deg)="<<deg(delx)<<" "<<deg(dely)<<endl
+        << "Slowness mag="<<u0.mag()<<" azimuth="<<deg(u0.azimuth())<<endl;
+        */
+
+    return(EQUATORIAL_EARTH_RADIUS*(delx*u0.ux + dely*u0.uy));
+}
+
 /* Extracts du for this enseble.  This procedure should never to extracted
 from this program without major modification.  REason is it make two 
 extreme assumptions appropriate here, but anything but general.  
@@ -1306,7 +1364,7 @@ int main(int argc, char **argv)
 	}
 	string dfile;  // used repeatedly below for data file names
 
-        for(i=3;i<argc;++i)
+        for(i=2;i<argc;++i)
         {
 		string sarg(argv[i]);
 		if(sarg=="-V")
@@ -1763,7 +1821,7 @@ int main(int argc, char **argv)
 				// are parallel with the ray path associated with the 
 				// current seismogram (i,j).  First we compute the S wave
 				// travel time down this ray path (i.e. ordered from surface down)
-                                Stime = compute_Stime(*Us3d,i,j,Vs1d,raygrid,use_3d_vmodel);
+                                Stime = compute_Stime(*Us3d,i,j,raygrid,use_3d_vmodel);
 				// Now we compute the gradient in the S ray travel time
 				// for each point on the ray.  Could have been done with 
 				// less memory use in the loop below, but the simplification
@@ -1786,7 +1844,7 @@ int main(int argc, char **argv)
                                             *TPptr,hypo);
                                             */
                                 double Tpr=TPptr->val[i+border_pad][j+border_pad][TPptr->n3-1];
-				double tlag,Tpx;
+				double tlag,Tpx,tdelta;
 				bool needs_padding;
 				int padmark=raygrid.n3-1;
 				bool tcompute_problem;   // set true if tt calculation fails away from edges 
@@ -1799,6 +1857,10 @@ int main(int argc, char **argv)
 				{
 					vector<double>nu;
 					double vp;
+                                        SlownessVector u0=svm0(i,j);
+                                        /* This is needed in new for to compute p*delta term */
+                                        Geographic_point x_gp,rTP_gp;
+                                        x_gp=raygrid.geo_coordinates(i,j,kk);
 
 					nu = compute_unit_normal_P(*TPptr,raygrid.x1[i][j][kk],
 						raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
@@ -1817,6 +1879,10 @@ int main(int argc, char **argv)
 					case 0:
 						Tpx=TPptr->interpolate(raygrid.x1[i][j][kk],
                                                    raygrid.x2[i][j][kk],raygrid.x3[i][j][kk]);
+                                                /* Not ugly border_pad constuct.  Required
+                                                 * because TP grid has extra points on i j boundary*/
+                                                rTP_gp = find_TP_at_x_depth(*TPptr,i+border_pad,
+                                                                j+border_pad,raygrid.depth(i,j,kk));
 						break;
 					case 1:
 					/* This means the point falls outside the P ray grid.
@@ -1835,10 +1901,13 @@ int main(int argc, char **argv)
 						padmark=k;
 					}
 					if(tcompute_problem || needs_padding) break;
-                                        /* Ths form does not change with the 
-                                           new approach.   The terms are just
-                                           computed differently. */
-					tlag=Tpx+Stime[k]-Tpr;
+                                        /* Previous version had a different form here with 3 terms.
+                                         * We have to add a new one for relative time calculation 
+                                         * here to correct for p*delta */
+                                        tdelta=compute_delta_p_term(x_gp,rTP_gp,u0);
+					tlag=Tpx+Stime[k]+tdelta-Tpr;
+                                        //DEBUG
+                                        //cout << "tdelta="<<tdelta <<" tlag="<<tlag<<endl;
 					SPtime.push_back(tlag);
 				}
 
