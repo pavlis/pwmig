@@ -114,6 +114,14 @@ void BuildSlownessGrid(Hypocenter h, GCLvectorfield& ug)
                 SlownessVector u=h.pslow(lat,lon,elev);
                 ug.val[i][j][0]=u.ux;
                 ug.val[i][j][1]=u.uy;
+//DEBUG
+/*
+cout << "source lat,lon="
+<<deg(h.lat)<<", "<<deg(h.lon)
+<< " psta lat,lon="
+<< deg(lat)<<", "<<deg(lon)
+<< " Back azimuth="<< deg(u.baz())<<endl;
+*/
             }
     }catch(...){throw;};
 }
@@ -356,9 +364,16 @@ int main(int argc, char **argv)
             delete din;
             long evid=ensemble->get_long("evid");
 	    int gather_size=ensemble->member.size();
+	    cout << "Event id="<<evid<<endl
+		<< "source latitude="<<ensemble->get_double("origin.lat")
+		<< " longitude="<<ensemble->get_double("origin.lon")
+		<< " depth="<< ensemble->get_double("origin.depth")
+		<< " origin time="
+			<< strtime(ensemble->get_double("origin.time"))
+		<<endl;
 	    if(gather_size<minimum_gather_size)
 	    {
-		cout << "Event id="<<evid<<" number of seismograms="
+		cout << "Warning:  number of seismograms="
 			<< gather_size<<" is below threshold of "
 			<< minimum_gather_size<<endl
 			<< "Data for this event not written to output file"
@@ -390,12 +405,8 @@ int main(int argc, char **argv)
                     exit(-1);
                 }
                 int nseis=write_ensemble(*ensemble,fp);
-                if(SEISPP_verbose)
-                {
-                    cout << "Event id ="<<evid<<endl
-                        << "Wrote "<<nseis<<" seismograms of expected "
-    		    << gather_size<<endl;
-                }
+		cout << "Wrote "<<nseis<<" seismograms of expected "
+                    << gather_size<<endl;
 		++number_events_saved;
 	    }
         }
