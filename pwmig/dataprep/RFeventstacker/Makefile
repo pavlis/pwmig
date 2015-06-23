@@ -8,6 +8,7 @@ cxxflags=-g
 ldlibs= -lpwmig -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid -lseispp
 # Following is required to work with g++ 3.2.3
 #ldflags=-shared -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid
+SUBDIR=/contrib
 
 
 include $(ANTELOPEMAKE) 
