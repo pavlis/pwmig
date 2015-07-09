@@ -616,6 +616,12 @@ cout << "Number of record to process="<<nrec<<endl;
                         auto_ptr<ThreeComponentEnsemble> pwdataraw =
                             auto_ptr<ThreeComponentEnsemble>(new
                                     ThreeComponentEnsemble(dbhwf,mdlin,mdens,am));
+                        if(pwdataraw->member.size()<=0) 
+                        {
+                            cerr << "Ensemble for data for row "<<record<<" of database view is empty"<<endl
+                                << "Likely missing waveform data or corrupted database"<<endl;
+                            continue;
+                        }
                         /*Scan for irregular sampling for efficiency.  Note always call
                           resampler with trim off assuming deconvolved data have no issue
                           with dc offset*/
