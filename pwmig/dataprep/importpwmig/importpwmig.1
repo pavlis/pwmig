@@ -3,7 +3,7 @@
 importpwmig - imports GCLvectorfield3d files created by pwmig
 .SH SYNOPSIS
 .nf
-importpwmig [-db dbname] file1 file2 ... filen
+importpwmig [-a -db dbname] file1 file2 ... filen
 .fi
 .SH DESCRIPTION
 .LP
@@ -22,7 +22,17 @@ large numbers of them are easier to maintain.
 The output data files indexed in the database are currently forced to be written in 
 a single directory with the frozen name of pwmigdata.   The program will only work
 with data from pwmig whose output is a 5 component vector field.
+Furthermore, ALL files in the list must share the same grid geometry or results
+will be wrong or any files with a grid change.   Furthermore the gclgdisk 
+table must NOT contain an entry for the GCLgrid3d geometry file or the program
+will abort.  Use the -a option if you are adding to an existing table with 
+more files of the same geometry.
 .SH OPTIONS
+.IP -a
+Use this option if you are appending additional data to an existing 
+database with the same base grid name as run previously.   
+In this situation the grid geometry data are not saved and the program 
+blindly assumes the data for the grid are already stored in the gclgdisk table.
 .IP -db
 Use this option to change the name of the database to store results.  
 The default is imports.
@@ -31,60 +41,14 @@ The default is imports.
 The program will write the grid geometry in a single file defined by the name
 tag for the grid stored in the pf file linked to each file.   The field contents
 for each file are written retaining the original base names passed as arguments.
-#
-# Describe input and output files (but not down to bits).
-#
-.SH ENVIRONMENT
-#
-# Describe any special environment variables
-#
-.SH PARAMETER FILE
-#
-# Describe any parameter file
-# This is not a place to put a copy of the parameter file; it's
-# supposed to be a description of each parameter in the file.
-#
-.SH EXAMPLE
-#
-# This section should contain an example that the user can follow
-# verbatim.  For a command, this should show a sample command line and output.
-# Use the same fonts as in \fBSYNOPSIS\fR. What the user types in should
-# be bold, and program response or output should be roman. All commands 
-# should be preceded by a representative UNIX prompt.
-#
-# For a library, you might show an example program (This is usually only 
-# done for more complex routines or packages.)
-#
-.in 2c
-.ft CW
-.nf
-.fi
-.ft R
-.in
-.SH RETURN VALUES
-#
-# Describe the return values for each subroutine or command.  The usual
-# is to return 0 for normal execution and something else for errors.
-#
-.SH LIBRARY
-#
-# Indicate the libraries which need to be linked in (for library routines only)
-# in the form of the ldlibs Makefile line, eg "-ldb -lstock -lm"
-#
-.SH ATTRIBUTES
-MT-Safe ?
 .SH DIAGNOSTICS
-#
-# Describe error messages and give cautionary advice.
-.SH "SEE ALSO"
-.nf
-#
-# List related manual entries and section (lowercase, bold)., eg "file(1)"
-# or related documents
-.fi
+.LP
+Various diagnostics should appear if there are problems reading files or 
+saving the results.
 .SH "BUGS AND CAVEATS"
-#
-# Describe any shortcomings of the programs, known bugs, or surprising 
-# results.
+.LP
+This program is really not designed to handle data from multiple grid 
+geometries.  The -a method is a related awkward construct that is needed
+by very error prone.
 .SH AUTHOR
-# Put the author's name here (person who wrote the code) (roman).
+Gary L. Pavlis, Department of Geological Sciences, Indiana University
