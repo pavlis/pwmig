@@ -1,12 +1,11 @@
-BIN=telecluster
-PF=telecluster.pf
 
-MAN1=telecluster.1
-ldlibs= -lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
-SUBDIR=/contrib
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
-include $(ANTELOPEMAKE) 
-CXXFLAGS+=-g
-OBJS= telecluster.o
-$(BIN) : $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
+
+FORCED:
+
