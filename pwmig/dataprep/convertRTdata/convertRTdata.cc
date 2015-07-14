@@ -3,6 +3,7 @@ for pwmig.  That means 3c data objects.  See design file in this directory
 for more info. */
 #include <math.h>
 #include <sstream>
+#include "perf.h"
 #include "coords.h"
 #include "stock.h"
 #include "seispp.h"

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include "perf.h"
 #include "seispp.h"
 #include "Metadata.h"
 #include "dbpp.h"

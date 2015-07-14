@@ -1,10 +1,11 @@
-BIN=project1dmod
 
-cxxflags=-g 
-ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp $(TRLIBS) $(DBLIBS) -lperf -lm
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
-include $(ANTELOPEMAKE)
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
 
-OBJS=project1dmod.o
-$(BIN) : $(OBJS)
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+FORCED:
+

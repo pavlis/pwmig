@@ -1,17 +1,11 @@
-BIN=convertRTdata
-INCLUDE=
-PF=convertRTdata.pf
-#MAN1=		# man pages for commands
 
-#cflags=-g -DSUNPERF
-cxxflags=-g 
-DBX=-g
-ldlibs= -lseispp -lgclgrid -ltrvltm $(DBLIBS) $(TRLIBS) -lperf -lm
-SUBDIR=/contrib
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
-include $(ANTELOPEMAKE)
-DIRS=
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
 
-OBJS=convertRTdata.o
-$(BIN) : $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+FORCED:
+
