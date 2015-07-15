@@ -1,11 +1,11 @@
-BIN=extract_volume
-PF=extract_volume.pf
 
-#MAN1=extract_volume.1
-#cflags=-O
-ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp $(TRLIBS) $(DBLIBS) -lperf -lwffil -lbrttutil -lm
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
-include $(ANTELOPEMAKE) 
-OBJS= extract_volume.o pfutils.o SEGY2002FileHandle.o
-$(BIN) : $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
+
+FORCED:
+

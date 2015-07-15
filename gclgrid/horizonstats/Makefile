@@ -1,9 +1,11 @@
-BIN=horizonstat
-#MAN1=		# man pages for commands
-ldflags=-lseispp -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lseispp -lm
 
-include $(ANTELOPEMAKE) 
-OBJS=horizonstat.o
-$(BIN) : $(OBJS)
-	$(RM) $@
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
+
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
+
+FORCED:
+

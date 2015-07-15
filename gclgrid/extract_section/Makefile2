@@ -1,0 +1,15 @@
+BIN=extract_section
+PF=extract_section.pf
+
+MAN1=extract_section.1
+#cflags=-O
+ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp $(TRLIBS) $(DBLIBS) -lperf -lm
+SUBDIR=/contrib
+
+include $(ANTELOPEMAKE) 
+include $(ANTELOPE)/contrib/include/antelopemake.local
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB)
+OBJS= extract_section.o
+$(BIN) : $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
