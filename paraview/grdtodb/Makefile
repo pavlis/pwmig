@@ -1,12 +1,11 @@
-BIN=grdtodb
 
-#MAN1=pwmig.1
-#cflags=-g
-ldlibs=-lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
-SUBDIR=/contrib
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
 
-include $(ANTELOPEMAKE) 
-OBJS= grdtodb.o
-$(BIN) : $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+FORCED:
+

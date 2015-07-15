@@ -1,0 +1,14 @@
+BIN=vtk_gcl_converter
+
+MAN1=vtk_gcl_converter.1
+PF=vtk_gcl_converter.pf
+ldlibs=-lm -lgeocoords -lseispp -lgclgrid -lperf $(DBLIBS) 
+SUBDIR=/contrib
+include $(ANTELOPEMAKE)
+include $(ANTELOPE)/contrib/include/antelopemake.local
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB)
+OBJS=vtk_gcl_converter.o
+$(BIN) : $(OBJS)
+	$(RM) $@
+	$(CXX) $(CCFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
