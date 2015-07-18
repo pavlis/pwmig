@@ -1,4 +1,5 @@
 BIN=print_gridgain_factors
+MAN1=print_gridgain_factors.1
 cflags=-g
 ldlibs=-lseispp -lgclgrid -lperf $(DBLIBS) -lm -lseispp
 
