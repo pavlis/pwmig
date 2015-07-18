@@ -1,4 +1,5 @@
 BIN=gaingrid
+MAN1=gaingrid.1
 cflags=-g
 ldlibs=-lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm -lseispp
 

@@ -1,0 +1,43 @@
+.TH GAINGRID 1
+.SH NAME
+gaingrid - apply a gain and scale correction for pwmig image data
+.SH SYNOPSIS
+.nf
+gaingrid db grid field outfield scale power [-clip level]
+.fi
+.SH DESCRIPTION
+.LP
+The primary purpose of this program is to take the raw output grids from  the
+plane wave migration package (pwmig) and scale the image volumes to be easily compared 
+in a 3D visualization (currently that means paraview or petrel).   
+This is form of true amplitude scaling that is recoverable by inverting the simple scaling formula.
+The scaling is controlled by the two arguments scale and power.   Each sample
+in the image volume is multiplied by a factor of scale*pow(z,power) where z
+is the depth from the surface (in km) of that grid point.   Physically, power is a geometric
+spreading correction.  scale is simply a constant used to equalize all amplitudes to a
+common scale factor.  
+.LP
+This program is tightly linked to a utility program called print_gridgain_factors(1). 
+That program can be used to estimate a reasonable scale factor for any chosen power 
+decay rate you want to choose.  It also outputs decay curves that can be plotted to 
+choose a decay constant.  If is, of course, essential to use a common power factor
+for any suite of imaging results that are to be compared for relative amplitude variations.
+.LP
+Input and output is to a Datascope db using the gclgdisk and gclfield tables. 
+\fIdb\fR is the database name, \fIgrid\fR is the grid name for the image being scaled and
+\fIfield\fR is the associated field name used to idenfify the data in the gclfield table.
+\fIoutfield\fR is the name that will be used for the output field. Be careful that this name
+does not overflow the fixed field length of 15 characters. \fIscale\fR and \fIpower\fR 
+are as described above.
+.SH OPTIONS
+.IP -clip
+Use this option to clip data.  The level is the clip level applied after
+the data are scaled.   If data are scaled to order 1.0 a reasonable 
+value is 50 to 100 since the dynamic range of data graphically is only 
+of the order of 8 bits.
+.SH "SEE ALSO"
+.nf
+print_gridgain_factors(1)
+.fi
+.SH AUTHOR
+Gary L. Pavlis, Department of Geological Sciences, Indiana University
