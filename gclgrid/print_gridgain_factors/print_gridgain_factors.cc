@@ -99,7 +99,9 @@ int main(int argc, char **argv)
         for(i=0;i<nfac;++i)
         {
             for(k=0;k<nz;++k) avz.push_back(curves(k,i));
-            cout << "For exponent="<< pfac[i]<< " use scale="<< median<double>(avz)<<endl;
+            double mdava=median<double>(avz);
+            cout << "For exponent="<< pfac[i]<< " use scale="<< 1.0/mdava
+                <<", Computed from median amplitude="<<mdava <<endl;
             avz.clear();
         }
     }catch(std::exception& ex)
