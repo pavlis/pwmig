@@ -1,0 +1,45 @@
+.TH PRINT_GRIDGAIN_FACTORS  1
+.SH NAME
+print_gridgain_factors - print suggested scale factors or pwmig images
+.SH SYNOPSIS
+.nf
+print_gridgain_factors file
+.fi
+.SH DESCRIPTION
+.LP
+The raw output of scattered wave image results produced by the pwmig
+package of programs always has a strong loss of amplitude with depth.
+In this package is a program called gaingrid which is used to normalize
+this correction.   The purpose of this program is to compute the constants
+needed to normalize a grid to a consistent amplitude level.   
+.LP
+The gaingrid program requires to constants:  (1) a scale factor used
+as a multiplier for all components of the image, and (2) an exponent 
+used to correct for geomtric spreading.  This program emits to 
+standard output estimates of the appropriate scale factor for a
+range of reasonable exponents.   
+.LP
+The results are computed from median amplitudes at each constant depth slice
+in the image volume. Amplitude is computed as the L2 norm of the vector amplitude
+at each (not Null) grid point (Null is defined by gridstacker with component 4 - fold -
+being positive).  These amplitude values are scaled by the range of exponents defined
+internally by the program.   The scale factor for each exponent is computed from the 
+median of each decay curve.   
+.LP
+The actual decay curves are written to a separate file with the frozen name 
+decaycurves.dat (see below for format).   This file is intended to be visualized
+in matlab or python.  In matlab the file can be read directly with the dlmread 
+command or a load -ascii command.
+.SH FILES
+.LP
+The decaycurves.dat output file is a matrix aimed to be read directly with matlab for plotting.
+The first row of the matrix contains the exponents used to scale that column of data.  
+Strip the first row to visualize the decay curve for that exponent.  The rows are the 
+corrected amplitudes (for the associated exponent) at each successive depth in the image
+grid arranged from the surface to the bottom of the grid.  
+.SH "SEE ALSO"
+.nf
+gaingrid(1) and pwmig documentation
+.fi
+.SH AUTHOR
+Gary L. Pavlis, Departmentt of Geological Sciences, Indiana University
