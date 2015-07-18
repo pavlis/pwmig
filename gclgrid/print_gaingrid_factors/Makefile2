@@ -1,5 +1,5 @@
-BIN=print_gridgain_factors
-MAN1=print_gridgain_factors.1
+BIN=print_gaingrid_factors
+MAN1=print_gaingrid_factors.1
 cflags=-g
 ldlibs=-lseispp -lgclgrid -lperf $(DBLIBS) -lm -lseispp
 
@@ -8,6 +8,6 @@ include $(ANTELOPEMAKE)
 include $(ANTELOPE)/contrib/include/antelopemake.local
 CXXFLAGS += -I$(BOOSTINCLUDE)
 LDFLAGS += -L$(BOOSTLIB)
-OBJS=print_gridgain_factors.o
+OBJS=print_gaingrid_factors.o
 $(BIN) : $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)

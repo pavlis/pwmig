@@ -12,7 +12,7 @@
 using namespace SEISPP;
 void usage()
 {
-    cerr << "print_gridgain_factors gclgridfile"<<endl;
+    cerr << "print_gaingrid_factors gclgridfile"<<endl;
     exit(-1);
 }
 bool SEISPP::SEISPP_verbose(true);
