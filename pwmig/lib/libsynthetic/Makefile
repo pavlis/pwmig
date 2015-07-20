@@ -1,30 +1,11 @@
-LIB=libsynthetic.a
-#DLIB=$(LIB:.a=$(DSUFFIX))
-#BUNDLE=$(LIB:.a=.bundle)
-INCLUDE=SyntheticSeismogram.h PointSourcePSSynthetic.h \
-        vectorcls.h SimplePSPrimarySynthetic.h StaVariableLayeredSynthetic.h \
-        SphericalRayPathArray.h   
-cflags=-g
-fflags=-g
-ldlibs=$(F77LIBS)
 
-include $(ANTELOPEMAKE)
-OBJS=	PointSourcePSSynthetic.o SimplePSPrimarySynthetic.o \
-        SphericalRayPathArray.o StaVariableLayeredSynthetic.o \
-        vectorcls.o \
-        abm.o dfftr.o fft.o ifmat.o kntfun.o kntsyn.o locast.o npowr2.o
+all Include install installMAN pf relink tags test :: FORCED
+	@-if localmake_config boost ; then \
+	    $(MAKE) -f Makefile2 $@ ; \
+	fi
 
+clean uninstall :: FORCED
+	$(MAKE) -f Makefile2 $@
 
-$(LIB) : $(OBJS)
-	$(RM) $@
-	$(CXXAR) $(CXXARFLAGS) $@ $(OBJS)  
-	$(RANLIB) $@
+FORCED:
 
-# Turned of - shared library not really necessary for this code
-#$(DLIB) : $(OBJS)
-#	$(RM) $@
-#	$(CXXDLD) $(CXXDLDFLAGS) -o $(DLIB) $(OBJS) $(DLDLIBS) 
-#
-#$(BUNDLE) : $(OBJS)
-#	$(RM) $@
-#	$(DLD)  -flat_namespace -bundle -undefined suppress -o $@   $(OBJS) $(LDFLAGS) $(DLDLIBS)
