@@ -1520,9 +1520,9 @@ int main(int argc, char **argv)
 		    if(SEISPP_verbose)
 		    {
 			cout << "P velocity model"<<endl;
-			cout << Up3d;
+			cout << *Up3d;
 			cout << "S velocity model"<<endl;
-			cout << Us3d;
+			cout << *Us3d;
 		    }
                     /*
 		    By default assume the models are defined as slowness
