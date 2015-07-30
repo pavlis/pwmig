@@ -26,8 +26,9 @@ using namespace SEISPP;
 void usage()
 {
 	cerr << "extract_volume db gridname fieldname "
-		<< "[-o outfile -pf pffile -v]"<<endl
-	      << "Default outfile is called extract_volume.su"<<endl;
+		<< "[-o outfile -coh -pf pffile -v]"<<endl
+	      << "Default outfile is called extract_volume.su"<<endl
+              << "Use -coh flag if input is a coherence grid (default is pwmig output)"<<endl;
 
 	exit(-1);
 }
@@ -199,7 +200,7 @@ ThreeComponentSeismogram ExtractFromGrid(GCLvectorfield3d& g,
 bool SEISPP::SEISPP_verbose(false);
 int main(int argc, char **argv)
 {
-	int i,j;
+	int i,j,k;
 	ios::sync_with_stdio();
 	if(argc<4) usage();
 	string dbname(argv[1]);
@@ -209,6 +210,7 @@ int main(int argc, char **argv)
 	ofstream outstrm;
 	bool out_to_other(false);
 	string outfile("extract_volume.su");
+        bool input_is_coherence(false);
 	for(i=4;i<argc;++i)
 	{
 		string argstr=string(argv[i]);
@@ -227,6 +229,8 @@ int main(int argc, char **argv)
                 }
 		else if(argstr=="-v")
 			SEISPP_verbose=true;
+                else if(argstr=="-coh")
+                    input_is_coherence=true;
 		else
 		{
 			cerr << "Unknown argument = "<<argstr<<endl;
@@ -269,6 +273,14 @@ int main(int argc, char **argv)
                     <<endl;
                 exit(-1);
             }
+            /* override the above if coherence - hack adaption of this program
+               puts coherence value in comp[0] and zeros other components. */
+            if(input_is_coherence)
+            {
+                comp_to_save[0]=true;
+                comp_to_save[1]=false;
+                comp_to_save[2]=false;
+            }
             string outform=control.get_string("output_format");
             GenericFileHandle *outhandle;
             DatascopeHandle dbh(dbname,true);
@@ -277,7 +289,24 @@ int main(int argc, char **argv)
 	    dbhg.lookup(string("gclfield"));
 	    Dbptr db=dbh.db;
 	    Dbptr dbgrd=dbhg.db;
-	    GCLvectorfield3d g(dbh,gridname,fieldname,5);
+            GCLvectorfield3d *g;
+            if(input_is_coherence)
+            {
+                /* To simplify coding for a coherence field
+                   copy the coherence data into component 0 
+                   and zero the other components.  Horribly 
+                   inefficient in memory usage, but avoids
+                   new code to handle a scalar field */
+                GCLscalarfield3d gcoh(dbh,gridname,fieldname);
+                g=new GCLvectorfield3d(gcoh,5);
+                g->zero();
+                for(i=0;i<g->n1;++i)
+                    for(j=0;j<g->n2;++j)
+                        for(k=0;k<g->n3;++k)
+                            g->val[i][j][k][0]=gcoh.val[i][j][k];
+            }
+            else
+                g=new GCLvectorfield3d(dbh,gridname,fieldname,5);
             string xrefstr=pftbl2string(pf,"metadata_cross_reference");
             AttributeCrossReference outxref(xrefstr);
             /* We share this list for both su and segy formats. This 
@@ -296,8 +325,8 @@ int main(int argc, char **argv)
             else if(outform=="SEGY")
             {
                 SEGY2002FileHandle *sgyh;
-                pfput_int(pf,"number_samples",g.n3);
-                pfput_int(pf,"sample_interval",g.dx3_nom*1000);
+                pfput_int(pf,"number_samples",g->n3);
+                pfput_int(pf,"sample_interval",g->dx3_nom*1000);
                 sgyh=new SEGY2002FileHandle(outfile,tmdlist,pf);
                 outhandle=dynamic_cast<GenericFileHandle *>(sgyh);
             }
@@ -309,18 +338,15 @@ int main(int argc, char **argv)
                 exit(-1);
             }
             /* Now loop over grid.  */
-            int i,j,tracr,npts;
+            int tracr,npts;
             double x1i,x2j;
             double x1max,x2max;
-            x1max=static_cast<double>(g.n1)-1;
-            x2max=static_cast<double>(g.n2)-1;
+            x1max=static_cast<double>(g->n1)-1;
+            x2max=static_cast<double>(g->n2)-1;
             ThreeComponentSeismogram d;
-            for(j=0,x2j=0.0,tracr;x2j<x2max;x2j+=dx2,++j)
                 for(i=0,x1i=0.0;x1i<x1max;x1i+=dx1,++i)
                 {
-                    //DEBUG
-                    //cout << i<<" "<<x1i<<" "<<j<<" "<<x2j<<endl;
-                    d=ExtractFromGrid(g,x1i,x2j);
+                    d=ExtractFromGrid(*g,x1i,x2j);
                     ++npts;
                     /* Some hard coded header edits better done
                        here than in ExtractFromGrid */
