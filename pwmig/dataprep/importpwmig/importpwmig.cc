@@ -7,8 +7,9 @@ using namespace std;
 using namespace SEISPP;
 void usage()
 {
-    cerr << "importpwmig -vector|-scalar file1 file2 ... filen [-db dbname]"<<endl
+    cerr << "importpwmig [-vector|-scalar -a -db dbname] file1 file2 ... filen"<<endl
         <<  "  only pwmig output fields can be imported"<<endl
+        <<  "  Use -vector migration output (default)and -scalar for coherence data"<<endl
         <<  "  dbname default is imports"<<endl;
     exit(-1);
 }
@@ -16,21 +17,15 @@ bool SEISPP::SEISPP_verbose(true);
 int main(int argc,char **argv)
 {
     if(argc<3) usage();
-    string fieldtypestr(argv[1]);
-    bool isvector;
-    if(fieldtypestr=="-vector")
-    	isvector=true;
-    else if(fieldtypestr=="-scalar")
-    	isvector=false;
-    else 
-    	usage();
+    bool isvector(true);
     string dbname("imports");
     string outdir("pwmigdata");
     string nulldir("");
+    bool append_mode(false);
     list<string> fieldlist;
     /* First parse the arg list to build the list of field names to import*/
     int i;
-    for(i=2;i<argc;++i)
+    for(i=1;i<argc;++i)
     {
         string sarg(argv[i]);
         if(sarg=="-db")
@@ -39,6 +34,12 @@ int main(int argc,char **argv)
             if(i>=argc) usage();
             dbname=string(argv[i]);
         }
+        else if(sarg=="-vector")
+            isvector=true;
+        else if(sarg=="-scalar")
+            isvector=false;
+        else if(sarg=="-a")
+            append_mode=false;
         else
             fieldlist.push_back(sarg);
     }
@@ -51,10 +52,10 @@ int main(int argc,char **argv)
 		    {
 		        try {
 		            GCLvectorfield3d f(*fptr);
-		            if(i==0)
+                            if( (i>0) || append_mode)
+                                f.save(dbh,nulldir,outdir,*fptr,*fptr);
+                            else
 		                f.save(dbh,outdir,outdir,*fptr,*fptr);
-		            else
-		                f.save(dbh,nulldir,outdir,*fptr,*fptr);
 		        }catch(GCLgridError& gerr)
 		        {
 		            cerr << "Problems with input file "<<*fptr<<endl
@@ -70,10 +71,10 @@ int main(int argc,char **argv)
 		    {
 		        try {
 		            GCLscalarfield3d f(*fptr);
-		            if(i==0)
+                            if( (i>0) || append_mode)
+                                f.save(dbh,nulldir,outdir,*fptr,*fptr);
+                            else
 		                f.save(dbh,outdir,outdir,*fptr,*fptr);
-		            else
-		                f.save(dbh,nulldir,outdir,*fptr,*fptr);
 		        }catch(GCLgridError& gerr)
 		        {
 		            cerr << "Problems with input file "<<*fptr<<endl
