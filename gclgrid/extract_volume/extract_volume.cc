@@ -344,6 +344,7 @@ int main(int argc, char **argv)
             x1max=static_cast<double>(g->n1)-1;
             x2max=static_cast<double>(g->n2)-1;
             ThreeComponentSeismogram d;
+            for(j=0,x2j=0.0,tracr;x2j<x2max;x2j+=dx2,++j)
                 for(i=0,x1i=0.0;x1i<x1max;x1i+=dx1,++i)
                 {
                     d=ExtractFromGrid(*g,x1i,x2j);
@@ -380,8 +381,6 @@ int main(int argc, char **argv)
                     d.put("cdp",npts);
                     /* SU, I think, uses this like crossline number */
                     d.put("tracl",j);
-                    //DEBUG
-                    //cout << "dt="<<d.dt<<" metadata dt="<<d.get_double("dt")<<endl;
                     /* We have to extract and write each component
                        as scalar becaue segy/su are not explicitly 
                        vector formats.  write will not allow this. */
