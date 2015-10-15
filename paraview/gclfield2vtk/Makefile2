@@ -6,13 +6,15 @@ MAN1=gclfield2vtk.1
 ldlibs=-lm -lgclgrid -lseispp -lperf  \
    $(DBLIBS) $(TRLIBS) $(F77LIBS) -L$(VTKLIB) \
    -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtkCommon -lvtkIO -lgclgrid
-ANTELOPEMAKELOCAL = $(ANTELOPE)/local/include/antelopemake.local
+ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
 SUBDIR=/contrib
 
 include $(ANTELOPEMAKE)
 include $(ANTELOPEMAKELOCAL)
 
 CXXFLAGS += -I$(VTKINCLUDE) 
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB) -lboost_serialization
 
 OBJS=gclfield2vtk.o vtk_output.o vtk_output_GCLgrid.o
 $(BIN) : $(OBJS)

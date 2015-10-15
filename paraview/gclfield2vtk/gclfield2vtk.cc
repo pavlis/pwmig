@@ -6,6 +6,7 @@
 #include <vector>
 #include <stdio.h>
 #include <float.h>
+#include "perf.h"
 #include "stock.h"
 #include "pf.h"
 #include "seispp.h"
@@ -16,7 +17,7 @@
 
 using namespace SEISPP;
 
-int vtk_output_GCLgrid(GCLgrid& g, string ofile);
+int vtk_output_GCLgrid(GCLgrid& g, string ofile,string scalars_tag="Elevation");
 /* Removes mean for constant x3 slices.  Important for
 proper display of tomography models showing absolute velocities */
 void remove_mean_x3(GCLscalarfield3d& f)
@@ -334,7 +335,7 @@ int main(int argc, char **argv)
 				remap_grid(g,*rgptr);
 			}
                         outfile=outfile+".vtk";
-			npoly=vtk_output_GCLgrid(g,outfile);
+			npoly=vtk_output_GCLgrid(g,outfile,scalars_tag);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
 					<<"This is ignored for grids and 2d fields"<<endl;
@@ -353,7 +354,7 @@ int main(int argc, char **argv)
 						*rgptr);
 			}
                         outfile=outfile+".vtk";
-			vtk_output_GCLgrid(dynamic_cast<GCLgrid&>(field),outfile);
+			vtk_output_GCLgrid(field,outfile,scalars_tag);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
 					<<"This is ignored for grids and 2d fields"<<endl;
