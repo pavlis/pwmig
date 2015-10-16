@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include "gclgrid.h"
+#include "GCLMasked.h"
 using namespace std;
 int vtk_output_points(GCLgrid& g,ofstream& out)
 {
@@ -122,6 +123,63 @@ int vtk_output_GCLgrid(GCLscalarfield& g,string fname,string scalars_tag)
 			out <<	g.val[i][j]<<endl;
 		}
 	
+	out.close();
+	return(icell);
+}
+int vtk_output_GCLgrid(GCLMaskedScalarField& g,string fname,string scalars_tag)
+{
+	int icell,i,j;
+	ofstream out;
+	out.open(fname.c_str(),ios::out);
+        try{
+            vtk_output_points(g,out);
+        }catch(...)
+        {
+            cerr << "vtk_output_GCLgrid failed writing point data.  Fatal, exiting."
+                <<endl;
+            exit(-1);
+        }
+        /* With a masked grid we need to build the output data first because we have to 
+           count the number of polygons actually marked as valid.   We store the output
+           in this list of strings and then write that block */
+        list<string> outlines;
+        char linebuf[128];
+        for(j=0,icell=0;j<g.n2-1;++j)
+            for(i=0;i<g.n1-1;++i)
+            {
+                /* All four corners must be marked on before we write a polygon */
+                if(g.point_is_valid(i,j) && g.point_is_valid(i+1,j)
+                        && g.point_is_valid(i,j+1) && g.point_is_valid(i+1,j+1))
+                {
+                    sprintf(linebuf,"4 %d %d %d %d\n",
+                            j*g.n1 + i,
+                            j*g.n1 + i + 1,
+                            (j+1)*g.n1 + i + 1,
+                            (j+1)*g.n1 + i);
+                    outlines.push_back(string(linebuf));
+                    ++icell;
+                }
+            }
+        out << "POLYGONS "<< icell<<" "<<5*icell<<endl;
+        list<string>::iterator optr;
+        for(optr=outlines.begin();optr!=outlines.end();++optr)
+            cout << *optr;
+        /* Similar complexity for point data */
+        outlines.clear();
+	for(j=0,icell=0;j<g.n2;++j)
+            for(i=0;i<g.n1;++i)
+            {
+                if(g.point_is_valid(i,j))
+                {
+                    sprintf(linebuf,"%lf\n",g.val[i][j]);
+                    outlines.push_back(string(linebuf));
+                }
+            }
+	    out << "POINT_DATA "<< outlines.size()<<endl
+		<< "SCALARS "<<scalars_tag <<" double"<<endl
+		<< "LOOKUP_TABLE default"<<endl;
+        for(optr=outlines.begin();optr!=outlines.end();++optr)
+            cout << *optr;
 	out.close();
 	return(icell);
 }
