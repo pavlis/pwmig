@@ -3,7 +3,7 @@ PF=gclfield2vtk.pf
 MAN1=gclfield2vtk.1
 
 
-ldlibs=-lm -lgclgrid -lseispp -lperf  \
+ldlibs=-lm -lgclgrid -lgeocoords -lseispp -lperf  \
    $(DBLIBS) $(TRLIBS) $(F77LIBS) -L$(VTKLIB) \
    -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtkCommon -lvtkIO -lgclgrid
 ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
