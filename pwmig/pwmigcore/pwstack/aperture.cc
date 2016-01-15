@@ -1,5 +1,6 @@
 #include <sstream>
 #include "stock.h"
+#include "perf.h"
 #include "PfStyleMetadata.h"
 #include "pwstack.h"
 using namespace std;

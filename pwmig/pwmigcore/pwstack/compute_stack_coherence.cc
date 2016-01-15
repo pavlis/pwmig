@@ -1,6 +1,7 @@
 #include <math.h>
 #include <vector>
 #include "TimeWindow.h"
+#include "perf.h"
 #include "dmatrix.h"
 #include "ThreeComponentSeismogram.h"
 #include "pwstack.h"
