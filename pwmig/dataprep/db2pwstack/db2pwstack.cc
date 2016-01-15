@@ -257,7 +257,6 @@ int main(int argc, char **argv)
 	else if(dbviewmode=="use_wfdisc")
 	{
 		dbh.lookup("arrival");
-                dbh.subset("phase=~/"+arrival_phase+"/");
 		list<string> j1,j2;
 		j1.push_back("sta");
 		j1.push_back("wfdisc.time::wfdisc.endtime");
@@ -265,10 +264,19 @@ int main(int argc, char **argv)
 		j2.push_back("arrival.time");
 		dbh.leftjoin("wfdisc",j1,j2);
 		dbh.natural_join("assoc");
+                dbh.subset("phase=~/"+arrival_phase+"/");
 		dbh.natural_join("origin");
 		dbh.natural_join("event");
 		dbh.subset("orid==prefor");
-		dbh.natural_join("sitechan");
+		j1.clear();
+		j2.clear();
+		j1.push_back("sta");
+		j1.push_back("chan");
+		j1.push_back("arrival.time");
+		j2.push_back("sta");
+		j2.push_back("chan");
+		j2.push_back("ondate::offdate");
+		dbh.join("sitechan",j1,j2);
 		dbh.natural_join("site");
 		if(SEISPP_verbose) cout << "working view size="
 			<<dbh.number_tuples()<<endl;
@@ -355,13 +363,12 @@ int main(int argc, char **argv)
 	int number_events_saved(0);
         for(rec=0,dbh.rewind();rec<dbh.number_tuples();++rec,++dbh)
         {
-            /* This requires segmented data */
-            ThreeComponentEnsemble *din = new ThreeComponentEnsemble(
-                                           dynamic_cast<DatabaseHandle&>(dbh),
-                                             station_mdl, ensemble_mdl,InputAM);
-            auto_ptr<ThreeComponentEnsemble> ensemble = ArrivalTimeReference(*din,
-                    "arrival.time",data_window);
-            delete din;
+            /* This requires segmented data */ 
+        	ThreeComponentEnsemble *din = new ThreeComponentEnsemble(dynamic_cast<DatabaseHandle&>(dbh),
+	                                         station_mdl, ensemble_mdl,InputAM);
+	        auto_ptr<ThreeComponentEnsemble> ensemble = ArrivalTimeReference(*din,
+	                "arrival.time",data_window);
+	        delete din;
             long evid=ensemble->get_long("evid");
 	    int gather_size=ensemble->member.size();
 	    cout << "Event id="<<evid<<endl
