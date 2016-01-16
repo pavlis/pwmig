@@ -4,8 +4,8 @@ PF=pwmig.pf
 
 #MAN1=pwmig.1
 cxxflags=-g -DNO_ANTELOPE
-ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
-DBX=-g
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock -lgclgrid
+#DBX=-g
 
 include $(PWMIGMAKE) 
 OBJS= pwmig.o \
