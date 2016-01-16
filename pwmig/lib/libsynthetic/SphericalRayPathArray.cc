@@ -21,6 +21,7 @@ SphericalRayPathArray::SphericalRayPathArray(VelocityModel_1d& vmod, vector<doub
 {
     const string base_error("SphericalRayPathArray constructor:  ");
     vector<double>::iterator rayptr;
+    //vmodel=vmod;
     int nrays=rayp.size();
     if(nrays<=1) throw SeisppError(base_error
                 +"input ray parameter vector is empty");
@@ -47,76 +48,107 @@ SphericalRayPathArray::SphericalRayPathArray(VelocityModel_1d& vmod, vector<doub
         vector<RayPathSphere>::iterator raypaths,nextpath;
         raypaths=rays.begin();
         nz=raypaths->npts;
-        ++raypaths;
-        for(;raypaths!=rays.end();++raypaths)
+        //++raypaths;
+        int i,j;
+	for(j=0;raypaths!=rays.end();++raypaths,++j)//from begin to end of the raypath grid
         {
-            if( (raypaths->npts)<nz) nz=raypaths->npts;
-        }
+		amps.push_back(vector<double> ((raypaths+(j>=nrays-1 ? 0:1 ))->npts));
+	}//amps grows internally.
+	
+	// this modification saves space and trouble in constructing a 
+	// desired amplitude grid based on ray path grid.
         zfloor=dz*static_cast<double>(nz-1);
         if(SEISPP_verbose) cout << "SphericalRayPathArray:  using grid of "
                             << nz << " points spaced at "<<dz
                                 <<" for total depth of "<<zfloor<<endl;
         /* Now set the amplitudes using ray geometric spreading */
-        amps=dmatrix(nz,nrays);
-        amps.zero();
-        int i,j;
-        double z,tani0,dx,dpdx;
+	///The matrix form of amps grid is no longer of use.
+        //amps=dmatrix(nz,nrays);
+        //amps.zero();
+        //int i,j;
+        double z,tani0,sini0,dx,dpdx;
+	double ddelta, dpddel, costheta2;
         const double nullamp(-99999.);
+	double sintheta2, vs0=3.5;//vs0 is the surface S wave velocity
+	//whereas theta2 is the suface incident angle of S wave (Versus p).
+
         /* nrays -1 is the loop range because we use a forward 
         difference formula for amplitude calculation.  Last two
         columns will be identical.  Not ideal, but adequate
         for planned use of this */
         for(j=0,raypaths=rays.begin();j<(nrays-1);++j,++raypaths)
         {// raypaths is the iterator, while rays is the vector object
-            for(i=0;i<nz;++i)
+	    sintheta2=vs0*raypaths->p/raypaths->r[0];
+	    costheta2=sqrt(1-sintheta2*sintheta2);
+	    //amps.push_back(vector<double> (raypaths->npts));
+            for(i=0;i<amps[j].size();++i)
             {
                 z=raypaths->depth(i);
                 /* flag amp values above zmin with a negative value */
                 if(z<zmin)
-                    amps(i,j)=nullamp;
+                    amps[j][i]=nullamp;
                 else
                 {
                     nextpath=raypaths;
                     ++nextpath;
-                    dpdx=(nextpath->p) - (raypaths->p);
+                    dpdx=(nextpath->p) - (raypaths->p); // p is in s/radians
                     // here dx is delta increment
-                    dx=(nextpath->delta[i])-(raypaths->delta[i]);
-                    dx*=raypaths->r[0];
-                    if(dx<=0.0) throw SeisppError(base_error
-                            + "Ray grid error.  incremental delta .le. 0.0");
-                    dpdx/=dx;
+                    ddelta=(nextpath->delta[i])-(raypaths->delta[i]);
+                    dx=ddelta*raypaths->r[0];
+                    if(dx<=0.0) 
+			throw SeisppError(base_error + "Ray grid error.  incremental delta .le. 0.0");
+                    dpddel=dpdx/ddelta;//dp/ddelta
+		    dpdx/=dx;
                     // now dx is used for local tangent computation 
                     if(i==(nz-1))
                         dx=raypaths->delta[nz-1]-raypaths->delta[nz-2];
                     else
                         dx=raypaths->delta[i+1]-raypaths->delta[i];
                     dx*=raypaths->r[0];
-                    if(j==0)
-                        amps(i,j)=dpdx;
+                    if(j==0){
+                        //amps(i,j)=dpdx;
+			/*double r1,v1;
+			r1=nextpath->r[0]-z;
+			v1=vmod.getv(z);*/
+			if(i==(nz-1))
+        	                dx=nextpath->delta[nz-1]-nextpath->delta[nz-2];
+	                else
+                	        dx=nextpath->delta[i+1]-nextpath->delta[i];
+			dx*=nextpath->r[0];
+                        tani0=dx/dz;
+                        sini0=dx/sqrt(dx*dx+dz*dz);
+			amps[j][i]=tani0*sini0*dpddel/(nextpath->p*sin(nextpath->delta[i])*nextpath->r[0]*nextpath->r[0]*costheta2);
+			//amps(i,j)=dpddel*nextpath->p*v1*v1/(sin(nextpath->delta[i])*r1*r1*nextpath->r[0]*nextpath->r[0]);
+		    }
                     else
                     {
-                        tani0=dz/dx;
-                        amps(i,j)=tani0*dpdx/(raypaths->delta[i]*raypaths->r[0]);
+                        tani0=dx/dz;
+			sini0=dx/sqrt(dx*dx+dz*dz);
+                        amps[j][i]=tani0*sini0*dpddel/(raypaths->p*sin(raypaths->delta[i])*raypaths->r[0]*raypaths->r[0]*costheta2);
                     }
+		    //if(SEISPP_verbose)
+		    //cout<<"amps("<<i<<", "<<j<<")="<<amps(i,j)<<endl;
+		    //cout<<raypaths->p<<sin(raypaths->delta[i])<<costheta2<<endl;
                 }
             }
         }
         /* copy last column amplitude */
-        for(i=0;i<nz;++i) amps(i,nrays-1)=amps(i,nrays-2);
+        for(i=0;i<amps[nrays-1].size();++i) amps[nrays-1][i]=amps[nrays-2][i];
         /* Amplitude right now is energy.  Normalize to p=0 value at first
            valid value and convert to amplitude by square root factor */
         double ampnormalizer;
         for(int i=0;i<nz;++i)
-            if(amps(i,0)>0.0)
+            if(amps[0][i]>0.0)
             {
-                ampnormalizer=amps(i,0);
+                ampnormalizer=amps[0][i];
                 break;
             }
         for(j=0;j<nrays;++j)
-            for(i=0;i<nz;++i)
-                if(amps(i,j)>0.0)
-                    amps(i,j)=sqrt(amps(i,j)/ampnormalizer);
-
+            for(i=0;i<amps[j].size();++i)//loop over the size of j.th ray path
+                if(amps[j][i]>0.0){
+                    amps[j][i]=sqrt(amps[j][i]/ampnormalizer);
+		    cout<<"amps("<<i<<", "<<j<<")="<<amps[j][i]<<endl;
+		}
     } catch(...){throw;};
 }
 SphericalRayPathArray::SphericalRayPathArray(VelocityModel_1d& vmod, 
@@ -147,9 +179,8 @@ pair<double,double> SphericalRayPathArray::time_and_amp(double delta, double z)
     int iupper,ilower;
     int iz=static_cast<int>(z/dz);
     for(iupper=0,raypaths=rays.begin();raypaths!=rays.end();++raypaths,++iupper)
-        if(raypaths->delta[iz]>delta) break;
-//    rayupper=raypaths-1;
-     rayupper=raypaths;
+        if(raypaths->npts<=iz ||raypaths->delta[iz]>delta) break;
+    rayupper=raypaths;
    //try{
 //    if(raypaths==rays.end()-1) throw SeisppError("distance delta exceeds limit"); 
     if(rayupper==rays.end())  return(pair<double,double> (0,0));//exceeds the upper limit..   
@@ -161,7 +192,7 @@ pair<double,double> SphericalRayPathArray::time_and_amp(double delta, double z)
    } */
 
     for(ilower=0,raypaths=rays.begin();raypaths!=rays.end();++raypaths,++ilower)
-        if(raypaths->delta[iz+1]>delta) break;
+        if(raypaths->npts<=(iz+1) ||raypaths->delta[iz+1]>delta) break;
 
     if(ilower!=0)// test if the rayparameter is smaller than the 1.st member;
 	 {   raylower=raypaths-1; ilower--;}
@@ -169,15 +200,19 @@ pair<double,double> SphericalRayPathArray::time_and_amp(double delta, double z)
             raylower=raypaths;
 
       //That gives raylower->delta[iz+1]<=delta
+    // see if we have 4 corner values for the bilinear interpolation.
+    if(rayupper->npts<=iz+1)// exceeds boundary of the raypath grid.
+	return(pair<double,double> (0,0));
 
     double zE=(iz+1)*dz-z;
 
     if(raylower==rayupper){//use linear interpolation.
-	cout<<"raylower equals rayupper"<<iupper<<endl;
+	//cout<<"raylower equals rayupper"<<iupper<<endl;
 	double wt1[2];
 	wt1[1]=zE/dz; wt1[0]=1-wt1[1];
 	time=wt1[0]*rayupper->t[iz+1]+wt1[1]*rayupper->t[iz];
-	amp=wt1[0]*amps(iz+1, iupper)+wt1[1]*amps(iz, iupper);
+	//amp=wt1[0]*amps(iz+1, iupper)+wt1[1]*amps(iz, iupper);
+	amp=wt1[0]*amps[iupper][iz+1]+wt1[1]*amps[iupper][iz];
 	return(pair<double,double>(time,amp));
 
     }
@@ -203,17 +238,22 @@ pair<double,double> SphericalRayPathArray::time_and_amp(double delta, double z)
     double sumwt(0.0);
     for(int i=0;i<2;++i)
        for(int j=0;j<2;++j) sumwt+=wt[i][j];
-    cout<<"sum of weight: "<<sumwt<<endl;
+    if(SEISPP_verbose) cout<<"sum of weight: "<<sumwt<<endl;
     time=0.0;
     time+=wt[0][0]*rayupper->t[iz+1];
     time+=wt[0][1]*rayupper->t[iz];
     time+=wt[1][0]*raylower->t[iz+1];
     time+=wt[1][1]*raylower->t[iz];
     amp=0.0;
-    amp+=wt[0][0]*amps(iz+1, iupper);
+    /*amp+=wt[0][0]*amps(iz+1, iupper);
     amp+=wt[0][1]*amps(iz, iupper);
     amp+=wt[1][0]*amps(iz+1, ilower);
-    amp+=wt[1][1]*amps(iz, ilower);
+    amp+=wt[1][1]*amps(iz, ilower);*/
+    amp+=wt[0][0]*amps[iupper][iz+1];
+    amp+=wt[0][1]*amps[iupper][iz];
+    amp+=wt[1][0]*amps[ilower][iz+1];
+    amp+=wt[1][1]*amps[ilower][iz];
+
     return(pair<double,double>(time,amp));
 
     
