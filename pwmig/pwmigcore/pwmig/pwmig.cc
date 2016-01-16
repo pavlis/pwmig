@@ -5,6 +5,7 @@
 #include <memory>
 #include "stock.h"
 #include "coords.h"
+#include "perf.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
 #include "ray1d.h"
