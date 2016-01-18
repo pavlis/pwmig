@@ -5,8 +5,9 @@
 
 # This variable should point to the top of the install tree for 
 # PWMIG binaries. 
+# YOU MUST CHANGE THE NEXT LINE
 
-BASE="~/PWMIG"
+BASE="/Users/pavlis/PWMIG"
 # For now this is frozen as a release directory name.  May 
 # may be done more elegantly
 RELEASE=2.0
