@@ -3,9 +3,10 @@ DIRS=
 PF=pwmig.pf
 
 #MAN1=pwmig.1
-cxxflags=-g -DNO_ANTELOPE
+#cxxflags=-g -DNO_ANTELOPE
+cxxflags= -DNO_ANTELOPE -O2
 ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
-DBX=-g
+#DBX=-g
 
 include $(PWMIGMAKE) 
 OBJS= pwmig.o \
