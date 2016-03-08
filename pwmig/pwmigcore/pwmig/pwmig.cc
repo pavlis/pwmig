@@ -1097,10 +1097,73 @@ SlownessVector slowness_average(ThreeComponentEnsemble *d)
 		return(SlownessVector(ux,uy));
 	}
 }
+Geographic_point fetch_TP_point_at_base(GCLscalarfield3d& TP,int i, int j)
+{
+    Geographic_point pt;
+    pt=TP.geo_coordinates(i,j,0);
+    return(pt);
+}
+Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
+{
+    int err_lookup;
+    Cartesian_point cp=TP.gtoc(xgp);
+    err_lookup=TP.lookup(cp.x1,cp.x2,cp.x3);
+    if(err_lookup != 0)
+        throw SeisppError(string("get_gp_base_TPx procedure:  ")
+                + "lookup method failed");
+    /* This is how we get an index to the grid - relic */
+    int tpind[3];
+    TP.get_index(tpind);
+    /* Compute unit vectors on 1 and 2 generalized coordinate directions
+     * at the image point x.  Use the lookup point */
+    int k;
+    double x[3],x0[3],x1[3],x2[3],dx[3],dx1[3],dx2[3];
+    x[0]=cp.x1;  x[1]=cp.x2;  x[2]=cp.x3;
+    x0[0]=TP.x1[tpind[0]][tpind[1]][tpind[2]];
+    x0[1]=TP.x2[tpind[0]][tpind[1]][tpind[2]];
+    x0[2]=TP.x3[tpind[0]][tpind[1]][tpind[2]];
+    x1[0]=TP.x1[tpind[0]+1][tpind[1]][tpind[2]];
+    x1[1]=TP.x2[tpind[0]+1][tpind[1]][tpind[2]];
+    x1[2]=TP.x3[tpind[0]+1][tpind[1]][tpind[2]];
+    x2[0]=TP.x1[tpind[0]][tpind[1]+1][tpind[2]];
+    x2[1]=TP.x2[tpind[0]][tpind[1]+1][tpind[2]];
+    x2[2]=TP.x3[tpind[0]][tpind[1]+1][tpind[2]];
+    for(k=0;k<3;++k) dx[k]=x[k]-x0[k];
+    for(k=0;k<3;++k) dx1[k]=x1[k]-x0[k];
+    for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
+    /* Now compute the fraction of each basis vector distance
+     * for x relative to x1.  That faction will be applied to comparable basis
+     * vectors on the base of TP */
+    double f1,f2;
+    double normx=dnrm2(3,dx,1);
+    f1=ddot(3,dx,1,dx1,1)/(normx*dnrm2(3,dx1,1));
+    f2=ddot(3,dx,1,dx2,1)/(normx*dnrm2(3,dx2,1));
+    /* Apply these now to the points at the base of TP.  Reuse the basis vector
+     * work spaces.  Note 0 is the base of the raygrid  */
+    x0[0]=TP.x1[tpind[0]][tpind[1]][0];
+    x0[1]=TP.x2[tpind[0]][tpind[1]][0];
+    x0[2]=TP.x3[tpind[0]][tpind[1]][0];
+    x1[0]=TP.x1[tpind[0]+1][tpind[1]][0];
+    x1[1]=TP.x2[tpind[0]+1][tpind[1]][0];
+    x1[2]=TP.x3[tpind[0]+1][tpind[1]][0];
+    x2[0]=TP.x1[tpind[0]][tpind[1]+1][0];
+    x2[1]=TP.x2[tpind[0]][tpind[1]+1][0];
+    x2[2]=TP.x3[tpind[0]][tpind[1]+1][0];
+    for(k=0;k<3;++k) dx[k]=x[k]-x0[k];
+    for(k=0;k<3;++k) dx1[k]=x1[k]-x0[k];
+    for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
+    /* Use x0 to accumulate the deltas.  We add a scaled basis vector in 1 and 2 
+     * generalized coordinate directions to get result */
+    daxpy(3,f1,dx1,1,x0,1);
+    daxpy(3,f2,dx2,1,x0,1);
+    Geographic_point gpr0x=TP.ctog(x0[0],x0[1],x0[2]);
+    return gpr0x;
+}
+
+
 /* New functions added April 2015 for version using relative times.   These
  * are procedures that deal with the p*delta term in the travel time equations.
- * See documenation of version 2.0 for details */
-/* This procedure finds an interpolated geographic point at the depth zx
+ * finds an interpolated geographic point at the depth zx
  * along the incident ray defined by the path in TP with top at i,j. Note 
  * the issue about border padding makes this not consistent with S ray raygrid 
  * positions.*/
@@ -1129,24 +1192,20 @@ Geographic_point find_TP_at_x_depth(GCLscalarfield3d& TP,int i, int j, double zx
     gpr0.r=r0_ellipse(gpr0.lat)-zx;
     return gpr0;
 }
-/* This procedure returns the p*delta term for scatter at point x and 
- * incident ray path intersection of same depth level as rz.  Depends on spherical
- * ray parameter formula.  This is an approximation but one that should not
- * prove problematic unless this is ever used to far into the lower mantle */
-double compute_delta_p_term(Geographic_point x, Geographic_point rz,
+double compute_delta_p_term(Geographic_point r0x, Geographic_point r0,
         SlownessVector u0)
 {
     /* dsap function to computer distance and azimuth.   gcp distance in degrees
      * is depth independent */
     double delta,az;
-    dist(rz.lat,rz.lon,x.lat,x.lon,&delta,&az);
-    /*az is the angle from N of gcp from rz to x.  This defines offset component
+    dist(r0.lat,r0.lon,r0x.lat,r0x.lon,&delta,&az);
+    /*az is the angle from N of gcp from r0 to r0x.  This defines offset component
      * for distance components as gcp angles */
     double delx=delta*sin(az);
     double dely=delta*cos(az);
     //DEBUG
     /*
-    cout << "Radius of x and rz points="<<x.r<<" "<<rz.r<<" diff="<<x.r-rz.r<<endl
+    cout << "Radius of r0x and r0 points="<<r0x.r<<" "<<r0.r<<" diff="<<r0x.r-r0.r<<endl
         << "Delta (deg)="<<deg(delta)<<" azimuth(deg)="<<deg(az)<<endl
         << "Delx,dely(deg)="<<deg(delx)<<" "<<deg(dely)<<endl
         << "Slowness mag="<<u0.mag()<<" azimuth="<<deg(u0.azimuth())<<endl;
@@ -1858,8 +1917,8 @@ int main(int argc, char **argv)
 					vector<double>nu;
 					double vp;
                                         SlownessVector u0=svm0(i,j);
-                                        /* This is needed in new for to compute p*delta term */
-                                        Geographic_point x_gp,rTP_gp;
+                                        /* This is needed below to compute p*delta term */
+                                        Geographic_point x_gp,rxTP_gp0,rTP_gp;
                                         x_gp=raygrid.geo_coordinates(i,j,kk);
 
 					nu = compute_unit_normal_P(*TPptr,raygrid.x1[i][j][kk],
@@ -1879,10 +1938,14 @@ int main(int argc, char **argv)
 					case 0:
 						Tpx=TPptr->interpolate(raygrid.x1[i][j][kk],
                                                    raygrid.x2[i][j][kk],raygrid.x3[i][j][kk]);
-                                                /* Not ugly border_pad constuct.  Required
+                                                /* Note ugly border_pad constuct.  Required
                                                  * because TP grid has extra points on i j boundary*/
+                                                rTP_gp=fetch_TP_point_at_base(*TPptr,i+border_pad,
+                                                        j+border_pad);
+                                                /* old
                                                 rTP_gp = find_TP_at_x_depth(*TPptr,i+border_pad,
                                                                 j+border_pad,raygrid.depth(i,j,kk));
+                                                                */
 						break;
 					case 1:
 					/* This means the point falls outside the P ray grid.
@@ -1900,11 +1963,20 @@ int main(int argc, char **argv)
 						needs_padding=true;
 						padmark=k;
 					}
+                                        /* New procedure (Mar 2016) to fix error in approximation found for 
+                                         * no antelope version pwmig2.0 */
+                                        try {
+                                            rxTP_gp0=get_gp_base_TPx(*TPptr,x_gp);
+                                        }catch(SeisppError& serr)
+                                        {
+                                            serr.log_error();
+                                            tcompute_problem=true;
+                                        }
 					if(tcompute_problem || needs_padding) break;
-                                        /* Previous version had a different form here with 3 terms.
+                                        /* Original version had a different form here with 3 terms.
                                          * We have to add a new one for relative time calculation 
                                          * here to correct for p*delta */
-                                        tdelta=compute_delta_p_term(x_gp,rTP_gp,u0);
+                                        tdelta=compute_delta_p_term(rxTP_gp0,rTP_gp,u0);
 					tlag=Tpx+Stime[k]+tdelta-Tpr;
                                         //DEBUG
                                         //cout << "tdelta="<<tdelta <<" tlag="<<tlag<<endl;
