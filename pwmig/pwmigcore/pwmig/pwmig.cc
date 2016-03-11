@@ -543,6 +543,7 @@ bool grid_mismatched(GCLgrid& parent, GCLgrid& padded, int pad)
         //DEBUG
         //extended test - used only for debug, delete when validated as this
         //extended test wastes computing time
+        /*
         for(int i=0;i<parent.n1;++i)
             for(int j=0;j<parent.n2;++j)
             {
@@ -555,6 +556,7 @@ bool grid_mismatched(GCLgrid& parent, GCLgrid& padded, int pad)
                 if(deltax > test) return true;
             }
         //END debug section
+        */
 
 	if(deltax>test)
 		return true;
@@ -1131,31 +1133,7 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     dmatrix J(3,3),Jinv(3,3);
     /* This is how we get an index to the grid - relic */
     int tpind[3];
-    /*DEBUG
-    TP.get_index(tpind);
-    cout << "tpindex on entry="<<tpind[0]<<", "<<tpind[1]<<", "<<tpind[2]<<endl;
-    */
     Cartesian_point cp=TP.gtoc(xgp);
-    /*
-    err_lookup=TP.lookup(cp.x1,cp.x2,cp.x3);
-    if(err_lookup != 0)
-        throw SeisppError(string("get_gp_base_TPx procedure:  ")
-                + "lookup method failed");
-    //DEBUG
-    TP.get_index(tpind);
-    cout << "tpindex after second lookup call="<<tpind[0]<<", "<<tpind[1]<<", "<<tpind[2]<<endl;
-    Geographic_point test;
-    test=TP.geo_coordinates(tpind[0],tpind[1],tpind[2]);
-    cout << "0 point: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
-    test=TP.geo_coordinates(tpind[0]+1,tpind[1],tpind[2]);
-    cout << "x1 +1: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
-    test=TP.geo_coordinates(tpind[0],tpind[1]+1,tpind[2]);
-    cout << "x2+1: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
-    test=TP.geo_coordinates(tpind[0]+1,tpind[1]+1,tpind[2]);
-    cout << "opposite: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
-    test=TP.geo_coordinates(tpind[0]+1,tpind[1]+1,tpind[2]+1);
-    cout << "diagonal: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
-    */
     /* WARNING WARNING WARNING:   In current position of this procedure we can be sure
      * that the index pointer is already position and we do not need to waste time on 
      * calling the lookup method.  This is a very dangerous assumption made for speed.*/
@@ -1195,8 +1173,6 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     double det;
     treex3_(J.get_address(0,0),&three,Jinv.get_address(0,0),&three,&det);
     dxunit=Jinv*dx;
-    //DEBUG 
-    //cout << "Unit cell components of dx vector="<<dxunit(0)<<", "<<dxunit(1)<<", "<<dxunit(2)<<endl;
     /* Now we do the same Jacobian calculation or the cell at the base of the the TP raygrid.   
      * We compute the piecing for the ray linked to the scatter point x by using the Jacobian
      * at this point and a forward an inverse transformation */
@@ -1227,13 +1203,9 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     /* J is the transformation matrix to convert dxunit to physical distance in the
      * cell at the base.*/
     dx=J*dxunit;
-    //DEBUG 
-    //cout << "Computed dx vector="<<dx(0)<<", "<<dx(1)<<", "<<dx(2)<<endl;
     /* x0 is our reference point so we add dx to that.  Type colision of
      * dvector and C array - store in C array */
     for(k=0;k<3;++k) x0[k]+=dx(k);
-    //DEBUG
-    //cout<<"x0+dx="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
     Geographic_point gpr0x=TP.ctog(x0[0],x0[1],x0[2]);
     return gpr0x;
 }
@@ -1805,8 +1777,6 @@ int main(int argc, char **argv)
                                         zmax*zpad,tmax,dt,zdecfac,use_3d_vmodel);
 			cout << "Time to compute Incident P wave grid "
 					<<now()-rundtime<<endl;
-                        //DEBUG
-                        //TPptr->enable_high_accuracy();   // done for testing
 			/* Now loop over plane wave components.  The method in 
 			the PwmigFileHandle used returns a new data ensemble for
 			one plane wave component for each call.  NULL return is
@@ -2005,13 +1975,6 @@ int main(int argc, char **argv)
                                         /* This is needed below to compute p*delta term */
                                         Geographic_point x_gp,rxTP_gp0;
                                         x_gp=raygrid.geo_coordinates(i,j,kk);
-                                        //DEBUG
-                                        /*
-                                        Geographic_point foo;
-                                        foo=TPptr->geo_coordinates(i+border_pad,j+border_pad,TPptr->n3-1);
-                                        cout <<"x_gp="<<deg(x_gp.lat)<<", "<<deg(x_gp.lon)<<", "<<x_gp.r<<endl
-                                            << "TP grid gp="<<deg(foo.lat)<<", "<<deg(foo.lon)<<", "<<foo.r<<endl;
-                                            */
 
 					nu = compute_unit_normal_P(*TPptr,raygrid.x1[i][j][kk],
 						raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
