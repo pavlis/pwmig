@@ -7,6 +7,11 @@
 #include "coords.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
+/* This is a FORTRAN procedure in libgclgrid that is intentionally not
+ * in the include file.  We need it here to compute inverse jacobian */
+extern "C" {
+    extern void treex3_(double *, int *, double *, int *, double *);
+}
 #include "ray1d.h"
 #include "ensemble.h"
 #include "seispp.h"
@@ -1122,6 +1127,8 @@ Geographic_point fetch_TP_point_at_base(GCLscalarfield3d& TP,int i, int j)
 Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
 {
     int err_lookup;
+    /* These matrices hold the Jacobian and inverse Jacobian for cells */
+    dmatrix J(3,3),Jinv(3,3);
     /* This is how we get an index to the grid - relic */
     int tpind[3];
     //DEBUG
@@ -1149,7 +1156,8 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     /* Compute unit vectors on 1 and 2 generalized coordinate directions
      * at the image point x.  Use the lookup point */
     int k;
-    double x[3],x0[3],x1[3],x2[3],x3[3],dx[3],dx1[3],dx2[3],dx3[3];
+    double x[3],x0[3],x1[3],x2[3],x3[3],dx1[3],dx2[3],dx3[3];
+    dvector dx(3),dxunit(3);
     x[0]=cp.x1;  x[1]=cp.x2;  x[2]=cp.x3;
     x0[0]=TP.x1[tpind[0]][tpind[1]][tpind[2]];
     x0[1]=TP.x2[tpind[0]][tpind[1]][tpind[2]];
@@ -1163,29 +1171,28 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     x3[0]=TP.x1[tpind[0]][tpind[1]][tpind[2]+1];
     x3[1]=TP.x2[tpind[0]][tpind[1]][tpind[2]+1];
     x3[2]=TP.x3[tpind[0]][tpind[1]][tpind[2]+1];
-    for(k=0;k<3;++k) dx[k]=x[k]-x0[k];
+    for(k=0;k<3;++k) dx(k)=x[k]-x0[k];
     for(k=0;k<3;++k) dx1[k]=x1[k]-x0[k];
     for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
     for(k=0;k<3;++k) dx3[k]=x3[k]-x0[k];
-    /* Now compute the fraction of each basis vector distance
-     * for x relative to x1.  That faction will be applied to comparable basis
-     * vectors on the base of TP */
-    double f1,f2;
-    double nrmx=dnrm2(3,dx,1); //Normalize by vector in x1-x2 plane only
-    f1=ddot(3,dx,1,dx1,1)/dnrm2(3,dx1,1);
-    f2=ddot(3,dx,1,dx2,1)/dnrm2(3,dx2,1);
-    // Add the contribute in x1 and x2 directions from x3 components in
-    // the x1-x2 plane.   
-    f1+=ddot(3,dx3,1,dx1,1)/dnrm2(3,dx1,1);
-    f2+=ddot(3,dx3,1,dx2,1)/dnrm2(3,dx2,1);
-    /* Now we normalize to be fraction of basis vector lengths (note this can be 
-     * greater than 1 or negative */
-    f1 /= dnrm2(3,dx1,1);
-    f2 /= dnrm2(3,dx2,1);
-    //DEBUG
-    cout << "f1="<<f1<<" f2="<<f2<<endl;
-    /* Apply these now to the points at the base of TP.  Reuse the basis vector
-     * work spaces.  Note 0 is the base of the raygrid  */
+    /* Here we build the Jacobian and the x point */
+    for(k=0;k<3;++k)
+    {
+        J(k,0)=dx1[k];
+        J(k,1)=dx2[k];
+        J(k,2)=dx3[k];
+    }
+    /* This is an analytic FORTRAN routine to compute the inverse of 
+     * a 3x3 matrix.   In libgclgrid */
+    int three(3);
+    double det;
+    treex3_(J.get_address(0,0),&three,Jinv.get_address(0,0),&three,&det);
+    dxunit=Jinv*dx;
+    //DEBUG 
+    cout << "Unit cell components of dx vector="<<dxunit(0)<<", "<<dxunit(1)<<", "<<dxunit(2)<<endl;
+    /* Now we do the same Jacobian calculation or the cell at the base of the the TP raygrid.   
+     * We compute the piecing for the ray linked to the scatter point x by using the Jacobian
+     * at this point and a forward an inverse transformation */
     x0[0]=TP.x1[tpind[0]][tpind[1]][0];
     x0[1]=TP.x2[tpind[0]][tpind[1]][0];
     x0[2]=TP.x3[tpind[0]][tpind[1]][0];
@@ -1195,14 +1202,30 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     x2[0]=TP.x1[tpind[0]][tpind[1]+1][0];
     x2[1]=TP.x2[tpind[0]][tpind[1]+1][0];
     x2[2]=TP.x3[tpind[0]][tpind[1]+1][0];
-    for(k=0;k<3;++k) dx[k]=x[k]-x0[k];
+    x3[0]=TP.x1[tpind[0]][tpind[1]][1];
+    x3[1]=TP.x2[tpind[0]][tpind[1]][1];
+    x3[2]=TP.x3[tpind[0]][tpind[1]][1];
     for(k=0;k<3;++k) dx1[k]=x1[k]-x0[k];
     for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
-    /* Use x0 to accumulate the deltas.  We add a scaled basis vector in 1 and 2 
-     * generalized coordinate directions to get result */
-    cout<<"x0="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
-    daxpy(3,f1,dx1,1,x0,1);
-    daxpy(3,f2,dx2,1,x0,1);
+    for(k=0;k<3;++k) dx3[k]=x3[k]-x0[k];
+    for(k=0;k<3;++k)
+    {
+        J(k,0)=dx1[k];
+        J(k,1)=dx2[k];
+        J(k,2)=dx3[k];
+    }
+    /* We must zero the x3 component of x transformed to unit cell as we
+     * want the point at the base */
+    dxunit(2)=0.0;
+    /* J is the transformation matrix to convert dxunit to physical distance in the
+     * cell at the base.*/
+    dx=J*dxunit;
+    //DEBUG 
+    cout << "Computed dx vector="<<dx(0)<<", "<<dx(1)<<", "<<dx(2)<<endl;
+    /* x0 is our reference point so we add dx to that.  Type colision of
+     * dvector and C array - store in C array */
+    for(k=0;k<3;++k) x0[k]+=dx(k);
+    //DEBUG
     cout<<"x0+dx="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
     Geographic_point gpr0x=TP.ctog(x0[0],x0[1],x0[2]);
     return gpr0x;
