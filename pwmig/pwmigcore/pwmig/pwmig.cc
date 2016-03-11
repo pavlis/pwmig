@@ -1131,10 +1131,12 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     dmatrix J(3,3),Jinv(3,3);
     /* This is how we get an index to the grid - relic */
     int tpind[3];
-    //DEBUG
+    /*DEBUG
     TP.get_index(tpind);
     cout << "tpindex on entry="<<tpind[0]<<", "<<tpind[1]<<", "<<tpind[2]<<endl;
+    */
     Cartesian_point cp=TP.gtoc(xgp);
+    /*
     err_lookup=TP.lookup(cp.x1,cp.x2,cp.x3);
     if(err_lookup != 0)
         throw SeisppError(string("get_gp_base_TPx procedure:  ")
@@ -1153,6 +1155,11 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     cout << "opposite: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
     test=TP.geo_coordinates(tpind[0]+1,tpind[1]+1,tpind[2]+1);
     cout << "diagonal: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
+    */
+    /* WARNING WARNING WARNING:   In current position of this procedure we can be sure
+     * that the index pointer is already position and we do not need to waste time on 
+     * calling the lookup method.  This is a very dangerous assumption made for speed.*/
+    TP.get_index(tpind);
     /* Compute unit vectors on 1 and 2 generalized coordinate directions
      * at the image point x.  Use the lookup point */
     int k;
@@ -1189,7 +1196,7 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     treex3_(J.get_address(0,0),&three,Jinv.get_address(0,0),&three,&det);
     dxunit=Jinv*dx;
     //DEBUG 
-    cout << "Unit cell components of dx vector="<<dxunit(0)<<", "<<dxunit(1)<<", "<<dxunit(2)<<endl;
+    //cout << "Unit cell components of dx vector="<<dxunit(0)<<", "<<dxunit(1)<<", "<<dxunit(2)<<endl;
     /* Now we do the same Jacobian calculation or the cell at the base of the the TP raygrid.   
      * We compute the piecing for the ray linked to the scatter point x by using the Jacobian
      * at this point and a forward an inverse transformation */
@@ -1221,12 +1228,12 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
      * cell at the base.*/
     dx=J*dxunit;
     //DEBUG 
-    cout << "Computed dx vector="<<dx(0)<<", "<<dx(1)<<", "<<dx(2)<<endl;
+    //cout << "Computed dx vector="<<dx(0)<<", "<<dx(1)<<", "<<dx(2)<<endl;
     /* x0 is our reference point so we add dx to that.  Type colision of
      * dvector and C array - store in C array */
     for(k=0;k<3;++k) x0[k]+=dx(k);
     //DEBUG
-    cout<<"x0+dx="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
+    //cout<<"x0+dx="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
     Geographic_point gpr0x=TP.ctog(x0[0],x0[1],x0[2]);
     return gpr0x;
 }
@@ -1275,10 +1282,12 @@ double compute_delta_p_term(Geographic_point r0x, Geographic_point r0,
     double delx=delta*sin(az);
     double dely=delta*cos(az);
     //DEBUG
+    /*
     cout << "Radius of r0x and r0 points="<<r0x.r<<" "<<r0.r<<" diff="<<r0x.r-r0.r<<endl
         << "Delta (deg)="<<deg(delta)<<" azimuth(deg)="<<deg(az)<<endl
         << "Delx,dely(deg)="<<deg(delx)<<" "<<deg(dely)<<endl
         << "Slowness mag="<<u0.mag()<<" azimuth="<<deg(u0.azimuth())<<endl;
+        */
 
     return(EQUATORIAL_EARTH_RADIUS*(delx*u0.ux + dely*u0.uy));
 }
@@ -1997,10 +2006,12 @@ int main(int argc, char **argv)
                                         Geographic_point x_gp,rxTP_gp0;
                                         x_gp=raygrid.geo_coordinates(i,j,kk);
                                         //DEBUG
+                                        /*
                                         Geographic_point foo;
                                         foo=TPptr->geo_coordinates(i+border_pad,j+border_pad,TPptr->n3-1);
                                         cout <<"x_gp="<<deg(x_gp.lat)<<", "<<deg(x_gp.lon)<<", "<<x_gp.r<<endl
                                             << "TP grid gp="<<deg(foo.lat)<<", "<<deg(foo.lon)<<", "<<foo.r<<endl;
+                                            */
 
 					nu = compute_unit_normal_P(*TPptr,raygrid.x1[i][j][kk],
 						raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
@@ -2052,8 +2063,9 @@ int main(int argc, char **argv)
                                         tdelta=compute_delta_p_term(rxTP_gp0,rTP_gp,u0);
 					tlag=Tpx+Stime[k]+tdelta-Tpr;
                                         //DEBUG
-                                        cout << "k="<<k<<"Tpx="<<Tpx<<" Stime[k]="<<Stime[k]
+                                        /*cout << "k="<<k<<"Tpx="<<Tpx<<" Stime[k]="<<Stime[k]
                                             << " tdelta="<<tdelta<<" Tpr="<<Tpr<<" = tlag of "<<tlag<<endl;
+                                            */
                                         //cout << "tdelta="<<tdelta <<" tlag="<<tlag<<endl;
 					SPtime.push_back(tlag);
 				}
