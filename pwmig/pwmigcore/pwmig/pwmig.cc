@@ -535,6 +535,22 @@ bool grid_mismatched(GCLgrid& parent, GCLgrid& padded, int pad)
 	test*=frac;
 	double deltax=hypot(lat1-lat2,lon1-lon2);
 	deltax *= EQUATORIAL_EARTH_RADIUS;
+        //DEBUG
+        //extended test - used only for debug, delete when validated as this
+        //extended test wastes computing time
+        for(int i=0;i<parent.n1;++i)
+            for(int j=0;j<parent.n2;++j)
+            {
+                lat1=parent.lat(i,j);
+                lon1=parent.lon(i,j);
+                lat2=padded.lat(i+pad,j+pad);
+                lon2=padded.lon(i+pad,j+pad);
+                deltax=hypot(lat1-lat2,lon1-lon2);
+                deltax *= EQUATORIAL_EARTH_RADIUS;
+                if(deltax > test) return true;
+            }
+        //END debug section
+
 	if(deltax>test)
 		return true;
 	else
@@ -1106,18 +1122,34 @@ Geographic_point fetch_TP_point_at_base(GCLscalarfield3d& TP,int i, int j)
 Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
 {
     int err_lookup;
+    /* This is how we get an index to the grid - relic */
+    int tpind[3];
+    //DEBUG
+    TP.get_index(tpind);
+    cout << "tpindex on entry="<<tpind[0]<<", "<<tpind[1]<<", "<<tpind[2]<<endl;
     Cartesian_point cp=TP.gtoc(xgp);
     err_lookup=TP.lookup(cp.x1,cp.x2,cp.x3);
     if(err_lookup != 0)
         throw SeisppError(string("get_gp_base_TPx procedure:  ")
                 + "lookup method failed");
-    /* This is how we get an index to the grid - relic */
-    int tpind[3];
+    //DEBUG
     TP.get_index(tpind);
+    cout << "tpindex after second lookup call="<<tpind[0]<<", "<<tpind[1]<<", "<<tpind[2]<<endl;
+    Geographic_point test;
+    test=TP.geo_coordinates(tpind[0],tpind[1],tpind[2]);
+    cout << "0 point: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
+    test=TP.geo_coordinates(tpind[0]+1,tpind[1],tpind[2]);
+    cout << "x1 +1: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
+    test=TP.geo_coordinates(tpind[0],tpind[1]+1,tpind[2]);
+    cout << "x2+1: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
+    test=TP.geo_coordinates(tpind[0]+1,tpind[1]+1,tpind[2]);
+    cout << "opposite: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
+    test=TP.geo_coordinates(tpind[0]+1,tpind[1]+1,tpind[2]+1);
+    cout << "diagonal: "<<deg(test.lat)<<", "<<deg(test.lon)<<", "<<test.r<<endl;
     /* Compute unit vectors on 1 and 2 generalized coordinate directions
      * at the image point x.  Use the lookup point */
     int k;
-    double x[3],x0[3],x1[3],x2[3],dx[3],dx1[3],dx2[3];
+    double x[3],x0[3],x1[3],x2[3],x3[3],dx[3],dx1[3],dx2[3],dx3[3];
     x[0]=cp.x1;  x[1]=cp.x2;  x[2]=cp.x3;
     x0[0]=TP.x1[tpind[0]][tpind[1]][tpind[2]];
     x0[1]=TP.x2[tpind[0]][tpind[1]][tpind[2]];
@@ -1128,16 +1160,30 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     x2[0]=TP.x1[tpind[0]][tpind[1]+1][tpind[2]];
     x2[1]=TP.x2[tpind[0]][tpind[1]+1][tpind[2]];
     x2[2]=TP.x3[tpind[0]][tpind[1]+1][tpind[2]];
+    x3[0]=TP.x1[tpind[0]][tpind[1]][tpind[2]+1];
+    x3[1]=TP.x2[tpind[0]][tpind[1]][tpind[2]+1];
+    x3[2]=TP.x3[tpind[0]][tpind[1]][tpind[2]+1];
     for(k=0;k<3;++k) dx[k]=x[k]-x0[k];
     for(k=0;k<3;++k) dx1[k]=x1[k]-x0[k];
     for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
+    for(k=0;k<3;++k) dx3[k]=x3[k]-x0[k];
     /* Now compute the fraction of each basis vector distance
      * for x relative to x1.  That faction will be applied to comparable basis
      * vectors on the base of TP */
     double f1,f2;
-    double normx=dnrm2(3,dx,1);
-    f1=ddot(3,dx,1,dx1,1)/(normx*dnrm2(3,dx1,1));
-    f2=ddot(3,dx,1,dx2,1)/(normx*dnrm2(3,dx2,1));
+    double nrmx=dnrm2(3,dx,1); //Normalize by vector in x1-x2 plane only
+    f1=ddot(3,dx,1,dx1,1)/dnrm2(3,dx1,1);
+    f2=ddot(3,dx,1,dx2,1)/dnrm2(3,dx2,1);
+    // Add the contribute in x1 and x2 directions from x3 components in
+    // the x1-x2 plane.   
+    f1+=ddot(3,dx3,1,dx1,1)/dnrm2(3,dx1,1);
+    f2+=ddot(3,dx3,1,dx2,1)/dnrm2(3,dx2,1);
+    /* Now we normalize to be fraction of basis vector lengths (note this can be 
+     * greater than 1 or negative */
+    f1 /= dnrm2(3,dx1,1);
+    f2 /= dnrm2(3,dx2,1);
+    //DEBUG
+    cout << "f1="<<f1<<" f2="<<f2<<endl;
     /* Apply these now to the points at the base of TP.  Reuse the basis vector
      * work spaces.  Note 0 is the base of the raygrid  */
     x0[0]=TP.x1[tpind[0]][tpind[1]][0];
@@ -1154,8 +1200,10 @@ Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
     for(k=0;k<3;++k) dx2[k]=x2[k]-x0[k];
     /* Use x0 to accumulate the deltas.  We add a scaled basis vector in 1 and 2 
      * generalized coordinate directions to get result */
+    cout<<"x0="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
     daxpy(3,f1,dx1,1,x0,1);
     daxpy(3,f2,dx2,1,x0,1);
+    cout<<"x0+dx="<<x0[0]<<", "<<x0[1]<<", "<<x0[2]<<endl;
     Geographic_point gpr0x=TP.ctog(x0[0],x0[1],x0[2]);
     return gpr0x;
 }
@@ -1204,12 +1252,10 @@ double compute_delta_p_term(Geographic_point r0x, Geographic_point r0,
     double delx=delta*sin(az);
     double dely=delta*cos(az);
     //DEBUG
-    /*
     cout << "Radius of r0x and r0 points="<<r0x.r<<" "<<r0.r<<" diff="<<r0x.r-r0.r<<endl
         << "Delta (deg)="<<deg(delta)<<" azimuth(deg)="<<deg(az)<<endl
         << "Delx,dely(deg)="<<deg(delx)<<" "<<deg(dely)<<endl
         << "Slowness mag="<<u0.mag()<<" azimuth="<<deg(u0.azimuth())<<endl;
-        */
 
     return(EQUATORIAL_EARTH_RADIUS*(delx*u0.ux + dely*u0.uy));
 }
@@ -1727,6 +1773,8 @@ int main(int argc, char **argv)
                                         zmax*zpad,tmax,dt,zdecfac,use_3d_vmodel);
 			cout << "Time to compute Incident P wave grid "
 					<<now()-rundtime<<endl;
+                        //DEBUG
+                        //TPptr->enable_high_accuracy();   // done for testing
 			/* Now loop over plane wave components.  The method in 
 			the PwmigFileHandle used returns a new data ensemble for
 			one plane wave component for each call.  NULL return is
@@ -1907,6 +1955,11 @@ int main(int argc, char **argv)
 				bool needs_padding;
 				int padmark=raygrid.n3-1;
 				bool tcompute_problem;   // set true if tt calculation fails away from edges 
+                                /* This is the position of the incident ray at the base of the model.
+                                 * Common for all in next loop and needed for travel time calculation.
+                                 * Note the ugly border pad construct necessary to account for padding
+                                 * efficiently - avoids a lookup */
+                                Geographic_point rTP_gp=fetch_TP_point_at_base(*TPptr,i+border_pad,j+border_pad);
 				/* It is a good idea to initialize these before each raty path */
 				TPptr->reset_index();
 				SPtime.clear();
@@ -1918,8 +1971,13 @@ int main(int argc, char **argv)
 					double vp;
                                         SlownessVector u0=svm0(i,j);
                                         /* This is needed below to compute p*delta term */
-                                        Geographic_point x_gp,rxTP_gp0,rTP_gp;
+                                        Geographic_point x_gp,rxTP_gp0;
                                         x_gp=raygrid.geo_coordinates(i,j,kk);
+                                        //DEBUG
+                                        Geographic_point foo;
+                                        foo=TPptr->geo_coordinates(i+border_pad,j+border_pad,TPptr->n3-1);
+                                        cout <<"x_gp="<<deg(x_gp.lat)<<", "<<deg(x_gp.lon)<<", "<<x_gp.r<<endl
+                                            << "TP grid gp="<<deg(foo.lat)<<", "<<deg(foo.lon)<<", "<<foo.r<<endl;
 
 					nu = compute_unit_normal_P(*TPptr,raygrid.x1[i][j][kk],
 						raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
@@ -1938,14 +1996,6 @@ int main(int argc, char **argv)
 					case 0:
 						Tpx=TPptr->interpolate(raygrid.x1[i][j][kk],
                                                    raygrid.x2[i][j][kk],raygrid.x3[i][j][kk]);
-                                                /* Note ugly border_pad constuct.  Required
-                                                 * because TP grid has extra points on i j boundary*/
-                                                rTP_gp=fetch_TP_point_at_base(*TPptr,i+border_pad,
-                                                        j+border_pad);
-                                                /* old
-                                                rTP_gp = find_TP_at_x_depth(*TPptr,i+border_pad,
-                                                                j+border_pad,raygrid.depth(i,j,kk));
-                                                                */
 						break;
 					case 1:
 					/* This means the point falls outside the P ray grid.
@@ -1979,6 +2029,8 @@ int main(int argc, char **argv)
                                         tdelta=compute_delta_p_term(rxTP_gp0,rTP_gp,u0);
 					tlag=Tpx+Stime[k]+tdelta-Tpr;
                                         //DEBUG
+                                        cout << "k="<<k<<"Tpx="<<Tpx<<" Stime[k]="<<Stime[k]
+                                            << " tdelta="<<tdelta<<" Tpr="<<Tpr<<" = tlag of "<<tlag<<endl;
                                         //cout << "tdelta="<<tdelta <<" tlag="<<tlag<<endl;
 					SPtime.push_back(tlag);
 				}
