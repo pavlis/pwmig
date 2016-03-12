@@ -6,17 +6,19 @@
 #include <vector>
 #include <stdio.h>
 #include <float.h>
+#include "perf.h"
 #include "stock.h"
 #include "pf.h"
 #include "seispp.h"
 #include "Metadata.h"
 #include "gclgrid.h"
+#include "GCLMasked.h"
 #include "agc.h"
 #include "vtk_output.h"
 
 using namespace SEISPP;
 
-int vtk_output_GCLgrid(GCLgrid& g, string ofile);
+int vtk_output_GCLgrid(GCLgrid& g, string ofile,string scalars_tag="Elevation");
 /* Removes mean for constant x3 slices.  Important for
 proper display of tomography models showing absolute velocities */
 void remove_mean_x3(GCLscalarfield3d& f)
@@ -77,7 +79,7 @@ void usage()
 bool SEISPP::SEISPP_verbose(true);
 int main(int argc, char **argv)
 {
-	int i;
+	int i,j;
 
         bool dbmode(true);  // default is db input mode
         ios::sync_with_stdio();
@@ -334,7 +336,7 @@ int main(int argc, char **argv)
 				remap_grid(g,*rgptr);
 			}
                         outfile=outfile+".vtk";
-			npoly=vtk_output_GCLgrid(g,outfile);
+			npoly=vtk_output_GCLgrid(g,outfile,scalars_tag);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
 					<<"This is ignored for grids and 2d fields"<<endl;
@@ -353,7 +355,62 @@ int main(int argc, char **argv)
 						*rgptr);
 			}
                         outfile=outfile+".vtk";
-			vtk_output_GCLgrid(dynamic_cast<GCLgrid&>(field),outfile);
+			npoly=vtk_output_GCLgrid(field,outfile,scalars_tag);
+			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
+			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
+					<<"This is ignored for grids and 2d fields"<<endl;
+		}	
+		else if( (fieldtype=="MaskedScalar2d")
+                        || (fieldtype=="MaskedGrid2d"))
+		{
+			int npoly;
+                        GCLMaskedScalarField *field;
+			if(dbmode)
+                        {
+                            cerr << "Not current support for db input for masked grid objects"
+                                <<endl
+                                << "Probably a parameter file inconsistency"<<endl;
+                            exit(-1);
+                        }
+                        else if(fieldtype=="MaskedScalar2d")
+                            field=new GCLMaskedScalarField(infile);
+                        else
+                        {
+                            /* Logic assumes can only land here if fieldtype is 
+                               masked 2d grid.  In that case we read the grid and
+                               add depth/elevation as an attribute */
+                            GCLMaskedGrid gtmp(infile);
+                            field=new GCLMaskedScalarField(gtmp);
+                            if(scalars_tag=="Elevation")
+                            {
+                                for(i=0;i<gtmp.n1;++i)
+                                    for(j=0;j<gtmp.n2;++j)
+                                    {
+                                        if(field->point_is_valid(i,j))
+                                            field->val[i][j]=(-gtmp.depth(i,j));
+                                        else
+                                            field->val[i][j]=0.0;
+                                    }
+                            }
+                            else
+                            {
+                                for(i=0;i<gtmp.n1;++i)
+                                    for(j=0;j<gtmp.n2;++j)
+                                    {
+                                        if(field->point_is_valid(i,j))
+                                            field->val[i][j]=gtmp.depth(i,j);
+                                        else
+                                            field->val[i][j]=0.0;
+                                    }
+                            }
+                        }
+			if(remap)
+			{
+			    remap_grid(dynamic_cast<GCLgrid&>(*field),
+						*rgptr);
+			}
+                        outfile=outfile+".vtk";
+			npoly=vtk_output_GCLgrid(*field,outfile,scalars_tag);
 			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
 			if(apply_agc)cerr <<"WARNING: apply_agc was set true\n"
 					<<"This is ignored for grids and 2d fields"<<endl;

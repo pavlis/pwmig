@@ -1,5 +1,6 @@
 #include <float.h>
 #include "coords.h"
+#include "perf.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
 #include "seispp.h"

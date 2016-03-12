@@ -32,7 +32,8 @@ class SphericalRayPathArray
         double zmin;  
         int nz;  // nominal depth steps that can be dependent on
         double dz;  // rays are made in equal depth steps, save here.
-        dmatrix amps;  // nz x nrays matrix of amplitudes derived from rays
+        //dmatrix amps;  // nz x nrays matrix of amplitudes derived from rays
+	vector<vector<double> >  amps;// new amps based on ray parameter grid.
         double zfloor;  // actual depth floor = dz*(nz-1) cached for efficiency
 };
 

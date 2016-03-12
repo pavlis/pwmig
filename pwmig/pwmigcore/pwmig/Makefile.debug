@@ -3,16 +3,15 @@ DIRS=
 PF=pwmig.pf
 
 #MAN1=pwmig.1
-#MATLAB=/opt/matlab6p1/extern
-MATLAB=/N/soft/linux-rhel4-x86_64/Matlab-2008b
-RPATH="-Wl,--rpath-link,$TMW_ROOT/extern/lib/$Arch,--rpath-link,$TMW_ROOT/bin/$Arch"
-cflags=-g -I$(MATLAB)/extern/include -DMATLABDEBUG
-ldflags=-lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
-ldlibs=-lpwmig -lseispp -ltrvltm -lgclgrid  -Wl,-rpath,$(MATLAB)/bin/glnxa64 -lmatlabprocessor  \
- -lgclgrid -lseispp -leng -lmx -lut -lmat $(TRLIBS) $(DBLIBS) -lperf -lm
-include $(ANTELOPEMAKE) 
-OBJS= mdutils.o \
-pwmig.o \
+cxxflags=-g -DNO_ANTELOPE
+#cxxflags= -DNO_ANTELOPE -O2
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
+DBX=-g
+
+include $(PWMIGMAKE) 
+OBJS= pwmig.o \
+decimate.o \
+mdutils.o \
 ray_transformation_operator.o \
 raygrid.o
 # include dependencies

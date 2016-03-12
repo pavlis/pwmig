@@ -79,7 +79,7 @@ void writesu(dmatrix& section, double zmin, double dz, list<Geographic_point>& p
 		lon*=10000;
 		d.put<double>("recLongOrX",lon);
 		d.put<double>("recLatOrY",lat);
-		/* In SEGY/SU dt is microsections.  This puts
+		/* In SEGY/SU dt is microseconds.  This puts
 		km scale depths to soomething closer to standard
 		seismic.  */
 		const double dz_multiplier(1000.0);

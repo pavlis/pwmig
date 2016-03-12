@@ -3,7 +3,7 @@
 importpwmig - imports GCLvectorfield3d files created by pwmig
 .SH SYNOPSIS
 .nf
-importpwmig [-a -db dbname] file1 file2 ... filen
+importpwmig [-vector|-scalar -a -db dbname] file1 file2 ... filen
 .fi
 .SH DESCRIPTION
 .LP
@@ -28,6 +28,11 @@ table must NOT contain an entry for the GCLgrid3d geometry file or the program
 will abort.  Use the -a option if you are adding to an existing table with 
 more files of the same geometry.
 .SH OPTIONS
+.IP -vector
+Use this if the inputs are pwmig image (vector) files.
+.IP -scalar
+Use this if the inputs are pwmig coherence data.  (Note -vector and -scalar
+cannot be mixed in one run.
 .IP -a
 Use this option if you are appending additional data to an existing 
 database with the same base grid name as run previously.   

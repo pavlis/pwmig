@@ -105,6 +105,11 @@ there is a size mismatch, but you may not get the names set right.  Note for
 scalar data the &Tbl construct is still required but in that case there should
 only be one name. 
 .LP
+A \fBscalars_name_tag\fR has a special purpose for grid2d objects and maskedgrid2d objects.
+In that case it can servce as a switch to switch between elevation and depth, which have 
+a difference in sign.  If \fBscalars_name_tag\fR is Elevation the sign is switched to be
+elevation.  Otherwise the depth (in km) is written to the scalars attribute section.
+.LP
 There are some special parameters used only in certain circumstances.  The user is warned these
 may one day be depricated in favor of editing and saving to new loction.  The boolean
 parameter \fBremove_mean_x3_slices\fR can be useful for absolute velocity tomography models.  

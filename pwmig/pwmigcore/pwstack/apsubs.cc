@@ -87,7 +87,7 @@ double aperture, double cutoff, double *w)
 }
 
 
-/* Computes vector of nsta moveout corrections for slowness vector\ 
+/* Computes vector of nsta moveout corrections for slowness vector
  * (ux,uy) using local coordinates stored in parallel deast, dnorth
  * vectors (both assumed length nsta).
  * Assumes moveout has been allocated previusly.

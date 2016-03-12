@@ -5,12 +5,16 @@ DATA=gclgdisk gclfield
 INCLUDE=pwstack_reader.h
 
 #MAN1=pwstack.1
-cxxflags=-g -DNO_ANTELOPE
+#cxxflags=-g -DNO_ANTELOPE
+cxxflags= -DNO_ANTELOPE
 # Use the following for Solaris
-ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lperf -lgclgrid -lseispp -lstock -lcoords
+ldlibs= -lstock -lcoords -lpwmig -lseispp -lgclgrid -lperf -lgclgrid -lseispp -lstock -lcoords
 # Following is required to work with g++ 3.2.3
 #ldflags=-shared -lseispp -lgclgrid -ltrvltm -lpfstream -lbrttutil $(TRLIBS) $(DBLIBS) -lperf -lgclgrid
-
+#
+# anomaly for bigred2 intel - remove for other
+# -fPIE and relink with -pie
+#CXX+=-fPIE
 
 include $(PWMIGMAKE) 
 

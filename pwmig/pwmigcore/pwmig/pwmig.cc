@@ -5,6 +5,7 @@
 #include <memory>
 #include "stock.h"
 #include "coords.h"
+#include "perf.h"
 #include "dmatrix.h"
 #include "gclgrid.h"
 /* This is a FORTRAN procedure in libgclgrid that is intentionally not
