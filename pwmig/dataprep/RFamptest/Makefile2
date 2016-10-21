@@ -10,7 +10,7 @@ SUBDIR=/contrib
 include $(ANTELOPEMAKE) 
 include $(ANTELOPE)/contrib/include/antelopemake.local
 CXXFLAGS+=-I$(BOOSTINCLUDE)
-LDFLAGS+=-L$(BOOSTLIB)
+LDFLAGS+=-L$(BOOSTLIB) -L../../lib/libpwmig/
 
 OBJS=RFamptest.o  
 $(BIN) : $(OBJS)

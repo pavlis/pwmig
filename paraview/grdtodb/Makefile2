@@ -2,7 +2,7 @@ BIN=grdtodb
 
 #MAN1=pwmig.1
 #cflags=-g
-ldlibs=-lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm
+ldlibs=-lseispp -ltrvltm -lgclgrid $(TRLIBS) $(DBLIBS) -lperf -lm -lseispp -lgclgrid
 
 SUBDIR=/contrib
 include $(ANTELOPEMAKE)

@@ -7,8 +7,8 @@ cxxflags=-g
 DBX=-g
 include $(ANTELOPEMAKE)  	
 include $(ANTELOPE)/contrib/include/antelopemake.local
-CXXFLAGS+=-I$(BOOSTINCLUDE)
-LDFLAGS+=-L$(BOOSTLIB)
+CXXFLAGS+=-I$(BOOSTINCLUDE) -I../../pwmigcore/pwstack/ -I../../lib/libpwmig/
+LDFLAGS+=-L$(BOOSTLIB) -L../../lib/libpwmig/
 OBJS=db2pwstack.o
 $(BIN) : $(OBJS)
 	$(RM) $@
