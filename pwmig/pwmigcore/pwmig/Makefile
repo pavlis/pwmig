@@ -5,7 +5,7 @@ PF=pwmig.pf
 #MAN1=pwmig.1
 #cxxflags=-g -DNO_ANTELOPE
 cxxflags= -DNO_ANTELOPE -O2
-ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock
+ldlibs=-lstock -lcoords -lpwmig -lseispp -lgclgrid -lcoords -lperf -lm -lstock -lgclgrid
 #DBX=-g
 
 include $(PWMIGMAKE) 
