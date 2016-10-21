@@ -7,7 +7,7 @@
 # PWMIG binaries. 
 # YOU MUST CHANGE THE NEXT LINE
 
-BASE="/Users/pavlis/PWMIG"
+BASE="/Users/wangyinz/PWMIGdebug"
 # For now this is frozen as a release directory name.  May 
 # may be done more elegantly
 RELEASE=2.0
@@ -18,6 +18,10 @@ if [ ! -d "$TOPDIR" ]; then
     exit 1
 fi
 export PWMIG="$BASE/$RELEASE"
+
+# Give boost related path
+export BOOSTHDR=/opt/boost/include
+export BOOSTLIB=/opt/boost/lib
 
 
 # Set up the PATH and MANPATH environment variables.

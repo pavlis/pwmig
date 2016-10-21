@@ -100,12 +100,12 @@ STOCKLIBS=-lcoords -lstock -ltt $(STOCKNEEDS)
 
 YFLAGS = -v -d -l 
 
-CXXFLAGS = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -D_REENTRANT  $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
+CXXFLAGS = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -D_REENTRANT  $(cxxflags)         -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) -I$(BOOSTHDR)
 CCFLAGS = $(CXXFLAGS)
 FFLAGS   = -m64              -mmacosx-version-min=10.8 -gdwarf-2   $(fflags) $(FEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE)
 CFLAGS   = -m64 -arch x86_64 -mmacosx-version-min=10.8 -gdwarf-2 -mfix-and-continue -pipe -fpascal-strings -Wall -D_REENTRANT     $(cflags) $(CEXTRA) -I$(PWMIG)/local/include -I$(PWMIG)/include -I$(XINCLUDE) 
 
-LDPATH=-L$(PWMIG)/local/lib -L$(PWMIG)/local/static -L$(PWMIG)/lib -L$(PWMIG)/static 
+LDPATH=-L$(PWMIG)/local/lib -L$(PWMIG)/local/static -L$(PWMIG)/lib -L$(PWMIG)/static -L$(BOOSTLIB) 
 LDFLAGS= -m64 -mmacosx-version-min=10.8  $(ldflags) $(LDEXTRA) $(LDPATH) $(LDRUN) 
 LDLIBS= $(ldlibs) 
 # For Linux
