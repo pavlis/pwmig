@@ -26,9 +26,10 @@ using namespace SEISPP;
 void usage()
 {
 	cerr << "extract_volume db gridname fieldname "
-		<< "[-o outfile -coh -pf pffile -v]"<<endl
+		<< "[-usegeo -o outfile -coh -pf pffile -v]"<<endl
 	      << "Default outfile is called extract_volume.su"<<endl
-              << "Use -coh flag if input is a coherence grid (default is pwmig output)"<<endl;
+              << "Use -coh flag if input is a coherence grid (default is pwmig output)"<<endl
+              << "Use -usegeo flag to output rx,ry as lon,lat using scalco factor"<<endl;
 
 	exit(-1);
 }
@@ -185,8 +186,8 @@ ThreeComponentSeismogram ExtractFromGrid(GCLvectorfield3d& g,
     result.put("time",0.0);
     /* SU specific */
     /* use tracl to define lines - i fast becomes inline */
-    //result.put("tracl",i);
-   // result.put("tracr",1);
+      result.put("tracl",i);
+      result.put("tracr",1);
     result.put("fldr",1);
     /* This makes the data look like cdp stacked data */
     result.put("cdpt",1);
@@ -211,6 +212,7 @@ int main(int argc, char **argv)
 	bool out_to_other(false);
 	string outfile("extract_volume.su");
         bool input_is_coherence(false);
+        bool use_geographic(false);
 	for(i=4;i<argc;++i)
 	{
 		string argstr=string(argv[i]);
@@ -231,6 +233,8 @@ int main(int argc, char **argv)
 			SEISPP_verbose=true;
                 else if(argstr=="-coh")
                     input_is_coherence=true;
+                else if(argstr=="-usegeo")
+                    use_geographic=true;
 		else
 		{
 			cerr << "Unknown argument = "<<argstr<<endl;
@@ -258,8 +262,8 @@ int main(int argc, char **argv)
                 exit(-1);
             }
             /* Additional scalar control parameters read next */
-            // Lat-lon values are scaled by this factor before 
-            // being written to output file headers
+               /*Lat-lon values are scaled by this factor before 
+               being written to output file headers*/
             double llscf=control.get_double("lat_lon_output_scale_factor");
             //Depth scale factor 
             double dpscf=control.get_double("depth_scale_factor");
@@ -325,8 +329,8 @@ int main(int argc, char **argv)
             else if(outform=="SEGY")
             {
                 SEGY2002FileHandle *sgyh;
-                pfput_int(pf,"number_samples",g->n3);
-                pfput_int(pf,"sample_interval",g->dx3_nom*1000);
+                pfput_int(pf,(char *)"number_samples",g->n3);
+                pfput_int(pf,(char *)"sample_interval",g->dx3_nom*1000);
                 sgyh=new SEGY2002FileHandle(outfile,tmdlist,pf);
                 outhandle=dynamic_cast<GenericFileHandle *>(sgyh);
             }
@@ -344,29 +348,38 @@ int main(int argc, char **argv)
             x1max=static_cast<double>(g->n1)-1;
             x2max=static_cast<double>(g->n2)-1;
             ThreeComponentSeismogram d;
-            for(j=0,x2j=0.0,tracr;x2j<x2max;x2j+=dx2,++j)
+            cout << "Starting main loop over surface grid"<<endl;
+            for(j=0,x2j=0.0,tracr=1;x2j<x2max;x2j+=dx2,++j)
                 for(i=0,x1i=0.0;x1i<x1max;x1i+=dx1,++i)
                 {
                     d=ExtractFromGrid(*g,x1i,x2j);
                     ++npts;
-                    /* Some hard coded header edits better done
-                       here than in ExtractFromGrid */
-//                    double dv=d.get_double("rx");
-//                    dv *= llscf;
-//                    d.put("rx",dv);
-//                    dv=d.get_double("ry");
-//                    dv *= llscf;
-//                    d.put("ry",dv);
-//                    dv=d.get_double("sx");
-//                    dv *= llscf;
-//                    d.put("sx",dv);
-//                    dv=d.get_double("sy");
-//                    dv *= llscf;
-//                    d.put("sy",dv);
-                    d.put("rx",(double)i);
-                    d.put("ry",(double)j);
-                    d.put("sx",(double)i);
-                    d.put("sy",(double)j);
+                    if(SEISPP_verbose)
+                    {
+                      cout << "Working on trace "<<npts<<" which is x1="<<x1i
+                        <<" x2="<<x2j << "(nondimensional)"<<endl;
+                    }
+                    if(use_geographic)
+                    {
+                      /* This assumes the ExtractFromGrid procedure
+                         sets rx to lon in degrees and ry to lat in 
+                         degrees*/
+                      double dv=d.get_double("rx");
+                      dv *= llscf;
+                      d.put("rx",dv);
+                      d.put("sx",dv);  // force to look like zero offset cmp
+                      dv=d.get_double("ry");
+                      dv *= llscf;
+                      d.put("ry",dv);
+                      d.put("sy",dv);
+                    }
+                    else
+                    {
+                       d.put("rx",(double)i);
+                       d.put("ry",(double)j);
+                       d.put("sx",(double)i);
+                       d.put("sy",(double)j);
+                    }
                     /* SEGY uses this scale factor explicitly */
                     d.put("scalco",llscf);
                     /* Note these do not mesh with SU but can be 
