@@ -7,6 +7,7 @@
 #include "gclgrid.h"
 #include "SEGY2002FileHandle.h"
 #include "GenericFileHandle.h"
+#include "LatLong-UTMconversion.h"
 /* These are functions in pfutils.cc.  Eventually they will probably land
    in Metadata.h */
 //string pftbl2string(Pf *pf, const char* tag);
@@ -26,10 +27,12 @@ using namespace SEISPP;
 void usage()
 {
 	cerr << "extract_volume db gridname fieldname "
-		<< "[-usegeo -o outfile -coh -pf pffile -v]"<<endl
+		<< "[(-usegeo || -utm) -o outfile -coh -pf pffile -v]"<<endl
 	      << "Default outfile is called extract_volume.su"<<endl
               << "Use -coh flag if input is a coherence grid (default is pwmig output)"<<endl
-              << "Use -usegeo flag to output rx,ry as lon,lat using scalco factor"<<endl;
+              << "Use -usegeo flag to ooutput rx,ry as lon,lat using scalco factor"<<endl
+              << "Use -utm to have data converted to utm coordinates"<<endl
+              << "(Note zone must be defined in pf file for this option)"<<endl;
 
 	exit(-1);
 }
@@ -213,6 +216,7 @@ int main(int argc, char **argv)
 	string outfile("extract_volume.su");
         bool input_is_coherence(false);
         bool use_geographic(false);
+        bool use_utm(false);
 	for(i=4;i<argc;++i)
 	{
 		string argstr=string(argv[i]);
@@ -235,12 +239,20 @@ int main(int argc, char **argv)
                     input_is_coherence=true;
                 else if(argstr=="-usegeo")
                     use_geographic=true;
+                else if(argstr=="-utm")
+                    use_utm=true;
 		else
 		{
 			cerr << "Unknown argument = "<<argstr<<endl;
 			usage();
 		}
 	}
+        if(use_geographic && use_utm)
+        {
+            cerr << "Illegal option:  both -utm and -usegeo flags set"<<endl
+                <<"Only one or the other is allowed"<<endl;
+            usage();
+        }
         Pf *pf;
         if(pfread(const_cast<char *>(pffile.c_str()),&pf))
         {
@@ -251,6 +263,13 @@ int main(int argc, char **argv)
             Metadata control(pf);
             double dx1=control.get_double("nondimensional_x1_sample_interval");
             double dx2=control.get_double("nondimensional_x2_sample_interval");
+            int RefEllipse;
+            string utmzone;
+            if(use_utm)
+            {
+                RefEllipse=control.get_int("UTMReferenceEllipsoidNumber");
+                utmzone=control.get_string("UTMzone");
+            }
             /* This is a safety valve appropriate here, but not essential*/
             if( (dx1>1.0) || (dx2>1.0) )
             {
@@ -372,6 +391,28 @@ int main(int argc, char **argv)
                       dv *= llscf;
                       d.put("ry",dv);
                       d.put("sy",dv);
+                    }
+                    else if(use_utm)
+                    {
+                      /* This assumes the ExtractFromGrid procedure
+                         sets rx to lon in degrees and ry to lat in 
+                         degrees*/
+                      double easting,northing;
+                      char actual_zone[20];
+                      double lon=d.get_double("rx");
+                      double lat=d.get_double("ry");
+                      std::pair<double,double> utmtmp;
+                      utmtmp=LLtoUTMFixedZone(RefEllipse,lat,lon,
+                              utmzone.c_str());
+                      easting=utmtmp.first;  
+                      northing=utmtmp.second;
+                      d.put("rx",lon);
+                      d.put("ry",lat);
+                      d.put("sx",lon);
+                      d.put("sy",lat);
+                      //DEBUG
+                      cout << "Grid "<<i<<","<<j<<" x,y="
+                          <<easting<<", "<<northing<<endl;
                     }
                     else
                     {

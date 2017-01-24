@@ -3,7 +3,7 @@ PF=extract_volume.pf
 
 #MAN1=extract_volume.1
 #cflags=-O
-ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp $(TRLIBS) $(DBLIBS) -lperf -lwffil -lbrttutil -lm
+ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp -lgeocoords $(TRLIBS) $(DBLIBS) -lperf -lwffil -lbrttutil -lm
 SUBDIR=/contrib
 include $(ANTELOPEMAKE) 
 include $(ANTELOPE)/contrib/include/antelopemake.local

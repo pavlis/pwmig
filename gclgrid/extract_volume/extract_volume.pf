@@ -1,3 +1,7 @@
+# These are use only with the -utm flag - ignored otherwise
+# 23 is a magic number for WGS-84 - see LatLong-UTMconversions.h for alternates
+UTMReferenceEllipsoidNumber 23
+UTMzone 15S
 output_format SEGY
 #output_format SeismicUnix
 # For now we have SEGY input read same cross reference map as SU
