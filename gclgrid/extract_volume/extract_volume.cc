@@ -406,10 +406,10 @@ int main(int argc, char **argv)
                               utmzone.c_str());
                       easting=utmtmp.first;  
                       northing=utmtmp.second;
-                      d.put("rx",lon);
-                      d.put("ry",lat);
-                      d.put("sx",lon);
-                      d.put("sy",lat);
+                      d.put("rx",easting);
+                      d.put("ry",northing);
+                      d.put("sx",easting);
+                      d.put("sy",northing);
                       //DEBUG
                       cout << "Grid "<<i<<","<<j<<" x,y="
                           <<easting<<", "<<northing<<endl;
