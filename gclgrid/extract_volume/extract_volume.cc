@@ -188,8 +188,8 @@ ThreeComponentSeismogram ExtractFromGrid(GCLvectorfield3d& g,
     result.t0=0.0;
     result.put("time",0.0);
     /* SU specific */
-    /* use tracl to define lines - i fast becomes inline */
-      result.put("tracl",i);
+    /* use tracl to define lines - i fast becomes inline - add 1 for petrel - need to generalize this*/
+      result.put("tracl",i+1);
       result.put("tracr",1);
     result.put("fldr",1);
     /* This makes the data look like cdp stacked data */
@@ -411,8 +411,10 @@ int main(int argc, char **argv)
                       d.put("sx",easting);
                       d.put("sy",northing);
                       //DEBUG
+                      /*
                       cout << "Grid "<<i<<","<<j<<" x,y="
                           <<easting<<", "<<northing<<endl;
+                          */
                     }
                     else
                     {
@@ -426,15 +428,15 @@ int main(int argc, char **argv)
                     /* Note these do not mesh with SU but can be 
                        written in modern SEGY in slots that were
                        formerly undefined extension slots. */
-                    d.put("inline",i);
-                    d.put("crossline",j);
+                    d.put("inline",i+1);
+                    d.put("crossline",j+1);
                     /* This needs to be made optional for SU.  
                        For testing these are thought to work with Kingdom*/
-                    d.put("ep",i);
-                    d.put("tracf",j);
+                    d.put("ep",i+1);
+                    d.put("tracf",j+1);
                     d.put("cdp",npts);
                     /* SU, I think, uses this like crossline number */
-                    d.put("tracl",j);
+                    d.put("tracl",j+1);
                     /* We have to extract and write each component
                        as scalar becaue segy/su are not explicitly 
                        vector formats.  write will not allow this. */
