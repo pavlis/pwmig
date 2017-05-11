@@ -1,0 +1,21 @@
+LIB=libpwmig.a
+INCLUDE=PwmigFileHandle.h SlownessVectorMatrix.h
+SUBDIR=/contrib
+include $(ANTELOPEMAKE) 
+include $(ANTELOPE)/contrib/include/antelopemake.local
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB)
+#cxxflags=-DNO_ANTELOPE
+#CXXFLAGS+=-D_FILE_OFFSET_BITS=64
+#CXXFLAGS+=-D_LARGEFILE_SOURCE
+#CXXFLAGS+=-D_LARGEFILE64_SOURCE
+#  needed for debug
+#CXXFLAGS+=-I/usr/OpenMotif/include
+# for valgrid use only
+#CXXFLAGS+=-O
+
+OBJS=PwmigFileHandle.o SlownessVectorMatrix.o
+$(LIB) : $(OBJS)
+	$(RM) $@
+	$(CXXAR) $(CXXARFLAGS) $@ $(OBJS)  
+	$(RANLIB) $@
