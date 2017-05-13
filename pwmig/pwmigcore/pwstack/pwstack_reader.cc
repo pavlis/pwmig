@@ -64,9 +64,17 @@ PwstackBinaryFileReader::PwstackBinaryFileReader(string fname)
     idin = new long[nevents];
     foffin = new long[nevents];
     if(fread(idin,sizeof(long),nevents,fp)!=nevents)
-        throw SeisppError(base_error+"attempt to read evid vector in index failed");
+    {
+      delete [] idin;
+      delete [] foffin;
+      throw SeisppError(base_error+"attempt to read evid vector in index failed");
+    }
     if(fread(foffin,sizeof(long),nevents,fp)!=nevents)
-        throw SeisppError(base_error+"attempt to read file offset vector in index failed");
+    {
+      delete [] idin;
+      delete [] foffin;
+      throw SeisppError(base_error+"attempt to read file offset vector in index failed");
+    }
     /* A potential memory lead above if either of the two throws are
        executed.  Did this intentionally because in this use if any of these
        errors are thown pwstack will abort so there is no risk of a memory 
