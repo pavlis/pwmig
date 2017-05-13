@@ -883,8 +883,14 @@ vector<double> compute_domega_for_path(SlownessVector& u0,double dux, double duy
 	double z0=raydx1.depth(0);  // assume all four rays have same z0
 	npath_P = gradP.columns();
 	if(npath_P!=zP.size())
-		throw SeisppError(string("compute_domega_for_path:  ")
+        {
+          delete gradSdx1;
+          delete gradSdx2;
+          delete gradSdy1;
+          delete gradSdy2;
+	  throw SeisppError(string("compute_domega_for_path:  ")
 		  + string("vector grid point depths and gradP matrix do not match"));
+        }
 	dmatrix temp(3,npath_P); // Holds interpolated gradS values before replacement
 	linear_vector_regular_to_irregular(z0,dz,*gradSdx1,&(zP[0]),temp);
 	dmatrix nudx1(gradP+temp);  // creates vector gradP + gradS
