@@ -65,11 +65,19 @@ surface_P_velocity 5.8
 surface_S_velocity 3.5
 SimplePSPrimarySynthetic::ddelta 1.0
 SimplePSPrimarySynthetic::ndelta 1500
+# This must be one of:  POINTSOURCE, SIMPLE, or STAVARIABLE_LAYERED
 Synthetic_method POINTSOURCE
 #
 # These parameters are only for the StaVariableLayeredSynthetic constructor
 #
-listfile model_files.list
+# models can be in many files or one.  The default here (true) is recommended.
+use_single_model_file true
+# Use this if there is one file per station with station name as file name
+# (i.e. use_single_model_file false)
+model_list_file  model_files.list
+# This file is referenced when use_single_model_file is true (default)
+# With that format models are in this one file 
+model_file_name vmodel.dat
 tsigma 1.0
 # When false return pure impulse response.  true deconvolute with wvlevel 
 # to compute receiver function simulation
