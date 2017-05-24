@@ -108,6 +108,7 @@ StaVariableLayeredSynthetic::StaVariableLayeredSynthetic(string modfile,
                 thismod.rho.push_back(rhoin);
                 thismod.dz.push_back(dzin);
             }
+            fclose(fp);
             this->mods.insert(pair<string,LayeredModel>(sta,thismod));
             thismod.alpha.clear();
             thismod.beta.clear();

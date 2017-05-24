@@ -275,7 +275,7 @@ void ComputeGridCoherence(GCLvectorfield3d& f,
 	    counts[i][j][k]=0.0;
 	  }
 	list<MemberGrid>::iterator mptr; 
-	for(mptr=mgl.begin();mptr!=mgl.end();++mptr)
+	for(mptr=mgl.begin(),sumwt=0.0;mptr!=mgl.end();++mptr)
 	{
 		/*Tricky use of a pointer here to get address of start of buffer */
 		nread=gsfh.load_next(buffer[0][0][0]);
