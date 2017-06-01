@@ -27,9 +27,11 @@ using namespace SEISPP;
 void usage()
 {
 	cerr << "extract_volume db gridname fieldname "
-		<< "[(-usegeo || -utm) -o outfile -coh -pf pffile -v]"<<endl
+		<< "[(-usegeo || -utm) -o outfile -scalar -pf pffile -v]"<<endl
 	      << "Default outfile is called extract_volume.su"<<endl
-              << "Use -coh flag if input is a coherence grid (default is pwmig output)"<<endl
+              << "Use -scalar flag if input is scalar data (default is pwmig output)"<<endl
+              << "Examples are tomography models and coherence grids"<<endl
+              << "WARNING:  scalar grid must be uniformly sampled in depth"<<endl
               << "Use -usegeo flag to ooutput rx,ry as lon,lat using scalco factor"<<endl
               << "Use -utm to have data converted to utm coordinates"<<endl
               << "(Note zone must be defined in pf file for this option)"<<endl;
@@ -214,7 +216,7 @@ int main(int argc, char **argv)
 	ofstream outstrm;
 	bool out_to_other(false);
 	string outfile("extract_volume.su");
-        bool input_is_coherence(false);
+        bool input_is_scalar(false);
         bool use_geographic(false);
         bool use_utm(false);
 	for(i=4;i<argc;++i)
@@ -235,8 +237,8 @@ int main(int argc, char **argv)
                 }
 		else if(argstr=="-v")
 			SEISPP_verbose=true;
-                else if(argstr=="-coh")
-                    input_is_coherence=true;
+                else if(argstr=="-scalar")
+                    input_is_scalar=true;
                 else if(argstr=="-usegeo")
                     use_geographic=true;
                 else if(argstr=="-utm")
@@ -296,9 +298,9 @@ int main(int argc, char **argv)
                     <<endl;
                 exit(-1);
             }
-            /* override the above if coherence - hack adaption of this program
-               puts coherence value in comp[0] and zeros other components. */
-            if(input_is_coherence)
+            /* override the above if scalar - hack adaption of this program
+               puts scalar value in comp[0] and zeros other components. */
+            if(input_is_scalar)
             {
                 comp_to_save[0]=true;
                 comp_to_save[1]=false;
@@ -313,7 +315,7 @@ int main(int argc, char **argv)
 	    Dbptr db=dbh.db;
 	    Dbptr dbgrd=dbhg.db;
             GCLvectorfield3d *g;
-            if(input_is_coherence)
+            if(input_is_scalar)
             {
                 /* To simplify coding for a coherence field
                    copy the coherence data into component 0 
@@ -410,9 +412,6 @@ int main(int argc, char **argv)
                       d.put("ry",northing);
                       d.put("sx",easting);
                       d.put("sy",northing);
-                      //DEBUG
-                      cout << "Grid "<<i<<","<<j<<" x,y="
-                          <<easting<<", "<<northing<<endl;
                     }
                     else
                     {
@@ -459,8 +458,6 @@ int main(int argc, char **argv)
                             default:
                                 comp->put("trid",15);
                         }
-                        //DEBUG
-                        //cout << *(dynamic_cast<Metadata*>(comp))<<endl;
                         outhandle->put(*comp);
                         delete comp;
                       }
