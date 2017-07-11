@@ -429,7 +429,10 @@ int main(int argc, char **argv)
                        d.put("sy",(double)j);
                     }
                     /* SEGY uses this scale factor explicitly */
-                    d.put("scalco",llscf);
+                    if(use_geographic) 
+                        d.put("scalco",llscf);
+                    else
+                        d.put("scalco",1.0);
                     /* Note these do not mesh with SU but can be 
                        written in modern SEGY in slots that were
                        formerly undefined extension slots. */
