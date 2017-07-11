@@ -343,13 +343,13 @@ int main(int argc, char **argv)
             {
                 outhandle=new GenericFileHandle(outfile,string("SEGYfloat"),
                     outxref,orderkeys,endslist,tmdlist,false,
-                    string("nsamp"),string("dt"),1000.0,true);
+                    string("nsamp"),string("dt"),1000.0*dpscf,true);
             }
             else if(outform=="SEGY")
             {
                 SEGY2002FileHandle *sgyh;
                 pfput_int(pf,(char *)"number_samples",g->n3);
-                pfput_int(pf,(char *)"sample_interval",g->dx3_nom*1000);
+                pfput_int(pf,(char *)"sample_interval",g->dx3_nom*1000.0*dpscf);
                 sgyh=new SEGY2002FileHandle(outfile,tmdlist,pf);
                 outhandle=dynamic_cast<GenericFileHandle *>(sgyh);
             }
@@ -359,6 +359,14 @@ int main(int argc, char **argv)
                     << outform<<endl
                     << "Must be either SeismicUnix of SEGY"<<endl;
                 exit(-1);
+            }
+            /* inform user if the dpscf factor is set */
+            if(dpscf!=1.0) 
+            {
+                cerr << "export_volume (WARNING):   depth scale factor set to "
+                    << dpscf<<" which means we set dz to "<<1000.0*dpscf<<endl;
+                cerr << "In segy or su headers with short in this will resolve to "
+                    << ((short)(1000.0*dpscf))<<endl;
             }
             /* Now loop over grid.  */
             int tracr,npts;
