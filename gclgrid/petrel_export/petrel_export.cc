@@ -148,7 +148,7 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 		for absurd grid sizes - strong possibility*/
 	  GCLgrid gout(nx1out,nx2out,string("temp"),gp1.lat,gp1.lon,gp1.r,x2_azimuth,
 	     dx1*1000.0,dx2*1000.0,0,0);
-		int i,j;
+		int i,j,k;
 		dvector x(2);
 		Geographic_point gpout;
 		for(i=0;i<gout.n1;++i)
@@ -156,12 +156,13 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 			for(j=0;j<gout.n2;++j)
 			{
 				double latdeg,londeg;
-				/* this is now a simple vector sum - not very efficient with the
-				class overhead, but not expected to be an issue. */
-				x = origin + ((double)i)*utmdx1 + ((double)j)*utmdx2;
+				for(k=0;k<2;++i)
+				{
+					x(k)=((double)i)*utmdx1(k) + ((double)j)*utmdx2(k);
+				}
 				/* Note we use the full utmzone specification here but the
 				equatorial form later - I don't think this will matter.   */
-				UTMtoLL(RefEllipse,x(1),x(0),utmzone.c_str(),&latdeg,&londeg);
+				UTMtoLL(RefEllipse,x(1),x(0),utmzone.c_str(),latdeg,londeg);
 				/* GCLgrid needs coordinates in radians, but this utm converter
 				returns coordinates in degrees */
 				gpout.lat=rad(latdeg);
@@ -228,7 +229,7 @@ int main(int argc, char **argv)
       double dx1=control.get_double("easting_sample_interval");
       double dx2=control.get_double("northing_sample_interval");
 			double dz=control.get_double("depth_sample_interval");
-			double nz=control.get_int("number_depth_points_in_output")
+			double nz=control.get_int("number_depth_points_in_output");
       int RefEllipse=control.get_int("UTMReferenceEllipsoidNumber");
       string utmzone=control.get_string("UTMzone");
       bool comp_to_save[3];
@@ -271,7 +272,7 @@ int main(int argc, char **argv)
 				/* the dynamic_cast here is probably not necessary, but shows
 				clearly this clones the grid but not the data to build the
 				working grid. */
-				g=new GCLscalarfield3d(dynamic_cast<GCLgrid3d&>f);
+				g=new GCLscalarfield3d(dynamic_cast<GCLgrid3d&>(f));
 				g->zero();
 				for(i=0;i<g->n1;++i)
 						for(j=0;j<g->n2;++j)
@@ -339,14 +340,14 @@ int main(int argc, char **argv)
 					switch (ic2save)
 					{
 							case (0):
-									comp->put("trid",16);
+									d.put("trid",16);
 									break;
 							case (1):
-									comp->put("trid",17);
+									d.put("trid",17);
 									break;
 							case (2):
 							default:
-									comp->put("trid",15);
+									d.put("trid",15);
 					}
 					/* This algorithm assumes if d is marked dead the outhandle will
 					wrie a null seismogram with the header set to be marked dead.
@@ -364,5 +365,4 @@ int main(int argc, char **argv)
   	{
     	cerr << sterr.what()<<endl;
   	}
-	}
 }
