@@ -2,7 +2,7 @@ BIN=petrel_export
 PF=petrel_export.pf
 
 #MAN1=petrel_export.1
-#cflags=-O
+cxxflags=-g
 ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp -lgeocoords $(TRLIBS) $(DBLIBS) -lperf -lwffil -lbrttutil -lm
 SUBDIR=/contrib
 include $(ANTELOPEMAKE) 

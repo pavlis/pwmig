@@ -31,7 +31,7 @@ void usage()
 	cerr << "petrel_export gclfield_filename "
 	  << "Read a gclfield file with base name defined by arg1"<<endl
 		<< "[ -o outfile -scalar -pf pffile -v]"<<endl
-	      << "Default outfile is called extract_volume.su"<<endl
+	      << "Default outfile is called petrel_export.sgy"<<endl
               << "Use -scalar flag if input is scalar data (default is pwmig output)"<<endl
               << "Examples are tomography models and coherence grids"<<endl;
 	exit(-1);
@@ -73,16 +73,16 @@ TimeSeries ExtractFromGrid(GCLscalarfield3d f,Geographic_point gp0,int nz, doubl
 				++nset;
 			}
 		}
-		if(nset>0)
-		{
-			d.live=true;
-			d.put("nsamp",nz);
-			d.put("dt",dz);  // note this is in m
-			d.put("samprate",1.0/dz);
-			d.put("time",0.0);
-			d.put("fldr",1);  // not sure this is needed
-			d.put("duse",1);
-		}
+		if(nset>0) d.live=true;
+		d.put("nsamp",nz);
+		d.put("dt",dz);  // note this is in m
+		d.put("samprate",1.0/dz);
+		d.put("time",0.0);
+		d.put("fldr",1);  // not sure this is needed
+		d.put("duse",1);
+                /* need these to transfer coordinates to caller */
+                d.put("latitude",deg(gp.lat));
+                d.put("longitude",deg(gp.lon));
 		return d;
 	}catch(...){throw;};
 }
@@ -95,10 +95,11 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 	makes a tacit assumption the input grid is approximately a box or a
 	rotated box mapped to a sphere */
 	double delta,az;
-	Geographic_point gp1,gp2;
+	Geographic_point gp0,gp1,gp2;
 	/* lower left corner - the n3-1 oddity is because the top of a standard
 	GCLgrid is n3-1 and 0 is at the base */
 	gp1=g->geo_coordinates(0,0,g->n3-1);
+        gp0=gp1;  // gp0 is saved origin
 	gp2=g->geo_coordinates(g->n1-1,0,g->n3-1);
 	dist(gp1.lat,gp1.lon,gp2.lat,gp2.lon,&delta,&az);
 	/* compute the grid size assumig dx1 and dx2 are in meters */
@@ -138,8 +139,11 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 	utmdx1(1)=dx1*cos(x1_azimuth);
 	utmdx2(0)=dx2*sin(x2_azimuth);
 	utmdx2(1)=dx2*cos(x2_azimuth);
+        /* Get utm coordinates of origin */
+        std::pair<double,double> utmtmp;
+        utmtmp=LLtoUTMFixedZone(RefEllipse,deg(gp0.lat),deg(gp0.lon),utmzone.c_str());
 	dvector origin(2);
-	origin(0)=0.0;  origin(1)=0.0;
+	origin(0)=utmtmp.first;  origin(1)=utmtmp.second;
 	/* Build the GCLgrid with origin at the 0,0 point of the utm grid = lower
 	left top of 3d grid.   number of points is defined by utmgrid size.  The
 	extents will not be exactly right but I don't think that will be an issue.*/
@@ -156,9 +160,9 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 			for(j=0;j<gout.n2;++j)
 			{
 				double latdeg,londeg;
-				for(k=0;k<2;++i)
+				for(k=0;k<2;++k)
 				{
-					x(k)=((double)i)*utmdx1(k) + ((double)j)*utmdx2(k);
+					x(k)=origin(k)+((double)i)*utmdx1(k) + ((double)j)*utmdx2(k);
 				}
 				/* Note we use the full utmzone specification here but the
 				equatorial form later - I don't think this will matter.   */
@@ -186,12 +190,12 @@ int main(int argc, char **argv)
 	ios::sync_with_stdio();
 	if(argc<2) usage();
 	string infilebase(argv[1]);
-  string pffile("extract_volume");
+  string pffile("petrel_export");
 	ofstream outstrm;
 	bool out_to_other(false);
 	string outfile("petrel_export.sgy");
   bool input_is_scalar(false);
-	for(i=4;i<argc;++i)
+	for(i=2;i<argc;++i)
 	{
 		string argstr=string(argv[i]);
 		if(argstr=="-o")
@@ -304,17 +308,23 @@ int main(int argc, char **argv)
 				if(ques!='y')exit(-2);
 			}
 			TimeSeries d;
-		  cout << "Starting main loop over surface grid"<<endl;
+		  if(SEISPP_verbose)
+			  cout << "Starting main loop over surface grid"<<endl;
 			/* This makes i (easting) direction inline and northing crossline */
-			for(j=0;j<gout0.n2;++j)
+			int ep;   // We use this for energy point - a counter from start of the file
+			for(j=0,ep=0;j<gout0.n2;++j)
 			{
-				for(i=0;i<gout0.n2;++j)
+				for(i=0;i<gout0.n1;++i)
 				{
+					++ep;
 					Geographic_point gp=gout0.geo_coordinates(i,j);
 					d=ExtractFromGrid(*g,gp,nz,dz);
+					/* Seems petrel really wants headers right even if a trace is
+					marked dead so we set all traces and depend on trid to mark dead
+					traces */
 					double easting,northing;
-					double lon=d.get_double("rx");
-					double lat=d.get_double("ry");
+					double lon=d.get_double("latitude");
+					double lat=d.get_double("longitude");
 					std::pair<double,double> utmtmp;
 					utmtmp=LLtoUTMFixedZone(RefEllipse,lat,lon,
 									utmzone.c_str());
@@ -326,6 +336,20 @@ int main(int argc, char **argv)
 					d.put("ry",northing);
 					d.put("sx",easting);
 					d.put("sy",northing);
+					if(SEISPP_verbose)
+					{
+						cout << i<<" "
+						  << j << " "
+							<< j << " "
+							<< deg(gp.lon) << " "
+							<< deg(gp.lat) << " "
+							<< easting << " "
+							<< northing;
+						if(d.live)
+						  cout << " live"<<endl;
+						else
+						  cout << " dead"<<endl;
+					}
 					/* petrel wants numbers greater than 0 for inine and crossline.
 					These are written in segy2002 slots, but are ignored at this time
 					by petrel. */
@@ -333,22 +357,22 @@ int main(int argc, char **argv)
 					d.put("crossline",j+1);
 					/* These are the default positions for inline and crossline in petrel.
 					This is not specified in the standard to my knowledge. */
-					d.put("cdp",i+1);  // treated as inline index by petrel
-					d.put("tracr",j+1);   // treated as crossline index by petrel
-					/*Not sure it is necessary to set these.  2002 standard specifies these
-					should be set for three component data */
-					switch (ic2save)
-					{
-							case (0):
-									d.put("trid",16);
-									break;
-							case (1):
-									d.put("trid",17);
-									break;
-							case (2):
-							default:
-									d.put("trid",15);
-					}
+					d.put("cdp",j+1);  // treated as inline index by petrel
+					d.put("tracr",i+1);   // treated as crossline index by petrel
+					/* Not use we need this one, but beter to be sure.   I also am only
+					guessing it supposed to be a sequential counter here = ep */
+					d.put("cdpt",ep);
+					/* Petrel wants the following, but I'm unsure if they are
+					actually required to import a 3d cube.  Better safe than sorry. */
+					d.put("ep",ep);
+					d.put("offset",0.0);   // explicit to treat as zero offset data
+					d.put("scalco",1.0);
+					/*  SEGY uses trid to mark dead traces.   Regular seismic data is 1
+					dead is 2 */
+					if(d.live)
+						d.put("trid",1);
+					else
+					  d.put("trid",2);
 					/* This algorithm assumes if d is marked dead the outhandle will
 					wrie a null seismogram with the header set to be marked dead.
 					The SEGY2002FileHandle version currently in this directory
