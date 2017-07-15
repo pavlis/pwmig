@@ -55,10 +55,15 @@ TimeSeries ExtractFromGrid(GCLscalarfield3d f,Geographic_point gp0,int nz, doubl
 		gp=gp0;
 		int k,nset;
 		double fval;
-		double dzkm=dz/1000.0;   // dz is m convert to km
 		for(k=0,nset=0;k<nz;++k)
 		{
-			gp.r=gp0.r-dzkm*((double)k);
+                    /* Assume dz has unit so km to mesh here */
+			gp.r=gp0.r-dz*((double)k);
+                        //DEBUG
+                        /*
+                        cout <<"k=0"<<k<< " r0_ellipse - gp.r="<<r0_ellipse(gp.lat)-gp.r
+                            << " Expected depth="<< dz*((double)k)<<endl;
+                            */
 			cp=f.gtoc(gp);
 			int iret=f.lookup(cp.x1,cp.x2,cp.x3);
 			if(iret)
@@ -76,13 +81,20 @@ TimeSeries ExtractFromGrid(GCLscalarfield3d f,Geographic_point gp0,int nz, doubl
 		if(nset>0) d.live=true;
 		d.put("nsamp",nz);
 		d.put("dt",dz);  // note this is in m
-		d.put("samprate",1.0/dz);
+		d.put("samprate",1.0/(dz));
 		d.put("time",0.0);
 		d.put("fldr",1);  // not sure this is needed
 		d.put("duse",1);
                 /* need these to transfer coordinates to caller */
                 d.put("latitude",deg(gp.lat));
                 d.put("longitude",deg(gp.lon));
+                /* We also need to set the required members of the time series object*/
+                d.ns=nz;
+                d.dt=dz;
+                d.t0=0.0;
+                d.tref=relative;  // do not depend on default
+                //DEBUG
+                //cout << d;
 		return d;
 	}catch(...){throw;};
 }
@@ -292,7 +304,7 @@ int main(int argc, char **argv)
 			/* This is an oddity of segy not defined in the standard.   When reading
 			data in depth units petrel assumes units are mm so scaling is roughly
 			the same as segy time in microsections.*/
-      pfput_int(pf,(char *)"sample_interval",dz*1000.0);
+      pfput_int(pf,(char *)"sample_interval",nint(dz));
       sgyh=new SEGY2002FileHandle(outfile,tmdlist,pf);
       outhandle=dynamic_cast<GenericFileHandle *>(sgyh);
 			GCLgrid gout0(BuildUTMgrid(g,dx1,dx2,RefEllipse,utmzone));
@@ -340,7 +352,6 @@ int main(int argc, char **argv)
 					{
 						cout << i<<" "
 						  << j << " "
-							<< j << " "
 							<< deg(gp.lon) << " "
 							<< deg(gp.lat) << " "
 							<< easting << " "

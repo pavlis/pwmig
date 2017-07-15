@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "Metadata.h"
 #include "SEGY2002FileHandle.h"
 typedef struct SegyReel{
         int32_t            kjob, kline, kreel;
@@ -79,15 +80,17 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
     /* Define and initialize binary (file) header */
     SegyReel BinaryHeader;
     Initialize_BinaryHeader(&BinaryHeader);
+    /* this proved necessary for some inputs */
+    int ival;
     try {
-        BinaryHeader.kjob=md.get_long("job_id_number");
+        BinaryHeader.kjob=md.get<int>("job_id_number");
     }catch(SeisppError& serr)
     {
         log_error(serr,"job_id_number","1");
         BinaryHeader.kjob=1;
     };
     try {
-        BinaryHeader.kline=md.get_long("line_number");
+        BinaryHeader.kline=md.get<int>("line_number");
     }catch(SeisppError& serr)
     {
         log_error(serr,"line_number","1");
@@ -96,7 +99,7 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
     // This one is always set to 1 here 
     BinaryHeader.kreel=1;
     try {
-        BinaryHeader.kntr=md.get_int("number_of_traces_per_ensemble");
+        BinaryHeader.kntr=md.get<short>("number_of_traces_per_ensemble");
     }catch(SeisppError& serr)
    {
         log_error(serr,"number_of_traces_per_ensemble","1");
@@ -104,21 +107,22 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
    };
 
     try {
-        BinaryHeader.knaux=md.get_int("number_of_aux_traces_per_ensemble");
+        BinaryHeader.knaux=md.get<short>("number_of_aux_traces_per_ensemble");
     }catch(SeisppError& serr)
    {
         log_error(serr,"number_of_aux_traces_per_ensemble","0");
         BinaryHeader.knaux=0;
    };
     try {
-        BinaryHeader.sr=md.get_int("sample_interval");
+        ival=md.get<int>("sample_interval");
+        BinaryHeader.sr=(short)ival;
     }catch(SeisppError& serr)
    {
         log_error(serr,"sample_interval","1000");
         BinaryHeader.sr=1000;
    };
     try {
-        BinaryHeader.kfldsr=md.get_int("field_sample_interval");
+        BinaryHeader.kfldsr=md.get<short>("field_sample_interval");
     }catch(SeisppError& serr)
    {
        // Silently set to sr if missing
@@ -126,7 +130,7 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
    };
    /* This one must be required */
     try {
-        BinaryHeader.knsamp=md.get_int("number_samples");
+        BinaryHeader.knsamp=md.get<short>("number_samples");
     }catch(SeisppError& serr)
    {
        cerr << "SEGY2002FileHandle::WriterFileHeaders:  " 
@@ -135,7 +139,7 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
        exit(-1);
    };
     try {
-        BinaryHeader.kfsamp=md.get_int("field_number_samples");
+        BinaryHeader.kfsamp=md.get<short>("field_number_samples");
     }catch(SeisppError& serr)
    {
         // Silently make equal to knsamp if not defined
@@ -144,14 +148,14 @@ void SEGY2002FileHandle::WriteFileHeaders(Metadata& md)
    /* This is frozen to 32 bit ieee floats */
    BinaryHeader.dsfc=5;
     try {
-        BinaryHeader.kmfold=md.get_int("fold");
+        BinaryHeader.kmfold=md.get<short>("fold");
     }catch(SeisppError& serr)
    {
         log_error(serr,"fold","1");
         BinaryHeader.kmfold=1;
    };
     try {
-        BinaryHeader.ksort=md.get_int("segy_sort_order_code");
+        BinaryHeader.ksort=md.get<short>("segy_sort_order_code");
     }catch(SeisppError& serr)
    {
        /* Standard says 2 is "CDP Ensemble" */
@@ -237,7 +241,7 @@ SEGY2002FileHandle::SEGY2002FileHandle(string fname,
         /* Hard code some arguments to set_required less elegant, but
            this is not intenteded to be the most elegant code ever. */
         this->set_required(xref,orderkeys,ensmdlist,tmdlist,
-            string("nsamp"),string("dt"),1000000.0,true,false);
+            string("nsamp"),string("dt"),1000.0,true,false);
 
         /* Make sure file output stream is at 0 offset */
         this->rewind();
