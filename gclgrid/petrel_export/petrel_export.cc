@@ -152,10 +152,26 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 	utmdx2(0)=dx2*sin(x2_azimuth);
 	utmdx2(1)=dx2*cos(x2_azimuth);
         /* Get utm coordinates of origin */
+        /*
         std::pair<double,double> utmtmp;
         utmtmp=LLtoUTMFixedZone(RefEllipse,deg(gp0.lat),deg(gp0.lon),utmzone.c_str());
 	dvector origin(2);
 	origin(0)=utmtmp.first;  origin(1)=utmtmp.second;
+        */
+        double x0,y0;
+        char originzone[20];  // overkill in size
+        LLtoUTM(RefEllipse,deg(gp0.lat),deg(gp0.lon),y0,x0,originzone);
+        if(utmzone!=originzone)
+        {
+            cerr << "Origin is not in the same utm zone as that defined by UTMzone paramer"
+                <<endl
+                << "UTMzone defined in parameter file="<<utmzone<<endl
+                << "UTM zone of the origin specified="<<originzone<<endl
+                << "Alter origin parameters to put origin in zone "<<utmzone<<endl;
+            exit(-1);
+        }
+        dvector origin(2);
+        origin(0)=x0;  origin(1)=y0;
 	/* Build the GCLgrid with origin at the 0,0 point of the utm grid = lower
 	left top of 3d grid.   number of points is defined by utmgrid size.  The
 	extents will not be exactly right but I don't think that will be an issue.*/
@@ -179,6 +195,11 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 				/* Note we use the full utmzone specification here but the
 				equatorial form later - I don't think this will matter.   */
 				UTMtoLL(RefEllipse,x(1),x(0),utmzone.c_str(),latdeg,londeg);
+                                //DEBUG
+                                cout << i << " "<<j<<" "
+                                    << setprecision(10)
+                                    << x(0)<<" "<<x(1)<<" "
+                                    << londeg<<" "<<latdeg<<endl;
 				/* GCLgrid needs coordinates in radians, but this utm converter
 				returns coordinates in degrees */
 				gpout.lat=rad(latdeg);
