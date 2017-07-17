@@ -98,6 +98,16 @@ TimeSeries ExtractFromGrid(GCLscalarfield3d f,Geographic_point gp0,int nz, doubl
 		return d;
 	}catch(...){throw;};
 }
+string GridOriginUTMzone(GCLscalarfield3d *g,int RefEllipse)
+{
+    try{
+        Geographic_point gp0=g->geo_coordinates(0,0,g->n3-1);
+        double x0,y0;
+        char originzone[20];  // overkill in size
+        LLtoUTM(RefEllipse,deg(gp0.lat),deg(gp0.lon),y0,x0,originzone);
+        return(string(originzone));
+    }catch(...){throw;};
+}
 
 GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 	  int RefEllipse, string utmzone)
@@ -183,9 +193,9 @@ GCLgrid BuildUTMgrid(GCLscalarfield3d *g, double dx1, double dx2,
 		int i,j,k;
 		dvector x(2);
 		Geographic_point gpout;
-		for(i=0;i<gout.n1;++i)
+                for(j=0;j<gout.n2;++j)
 		{
-			for(j=0;j<gout.n2;++j)
+		        for(i=0;i<gout.n1;++i)
 			{
 				double latdeg,londeg;
 				for(k=0;k<2;++k)
@@ -328,6 +338,17 @@ int main(int argc, char **argv)
       pfput_int(pf,(char *)"sample_interval",nint(dz));
       sgyh=new SEGY2002FileHandle(outfile,tmdlist,pf);
       outhandle=dynamic_cast<GenericFileHandle *>(sgyh);
+      string utmz0;
+      utmz0=GridOriginUTMzone(g,RefEllipse);
+      if(utmz0!=utmzone)
+      {
+          cerr << "WARNING-WARNING-WARNING:   UTM zone of lower left corner of this grid is in zone = "
+              << utmz0<<endl
+              << "Parameter file wants to use utm zone="<<utmzone<<endl
+              << "Switching internally to utm zone = "<< utmz0<<endl
+              << "Use "<<utmz0<<" as the CRS for this file when you import it to petrel"<<endl;
+          utmzone=utmz0;
+      }
 			GCLgrid gout0(BuildUTMgrid(g,dx1,dx2,RefEllipse,utmzone));
 			const int warngridsize(10000);
 			if((gout0.n1>warngridsize) || (gout0.n2>warngridsize))
