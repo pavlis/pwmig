@@ -1,0 +1,14 @@
+BIN=pwmig_outlier_repair
+ldlibs=-lgclgrid -lseispp $(TRLIBS) -lperf 
+
+SUBDIR=/contrib
+include $(ANTELOPEMAKE)  	
+include  $(ANTELOPE)/contrib/include/antelopemake.local
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB)
+
+OBJS=pwmig_outlier_repair.o 
+
+$(BIN) : $(OBJS)
+	$(RM) $@
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
