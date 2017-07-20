@@ -8,8 +8,8 @@ AttributeCrossReferenceMapName metadata_cross_reference
 # We resample data along utm coordinates at uniform spacing in meters
 easting_sample_interval 30000.0
 northing_sample_interval 30000.0
-# data are always resampled in depth to this scale in meters
-depth_sample_interval  2000.0
+# This parameter should have units of kilometers
+depth_sample_interval  2
 number_depth_points_in_output 100
 save_radial true
 # External names are cross reference coded using passcal names
@@ -90,6 +90,7 @@ gaps gapSize integer
 otrav taperOvertravel integer
 }
 output_metadata_list &Tbl{
+tracl
 tracr
 fldr
 cdp
