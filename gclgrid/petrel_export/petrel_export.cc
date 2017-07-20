@@ -70,12 +70,12 @@ TimeSeries ExtractFromGrid(GCLscalarfield3d f,Geographic_point gp0,int nz, doubl
 			if(iret)
 			{
 				/* land here if the lookup failed */
-				d.s[kk]=0.0;  // not really necessary but clearer
+				d.s[k]=0.0;  // not really necessary but clearer
 			}
 			else
 			{
 				fval=f.interpolate(cp.x1,cp.x2,cp.x3);
-                                d.s[kk]=fval;
+                                d.s[k]=fval;
 				++nset;
 			}
 		}
