@@ -273,6 +273,12 @@ int main(int argc, char **argv)
 		cerr << "pfread failed for pf file="<<pffile<<endl;
     exit(-1);
   }
+  if(is_present(const_cast<char *>(outfile.c_str())))
+  {
+      cerr << "petrel_export:  segy output file="<<outfile<<" exists"<<endl
+          << "Fatal error:  delete or rename file "<<outfile<<endl;
+      exit(-1);
+  }
 	try {
       Metadata control(pf);
       double dx1=control.get_double("easting_sample_interval");
