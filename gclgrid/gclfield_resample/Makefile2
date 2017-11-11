@@ -1,0 +1,12 @@
+BIN=gclfield_resample
+
+cxxflags=-g
+ldlibs=-lseispp -ltrvltm -lgclgrid -lseispp -lgeocoords $(TRLIBS) $(DBLIBS) -lperf -lwffil -lbrttutil -lm
+SUBDIR=/contrib
+include $(ANTELOPEMAKE) 
+include $(ANTELOPE)/contrib/include/antelopemake.local
+CXXFLAGS += -I$(BOOSTINCLUDE)
+LDFLAGS += -L$(BOOSTLIB)
+OBJS=gclfield_resample.o
+$(BIN) : $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
