@@ -10,12 +10,14 @@ void usage()
     << "(Best constructed with makegclgrid)"<<endl
     << "infield - field object base name to be resampled"<<endl
     << "outfile - output filed base name"<<endl
-    << "(Note all 3 above are base names used for file storage of gclgrid objects)"<<endl
-    << " -vector - If present assume the input field is a vector field"<<endl
+    << "(Note all 3 above are base names used for file storage of gclgrid objects)"
+      <<endl;
+    cerr << " -vector - If present assume the input field is a vector field"<<endl
     << "  (default is scalar data)"<<endl
     << " -null - specify alternative to null value used when interpolation fails"<<endl
     << "Default is 9999999.9"<<endl
     << " -dir - save data to directory dir (default is current directory)"<<endl;
+    exit(-1);
 }
 const double nullvalue(9999999.9);
 void setnulls(GCLscalarfield3d *f)
